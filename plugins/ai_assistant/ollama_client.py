@@ -295,8 +295,10 @@ class LLMProvider:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        prefer_local: bool = True
-    ) -> str:
+        prefer_local: bool = True,
+        previous_response_id: Optional[str] = None,
+        tools: Optional[List[Any]] = None
+    ) -> Dict[str, Any]:
         """
         Chat with message history and automatic fallback.
         
@@ -304,9 +306,11 @@ class LLMProvider:
             messages: List of message dicts
             temperature: Sampling temperature
             prefer_local: Try local LLM first
+            previous_response_id: ID of previous response for stateful chat
+            tools: List of tools for the model to use
             
         Returns:
-            Generated response text
+            Dict containing 'content', 'response_id', and 'model'
         """
         if prefer_local and self.use_local:
             try:
@@ -314,42 +318,117 @@ class LLMProvider:
                     messages=messages,
                     temperature=temperature
                 )
-                return response.get("message", {}).get("content", "")
+                return {
+                    "content": response.get("message", {}).get("content", ""),
+                    "response_id": None,
+                    "model": response.get("model", "local")
+                }
             except Exception as e:
                 logger.warning(f"Local LLM chat failed, falling back to OpenAI: {e}")
         
         # Fallback to OpenAI
-        return self._openai_chat(messages, temperature)
-    
-    def _openai_chat(self, messages: List[Dict[str, str]], temperature: float) -> str:
-        """Fallback to OpenAI chat."""
+        return self._openai_chat(
+            messages=messages, 
+            temperature=temperature,
+            previous_response_id=previous_response_id,
+            tools=tools
+        )
+
+    def _openai_chat(
+        self, 
+        messages: List[Dict[str, str]], 
+        temperature: float,
+        previous_response_id: Optional[str] = None,
+        tools: Optional[List[Any]] = None
+    ) -> Dict[str, Any]:
+        """Fallback to OpenAI chat using either Responses API or Chat Completions."""
         try:
             from openai import OpenAI
             
             client = OpenAI(api_key=self.config.openai_api_key.get_secret_value())
             
             if self.config.responses_api_enabled:
-                # Use new Responses API for chat
-                # Convert messages to input format (simplified for now)
-                last_user_msg = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-                system_msg = next((m["content"] for m in messages if m["role"] == "system"), "You are a helpful AAS assistant.")
+                # Use new Responses API for stateful, tool-enabled chat
+                # Convert messages to input items
+                input_items: List[Any] = []
+                for msg in messages:
+                    if msg["role"] == "user":
+                        input_items.append({
+                            "type": "message",
+                            "role": "user",
+                            "content": [{"type": "input_text", "text": msg["content"]}]
+                        })
+                
+                # Extract system instructions
+                instructions = next((m["content"] for m in messages if m["role"] == "system"), "You are a helpful AAS assistant.")
+                
+                # Configure native tools
+                native_tools: List[Any] = []
+                if self.config.enable_web_search:
+                    native_tools.append({"type": "web_search"})
+                # File search requires vector_store_ids which we don't have yet
+                # if self.config.enable_file_search:
+                #     native_tools.append({"type": "file_search"})
+                # Code interpreter seems to require 'container' parameter in some environments
+                # if self.config.enable_code_interpreter:
+                #     native_tools.append({"type": "code_interpreter"})
+                
+                # Combine with custom tools if provided
+                all_tools = native_tools + (tools or [])
                 
                 response = client.responses.create(
                     model=self.config.openai_model,
-                    instructions=system_msg,
-                    input=last_user_msg,
+                    instructions=instructions,
+                    input=input_items,
+                    tools=all_tools if all_tools else None, # type: ignore
                     temperature=temperature,
-                    store=True
+                    previous_response_id=previous_response_id,
+                    store=True  # Enable stateful context
                 )
-                text_outputs = [item.text for item in response.output if hasattr(item, 'text')]
-                return "\n".join(text_outputs)
+                
+                # Extract text content and response ID
+                text_content = ""
+                tool_calls_info = []
+                
+                for item in response.output:
+                    if hasattr(item, 'type'):
+                        if item.type == "message":
+                            # In Responses API, message items have a content list
+                            if hasattr(item, 'content'):
+                                for part in item.content: # type: ignore
+                                    if hasattr(part, 'type'):
+                                        if part.type == "output_text" and hasattr(part, 'text'):
+                                            text_content += part.text # type: ignore
+                                        elif part.type == "text" and hasattr(part, 'text'):
+                                            text_content += part.text # type: ignore
+                        elif item.type.endswith("_call"):
+                            # Handle tool calls (web_search_call, function_call, etc.)
+                            tool_calls_info.append(item.type)
+                            logger.debug(f"Tool call: {item.type}")
+                
+                if tool_calls_info:
+                    logger.info(f"✓ Responses API executed tools: {', '.join(tool_calls_info)}")
+                
+                return {
+                    "content": text_content,
+                    "response_id": response.id,
+                    "model": response.model,
+                    "tool_calls": tool_calls_info
+                }
             else:
+                # Legacy Chat Completions API
                 response = client.chat.completions.create(
                     model=self.config.openai_model,
-                    messages=messages,
-                    temperature=temperature
+                    messages=messages, # type: ignore
+                    temperature=temperature,
+                    tools=tools if tools else None # type: ignore
                 )
-                return response.choices[0].message.content
+                return {
+                    "content": response.choices[0].message.content or "",
+                    "response_id": None,
+                    "model": response.model,
+                    "tool_calls": []
+                }
             
         except Exception as e:
             logger.error(f"OpenAI chat fallback failed: {e}")
