@@ -18,6 +18,9 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
  | AAS-011 | Medium | Autonomous SysAdmin | AAS-006 | queued | - | 2026-01-02 | 2026-01-02 | 
  | AAS-013 | Low | Deimos-Wizard101 Port | AAS-012 | queued | - | 2026-01-02 | 2026-01-02 | 
  | AAS-014 | Low | DanceBot Integration | AAS-012 | queued | - | 2026-01-02 | 2026-01-02 | 
+ | AAS-104 | High | Integrate OpenAI Agents SDK | AAS-003, AAS-032 | queued | - | 2026-01-02 | 2026-01-02 |
+ | AAS-105 | Medium | Build ChatKit Agent Dashboard | AAS-033, AAS-104 | queued | - | 2026-01-02 | 2026-01-02 |
+ | AAS-106 | High | Migrate to OpenAI Responses API | AAS-003 | queued | - | 2026-01-02 | 2026-01-02 | 
 
 ## Task Details
 
@@ -109,3 +112,42 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
     - [ ] Define state graph for task decomposition.
     - [ ] Implement "Decomposer" node that writes to `ACTIVE_TASKS.md`.
     - [ ] Integrate with `HandoffManager`.
+
+### AAS-106: Migrate to OpenAI Responses API
+- **Description**: Migrate from Chat Completions API to new Responses API for better performance, agentic capabilities, and cost savings (40-80% cache improvement).
+- **Dependencies**: AAS-003 (Pydantic RCS) ✅
+- **Priority**: High
+- **Benefits**:
+  - 3% better model intelligence (SWE-bench evals)
+  - Native agentic loop with built-in tools (web_search, file_search, code_interpreter)
+  - 40-80% better cache utilization = lower costs
+  - Stateful context with store=true (preserves reasoning/tool context)
+  - Encrypted reasoning for ZDR compliance
+  - Future-proof for GPT-5 and upcoming models
+- **Deliverables**:
+  - Update plugins/ai_assistant/ollama_client.py to use client.responses.create()
+  - Replace chat.completions with responses endpoint
+  - Update message format to Items (input/output structure)
+  - Add native tool support (web_search, file_search, code_interpreter)
+  - Implement stateful conversations with previous_response_id
+  - Update structured outputs from response_format to text.format
+  - Add reasoning items support with encrypted_content for ZDR
+  - Update all API calls in codebase
+- **Migration Steps**:
+  1. Update endpoint: /v1/chat/completions → /v1/responses
+  2. Change messages=[...] to input=... or instructions + input
+  3. Update functions to internally-tagged format (strict by default)
+  4. Use previous_response_id for multi-turn conversations
+  5. Update structured outputs to text.format
+  6. Add native tools: web_search, file_search, code_interpreter
+- **Acceptance Criteria**:
+  - [ ] All chat.completions.create() calls migrated to responses.create()
+  - [ ] Multi-turn conversations using previous_response_id
+  - [ ] Native tools integrated (web_search at minimum)
+  - [ ] Structured outputs working with text.format
+  - [ ] Stateful conversations with store=true
+  - [ ] Encrypted reasoning for ZDR compliance (store=false + encrypted_content)
+  - [ ] Tests updated and passing
+  - [ ] Documentation updated
+- **Type**: enhancement
+- **Resources**: https://platform.openai.com/docs/guides/migrate-to-responses
