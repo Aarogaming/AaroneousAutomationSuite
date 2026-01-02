@@ -1,0 +1,5 @@
+{"custom_id": "embed-0", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": "AAS is a Python-based orchestration hub for multi-purpose automation"}}
+{"custom_id": "embed-1", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": "The Handoff Manager implements the Autonomous Handoff Protocol"}}
+{"custom_id": "embed-2", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": "Project Maelstrom is a C# game client that communicates via gRPC"}}
+{"custom_id": "embed-3", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": "The IPC bridge handles communication between AAS and Maelstrom"}}
+{"custom_id": "embed-4", "method": "POST", "url": "/v1/embeddings", "body": {"model": "text-embedding-3-small", "input": "Linear integration enables autonomous task management"}}
