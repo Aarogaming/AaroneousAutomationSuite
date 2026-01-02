@@ -17,7 +17,7 @@
 ## Event Object (Write)
 - `event_id`: (string) Globally unique UUID.
 - `task_id`: Reference to parent task.
-- `actor`: "Sixth" | "ChatGPT-5.2" | "Linear".
+- `actor`: "Sixth" | "ChatGPT-5.2" | "CodeGPT" | "Linear".
 - `event_type`: "claimed" | "progress" | "blocked" | "completed" | "failed".
 - `message`: (string) Human/AI readable update.
 - `artifacts`: Array of produced Artifact objects.

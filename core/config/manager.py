@@ -23,7 +23,7 @@ class AASConfig(BaseSettings):
     ipc_host: str = Field(default="localhost", alias="IPC_HOST")
 
     model_config = SettingsConfigDict(
-        env_file="../.env",
+        env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore"
     )
