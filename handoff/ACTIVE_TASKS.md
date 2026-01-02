@@ -157,6 +157,7 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
   - [ ] Documentation updated
 - **Type**: enhancement
 - **Resources**: https://platform.openai.com/docs/guides/migrate-to-responses
+<<<<<<< HEAD
 ### AAS-107: Implement CLI Task Management
 - **Description**: Enhance core/main.py CLI with complete task lifecycle management (create, update, transition, search, validate dependencies).
 - **Dependencies**: AAS-003 (Pydantic RCS) ✅
@@ -224,3 +225,5 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
 - **Dependencies**: AAS-003
 - **Priority**: Medium
 - **Type**: enhancement
+=======
+>>>>>>> f809ef2 (Aaroneous)
