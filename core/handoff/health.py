@@ -15,10 +15,22 @@ class HealthAggregator:
             "HACK": re.compile(r"HACK[:\s]+(.*)", re.IGNORECASE)
         }
 
-    def scan(self) -> dict:
-        results = {"TODO": [], "FIXME": [], "HACK": []}
+    def scan(self) -> dict[str, list[str]]:
+        results: dict[str, list[str]] = {"TODO": [], "FIXME": [], "HACK": [], "AUDIT": []}
+        
+        # Integrate Visual Audit results if available
+        audit_report = "artifacts/handoff/reports/VISUAL_AUDIT.md"
+        if os.path.exists(audit_report):
+            results["AUDIT"].append(f"Visual Audit report found at {audit_report}")
+
+        # Integrate Build results if available
+        build_report = "artifacts/handoff/reports/BUILD_REPORT.md"
+        if os.path.exists(build_report):
+            results["AUDIT"].append(f"Build report found at {build_report}")
+
         for root, _, files in os.walk(self.root_dir):
-            if any(x in root for x in [".git", "__pycache__", "venv", "bin", "obj"]):
+            # Skip noisy directories
+            if any(x in root for x in [".git", "__pycache__", ".venv", "bin", "obj", "artifacts"]):
                 continue
             
             for file in files:

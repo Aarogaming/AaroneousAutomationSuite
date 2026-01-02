@@ -11,3 +11,16 @@ pytest>=7.4.0
 loguru>=0.7.2
 pyyaml>=6.0.1
 pillow>=10.0.0
+
+# Consolidated from legacy repos
+opencv-python>=4.8.0
+pyautogui>=0.9.54
+pygetwindow>=0.0.9
+pynput>=1.7.6
+mss>=9.0.1
+numpy>=1.25.1
+thefuzz>=0.22.1
+pyperclip>=1.9.0
+requests>=2.32.3
+pypresence>=4.3.0
+pywin32>=306

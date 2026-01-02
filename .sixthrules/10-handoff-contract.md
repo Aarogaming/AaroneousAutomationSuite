@@ -8,6 +8,7 @@
 - `project`: "AAS" | "Maelstrom" | "Research".
 - `title`: (string) Short summary.
 - `description`: (string) Detailed instructions + Acceptance Criteria.
+- `depends_on`: (string) Comma-separated list of task IDs.
 - `task_type`: "feature" | "bug" | "research" | "ui".
 - `priority`: "low" | "medium" | "high" | "urgent".
 - `status`: Current lifecycle state.
@@ -27,3 +28,8 @@
 - **No Secrets:** Redact `ghp_`, `AIza`, and private keys.
 - **Redaction Pattern:** Use `[REDACTED_KEY_TYPE]` for sensitive data.
 - **Endpoint:** `NEEDS_INPUT: HANDOFF_BASE_URL`
+
+## Local Registry
+- **Path:** `handoff/ACTIVE_TASKS.md`
+- **Format:** Markdown table with `ID`, `Priority`, `Title`, `Depends On`, `Status`, `Assignee`, `Created`, `Updated`.
+- **Claiming:** Atomic update of `Status` to `In Progress` and `Assignee` to the claiming actor.

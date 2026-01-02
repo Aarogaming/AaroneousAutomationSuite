@@ -1,5 +1,5 @@
 # AAS HEALTH REPORT
-Timestamp: 2026-01-01T23:38:57.293871
+Timestamp: 2026-01-02T01:09:46.608648
 
 ## 🔴 Errors
 None detected.
@@ -8,5 +8,468 @@ None detected.
 None detected.
 
 ## 📝 To-Do List
-- [ ] Implement gRPC proto generation
-- [ ] Connect Linear API
+- [ ] collision_math.py:204 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] combat_cache.py:16 - Potential flaw: If we're matching for None with a data structure that might not exist, we will return a correct match regardless, as get() defaults to none.
+- [ ] combat_math.py:89 - Idemnity (Item Card)
+- [ ] combat_math.py:90 - Aegis (Item Card)
+- [ ] combat_math.py:246 - Express both the crit & non-crit values, along with the crit percentage.
+- [ ] combat_new.py:27 - finish unified clamping pips function,
+- [ ] combat_new.py:52 - This shouldn't ever fail, but the indexing is sussy nonetheless. Fix it. -slack
+- [ ] deimosgui.py:214 - 
+- [ ] deimosgui.py:309 - Switch to using keys for this stuff
+- [ ] deimosgui.py:338 - Does it make any sense to translate this? Has more occurences later in the file
+- [ ] deimosgui.py:404 - Come back with some ingenius solution for this
+- [ ] deimosgui.py:460 - Also needs some smart solution
+- [ ] drop_logger.py:119 - Finish this loop and create a system for determining new drops
+- [ ] effect_simulation.py:119 - Roshambo shit here
+- [ ] effect_simulation.py:122 - Conditional shit
+- [ ] effect_simulation.py:125 - Figure out what this actually means
+- [ ] effect_simulation.py:134 - Make this handle the subeffects according to top-level effect type (type name, not enum effect type)
+- [ ] effect_simulation.py:153 - there's probably a way to simplify this logic -slack
+- [ ] effect_simulation.py:160 - Add global effects
+- [ ] effect_simulation.py:247 - Add global effects
+- [ ] effect_simulation.py:313 - Add global effects
+- [ ] effect_simulation.py:464 - Make sim_damage use this
+- [ ] effect_simulation.py:585 - Verify if this actually works to check if we have enough effects
+- [ ] effect_simulation.py:640 - Handle this, and find a spell where its used.
+- [ ] effect_simulation.py:644 - Simplify this
+- [ ] effect_simulation.py:651 - Simplify this
+- [ ] effect_simulation.py:734 - Make a mod pips function
+- [ ] effect_simulation.py:808 - THIS ENTIRE FUNCTION
+- [ ] effect_simulation.py:818 - THIS ENTIRE FUNCTION
+- [ ] questing.py:91 - Does this need a client?
+- [ ] questing.py:1185 - Slay the beast
+- [ ] questing.py:1279 - Get rid of this once scripting system allows for quest libraries
+- [ ] sigil.py:155 - Logic for dungeons with questlines
+- [ ] sigil.py:256 - Logic for dungeons with questlines
+- [ ] sigil.py:321 - Somehow finish this function
+- [ ] teleport_math.py:178 - This has 2 duplicates
+- [ ] teleport_math.py:243 - What is leader_client meant to be for?
+- [ ] utils.py:770 - Find a better solution to waiting for load in screen to end
+- [ ] utils.py:925 - add error if friend is busy message pops up
+- [ ] parser.py:114 - Maybe refactor this and parse_numeric_comparison to condense code?
+- [ ] sem.py:146 - 
+- [ ] tokenizer.py:361 - Implement wildcards in all stages
+- [ ] types.py:139 - Replace asserts
+- [ ] vm.py:1281 - is eval always fast enough to run in order during a TaskGroup
+- [ ] vm.py:1391 - "quest" could instead be treated as an XYZ expression or something
+- [ ] README.md:128 - (single list)
+- [ ] UI_POLISH_TODO.md:1 - (pending audit results)
+- [ ] automatus.py:37 - Display more error information - this is called whenever there is an error in the bot definition
+- [ ] automatus.py:45 - - WAITING ON THIS TO BE FIXED IN THE LIBRARY
+- [ ] README.md:14 - >
+- [ ] args.py:42 - Change directory to a bot output directory (if it takes screenshots or the like)
+- [ ] args.py:43 - Support multiple modules and allow a flag to specify the game index
+- [ ] args.py:44 - Figure out support for multiple bots on multiple clients
+- [ ] args.py:85 - allow user to specify location of bot module
+- [ ] flow.py:7 - ###
+- [ ] flow.py:26 - try to hook to second client if first already hooked
+- [ ] flow.py:30 - automatic launch functionality
+- [ ] flow.py:49 - complete stats system")
+- [ ] locomotion.py:8 - REFACTOR THIS FUNCTION - Lots of duplicated code!
+- [ ] map.py:39 - - USE WORLDNAME TO CHECK IF WORLD MATCHES AND GOTO DIFFERENT WORLD IF NOT
+- [ ] utils.py:122 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:126 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:118 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:122 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:99 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:103 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:99 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:103 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] gear.py:162 - 
+- [ ] mouse.py:291 - find fastest way out of rect
+- [ ] wad.py:35 - allow for `file` that doesnt exist yet
+- [ ] wad.py:160 - finish
+- [ ] wad.py:212 - why don't we just write a file full of zeros instead of an empty file
+- [ ] __main__.py:110 - raise an error if it isn't a valid wad file
+- [ ] application.py:6 - delete this file in 2.0
+- [ ] client.py:148 - 2.0 remove the base_ here and in sub methods
+- [ ] client.py:156 - add example
+- [ ] client.py:223 - test this claim on login screen
+- [ ] client.py:315 - check if we also need to check for wndDialogMain child
+- [ ] client.py:345 - replace error
+- [ ] client.py:380 - replace error
+- [ ] client.py:437 - 2.0 remove move_after as it isn't needed anymore
+- [ ] errors.py:164 - remove in 2.0
+- [ ] hotkey.py:121 - remove in 2.0
+- [ ] hotkey.py:144 - remove in 2.0, make sure to also remove janus requirement
+- [ ] hotkey.py:214 - add to self._tasks and cancel in self.close
+- [ ] hotkey.py:318 - 2.0: make async
+- [ ] mouse_handler.py:81 - add errors (HookNotActive)
+- [ ] mouse_handler.py:119 - test passing use_post
+- [ ] utils.py:273 - use login window for this
+- [ ] utils.py:296 - have way to properly check if instances are on login screen
+- [ ] utils.py:353 - 2.0 rename coro to awaitable (do for other wait_for methods also)
+- [ ] utils.py:664 - 2.0 move all these pharse functions to cache_handler, and rename them to parse instead of pharse
+- [ ] __main__.py:47 - 2.0: remove --nowait, make start_instances_with_login not wait if there are no logins
+- [ ] __main__.py:79 - finish
+- [ ] __main__.py:159 - finish
+- [ ] console.py:232 - replace app with walker when WizWalker has run loop
+- [ ] card.py:7 - add way to cast divide spells (remember to click the confirm button after targeting)
+- [ ] card.py:23 - add checks before casting
+- [ ] card.py:107 - 2.0 rename get_* effects to just attr name i.e async def graphical_spell
+- [ ] handler.py:34 - handle this taking longer than planning timer time
+- [ ] handler.py:40 - remove in 2.0
+- [ ] handler.py:199 - add allow_treasure_cards that defaults to False
+- [ ] handler.py:488 - draw tc?
+- [ ] handler.py:494 - maybe flee instead?
+- [ ] handler.py:498 - add method for people to subclass for this?
+- [ ] member.py:17 - remove in 2.0
+- [ ] member.py:133 - finish
+- [ ] deck_builder.py:152 - finish
+- [ ] utils.py:147 - add error if friend is busy message pops up
+- [ ] cache_handler.py:78 - rename in 2.0 to _cache
+- [ ] nif.py:9 - finish
+- [ ] wad.py:76 - why is this stored but not used in half the methods
+- [ ] handler.py:174 - replace error
+- [ ] handler.py:177 - make this faster
+- [ ] hooks.py:15 - 2.0 delete (useless)
+- [ ] hooks.py:139 - tell handler those bytes are free now?
+- [ ] hooks.py:558 - fix this hacky class
+- [ ] instance_finder.py:91 - add worker tasks with workers kwarg and default of 3
+- [ ] memory_object.py:21 - add .find_instances that find instances of whichever class used it
+- [ ] memory_object.py:207 - rework this into from_offset and add read_vector which takes an address
+- [ ] memory_object.py:337 - ensure this is always the case
+- [ ] memory_reader.py:36 - 2.0 make this a property
+- [ ] memory_reader.py:254 - figure out how params works
+- [ ] README.md:12 - 
+- [ ] automatus.py:37 - Display more error information - this is called whenever there is an error in the bot definition
+- [ ] automatus.py:45 - - WAITING ON THIS TO BE FIXED IN THE LIBRARY
+- [ ] README.md:14 - >
+- [ ] args.py:42 - Change directory to a bot output directory (if it takes screenshots or the like)
+- [ ] args.py:43 - Support multiple modules and allow a flag to specify the game index
+- [ ] args.py:44 - Figure out support for multiple bots on multiple clients
+- [ ] args.py:85 - allow user to specify location of bot module
+- [ ] flow.py:7 - ###
+- [ ] flow.py:26 - try to hook to second client if first already hooked
+- [ ] flow.py:30 - automatic launch functionality
+- [ ] flow.py:49 - complete stats system")
+- [ ] locomotion.py:8 - REFACTOR THIS FUNCTION - Lots of duplicated code!
+- [ ] map.py:39 - - USE WORLDNAME TO CHECK IF WORLD MATCHES AND GOTO DIFFERENT WORLD IF NOT
+- [ ] collision_math.py:204 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] combat_cache.py:16 - Potential flaw: If we're matching for None with a data structure that might not exist, we will return a correct match regardless, as get() defaults to none.
+- [ ] combat_math.py:89 - Idemnity (Item Card)
+- [ ] combat_math.py:90 - Aegis (Item Card)
+- [ ] combat_math.py:246 - Express both the crit & non-crit values, along with the crit percentage.
+- [ ] combat_new.py:27 - finish unified clamping pips function,
+- [ ] combat_new.py:52 - This shouldn't ever fail, but the indexing is sussy nonetheless. Fix it. -slack
+- [ ] deimosgui.py:214 - 
+- [ ] deimosgui.py:309 - Switch to using keys for this stuff
+- [ ] deimosgui.py:338 - Does it make any sense to translate this? Has more occurences later in the file
+- [ ] deimosgui.py:404 - Come back with some ingenius solution for this
+- [ ] deimosgui.py:460 - Also needs some smart solution
+- [ ] drop_logger.py:119 - Finish this loop and create a system for determining new drops
+- [ ] effect_simulation.py:119 - Roshambo shit here
+- [ ] effect_simulation.py:122 - Conditional shit
+- [ ] effect_simulation.py:125 - Figure out what this actually means
+- [ ] effect_simulation.py:134 - Make this handle the subeffects according to top-level effect type (type name, not enum effect type)
+- [ ] effect_simulation.py:153 - there's probably a way to simplify this logic -slack
+- [ ] effect_simulation.py:160 - Add global effects
+- [ ] effect_simulation.py:247 - Add global effects
+- [ ] effect_simulation.py:313 - Add global effects
+- [ ] effect_simulation.py:464 - Make sim_damage use this
+- [ ] effect_simulation.py:585 - Verify if this actually works to check if we have enough effects
+- [ ] effect_simulation.py:640 - Handle this, and find a spell where its used.
+- [ ] effect_simulation.py:644 - Simplify this
+- [ ] effect_simulation.py:651 - Simplify this
+- [ ] effect_simulation.py:734 - Make a mod pips function
+- [ ] effect_simulation.py:808 - THIS ENTIRE FUNCTION
+- [ ] effect_simulation.py:818 - THIS ENTIRE FUNCTION
+- [ ] questing.py:91 - Does this need a client?
+- [ ] questing.py:1185 - Slay the beast
+- [ ] questing.py:1279 - Get rid of this once scripting system allows for quest libraries
+- [ ] sigil.py:155 - Logic for dungeons with questlines
+- [ ] sigil.py:256 - Logic for dungeons with questlines
+- [ ] sigil.py:321 - Somehow finish this function
+- [ ] teleport_math.py:178 - This has 2 duplicates
+- [ ] teleport_math.py:243 - What is leader_client meant to be for?
+- [ ] utils.py:770 - Find a better solution to waiting for load in screen to end
+- [ ] utils.py:925 - add error if friend is busy message pops up
+- [ ] parser.py:114 - Maybe refactor this and parse_numeric_comparison to condense code?
+- [ ] sem.py:146 - 
+- [ ] tokenizer.py:361 - Implement wildcards in all stages
+- [ ] types.py:139 - Replace asserts
+- [ ] vm.py:1281 - is eval always fast enough to run in order during a TaskGroup
+- [ ] vm.py:1391 - "quest" could instead be treated as an XYZ expression or something
+- [ ] utils.py:122 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:126 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:118 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:122 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:99 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:103 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:99 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:103 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] gear.py:162 - 
+- [ ] mouse.py:291 - find fastest way out of rect
+- [ ] wad.py:35 - allow for `file` that doesnt exist yet
+- [ ] wad.py:160 - finish
+- [ ] wad.py:212 - why don't we just write a file full of zeros instead of an empty file
+- [ ] __main__.py:110 - raise an error if it isn't a valid wad file
+- [ ] application.py:6 - delete this file in 2.0
+- [ ] client.py:148 - 2.0 remove the base_ here and in sub methods
+- [ ] client.py:156 - add example
+- [ ] client.py:223 - test this claim on login screen
+- [ ] client.py:315 - check if we also need to check for wndDialogMain child
+- [ ] client.py:345 - replace error
+- [ ] client.py:380 - replace error
+- [ ] client.py:437 - 2.0 remove move_after as it isn't needed anymore
+- [ ] errors.py:164 - remove in 2.0
+- [ ] hotkey.py:121 - remove in 2.0
+- [ ] hotkey.py:144 - remove in 2.0, make sure to also remove janus requirement
+- [ ] hotkey.py:214 - add to self._tasks and cancel in self.close
+- [ ] hotkey.py:318 - 2.0: make async
+- [ ] mouse_handler.py:81 - add errors (HookNotActive)
+- [ ] mouse_handler.py:119 - test passing use_post
+- [ ] utils.py:273 - use login window for this
+- [ ] utils.py:296 - have way to properly check if instances are on login screen
+- [ ] utils.py:353 - 2.0 rename coro to awaitable (do for other wait_for methods also)
+- [ ] utils.py:664 - 2.0 move all these pharse functions to cache_handler, and rename them to parse instead of pharse
+- [ ] __main__.py:47 - 2.0: remove --nowait, make start_instances_with_login not wait if there are no logins
+- [ ] __main__.py:79 - finish
+- [ ] __main__.py:159 - finish
+- [ ] console.py:232 - replace app with walker when WizWalker has run loop
+- [ ] card.py:7 - add way to cast divide spells (remember to click the confirm button after targeting)
+- [ ] card.py:23 - add checks before casting
+- [ ] card.py:107 - 2.0 rename get_* effects to just attr name i.e async def graphical_spell
+- [ ] handler.py:34 - handle this taking longer than planning timer time
+- [ ] handler.py:40 - remove in 2.0
+- [ ] handler.py:199 - add allow_treasure_cards that defaults to False
+- [ ] handler.py:488 - draw tc?
+- [ ] handler.py:494 - maybe flee instead?
+- [ ] handler.py:498 - add method for people to subclass for this?
+- [ ] member.py:17 - remove in 2.0
+- [ ] member.py:133 - finish
+- [ ] deck_builder.py:152 - finish
+- [ ] utils.py:147 - add error if friend is busy message pops up
+- [ ] cache_handler.py:78 - rename in 2.0 to _cache
+- [ ] nif.py:9 - finish
+- [ ] wad.py:76 - why is this stored but not used in half the methods
+- [ ] handler.py:174 - replace error
+- [ ] handler.py:177 - make this faster
+- [ ] hooks.py:15 - 2.0 delete (useless)
+- [ ] hooks.py:139 - tell handler those bytes are free now?
+- [ ] hooks.py:558 - fix this hacky class
+- [ ] instance_finder.py:91 - add worker tasks with workers kwarg and default of 3
+- [ ] memory_object.py:21 - add .find_instances that find instances of whichever class used it
+- [ ] memory_object.py:207 - rework this into from_offset and add read_vector which takes an address
+- [ ] memory_object.py:337 - ensure this is always the case
+- [ ] memory_reader.py:36 - 2.0 make this a property
+- [ ] memory_reader.py:254 - figure out how params works
+- [ ] README.md:12 - 
+- [ ] automatus.py:37 - Display more error information - this is called whenever there is an error in the bot definition
+- [ ] automatus.py:45 - - WAITING ON THIS TO BE FIXED IN THE LIBRARY
+- [ ] README.md:14 - >
+- [ ] args.py:42 - Change directory to a bot output directory (if it takes screenshots or the like)
+- [ ] args.py:43 - Support multiple modules and allow a flag to specify the game index
+- [ ] args.py:44 - Figure out support for multiple bots on multiple clients
+- [ ] args.py:85 - allow user to specify location of bot module
+- [ ] flow.py:7 - ###
+- [ ] flow.py:26 - try to hook to second client if first already hooked
+- [ ] flow.py:30 - automatic launch functionality
+- [ ] flow.py:49 - complete stats system")
+- [ ] locomotion.py:8 - REFACTOR THIS FUNCTION - Lots of duplicated code!
+- [ ] map.py:39 - - USE WORLDNAME TO CHECK IF WORLD MATCHES AND GOTO DIFFERENT WORLD IF NOT
+- [ ] collision_math.py:204 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] combat_cache.py:16 - Potential flaw: If we're matching for None with a data structure that might not exist, we will return a correct match regardless, as get() defaults to none.
+- [ ] combat_math.py:89 - Idemnity (Item Card)
+- [ ] combat_math.py:90 - Aegis (Item Card)
+- [ ] combat_math.py:246 - Express both the crit & non-crit values, along with the crit percentage.
+- [ ] combat_new.py:27 - finish unified clamping pips function,
+- [ ] combat_new.py:52 - This shouldn't ever fail, but the indexing is sussy nonetheless. Fix it. -slack
+- [ ] deimosgui.py:214 - 
+- [ ] deimosgui.py:309 - Switch to using keys for this stuff
+- [ ] deimosgui.py:338 - Does it make any sense to translate this? Has more occurences later in the file
+- [ ] deimosgui.py:404 - Come back with some ingenius solution for this
+- [ ] deimosgui.py:460 - Also needs some smart solution
+- [ ] drop_logger.py:119 - Finish this loop and create a system for determining new drops
+- [ ] effect_simulation.py:119 - Roshambo shit here
+- [ ] effect_simulation.py:122 - Conditional shit
+- [ ] effect_simulation.py:125 - Figure out what this actually means
+- [ ] effect_simulation.py:134 - Make this handle the subeffects according to top-level effect type (type name, not enum effect type)
+- [ ] effect_simulation.py:153 - there's probably a way to simplify this logic -slack
+- [ ] effect_simulation.py:160 - Add global effects
+- [ ] effect_simulation.py:247 - Add global effects
+- [ ] effect_simulation.py:313 - Add global effects
+- [ ] effect_simulation.py:464 - Make sim_damage use this
+- [ ] effect_simulation.py:585 - Verify if this actually works to check if we have enough effects
+- [ ] effect_simulation.py:640 - Handle this, and find a spell where its used.
+- [ ] effect_simulation.py:644 - Simplify this
+- [ ] effect_simulation.py:651 - Simplify this
+- [ ] effect_simulation.py:734 - Make a mod pips function
+- [ ] effect_simulation.py:808 - THIS ENTIRE FUNCTION
+- [ ] effect_simulation.py:818 - THIS ENTIRE FUNCTION
+- [ ] questing.py:91 - Does this need a client?
+- [ ] questing.py:1185 - Slay the beast
+- [ ] questing.py:1279 - Get rid of this once scripting system allows for quest libraries
+- [ ] sigil.py:155 - Logic for dungeons with questlines
+- [ ] sigil.py:256 - Logic for dungeons with questlines
+- [ ] sigil.py:321 - Somehow finish this function
+- [ ] teleport_math.py:178 - This has 2 duplicates
+- [ ] teleport_math.py:243 - What is leader_client meant to be for?
+- [ ] utils.py:770 - Find a better solution to waiting for load in screen to end
+- [ ] utils.py:925 - add error if friend is busy message pops up
+- [ ] parser.py:114 - Maybe refactor this and parse_numeric_comparison to condense code?
+- [ ] sem.py:146 - 
+- [ ] tokenizer.py:361 - Implement wildcards in all stages
+- [ ] types.py:139 - Replace asserts
+- [ ] vm.py:1281 - is eval always fast enough to run in order during a TaskGroup
+- [ ] vm.py:1391 - "quest" could instead be treated as an XYZ expression or something
+- [ ] utils.py:122 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:126 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:118 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:122 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:99 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:103 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:99 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:103 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] gear.py:162 - 
+- [ ] mouse.py:291 - find fastest way out of rect
+- [ ] wad.py:35 - allow for `file` that doesnt exist yet
+- [ ] wad.py:160 - finish
+- [ ] wad.py:212 - why don't we just write a file full of zeros instead of an empty file
+- [ ] __main__.py:110 - raise an error if it isn't a valid wad file
+- [ ] application.py:6 - delete this file in 2.0
+- [ ] client.py:148 - 2.0 remove the base_ here and in sub methods
+- [ ] client.py:156 - add example
+- [ ] client.py:223 - test this claim on login screen
+- [ ] client.py:315 - check if we also need to check for wndDialogMain child
+- [ ] client.py:345 - replace error
+- [ ] client.py:380 - replace error
+- [ ] client.py:437 - 2.0 remove move_after as it isn't needed anymore
+- [ ] errors.py:164 - remove in 2.0
+- [ ] hotkey.py:121 - remove in 2.0
+- [ ] hotkey.py:144 - remove in 2.0, make sure to also remove janus requirement
+- [ ] hotkey.py:214 - add to self._tasks and cancel in self.close
+- [ ] hotkey.py:318 - 2.0: make async
+- [ ] mouse_handler.py:81 - add errors (HookNotActive)
+- [ ] mouse_handler.py:119 - test passing use_post
+- [ ] utils.py:273 - use login window for this
+- [ ] utils.py:296 - have way to properly check if instances are on login screen
+- [ ] utils.py:353 - 2.0 rename coro to awaitable (do for other wait_for methods also)
+- [ ] utils.py:664 - 2.0 move all these pharse functions to cache_handler, and rename them to parse instead of pharse
+- [ ] __main__.py:47 - 2.0: remove --nowait, make start_instances_with_login not wait if there are no logins
+- [ ] __main__.py:79 - finish
+- [ ] __main__.py:159 - finish
+- [ ] console.py:232 - replace app with walker when WizWalker has run loop
+- [ ] card.py:7 - add way to cast divide spells (remember to click the confirm button after targeting)
+- [ ] card.py:23 - add checks before casting
+- [ ] card.py:107 - 2.0 rename get_* effects to just attr name i.e async def graphical_spell
+- [ ] handler.py:34 - handle this taking longer than planning timer time
+- [ ] handler.py:40 - remove in 2.0
+- [ ] handler.py:199 - add allow_treasure_cards that defaults to False
+- [ ] handler.py:488 - draw tc?
+- [ ] handler.py:494 - maybe flee instead?
+- [ ] handler.py:498 - add method for people to subclass for this?
+- [ ] member.py:17 - remove in 2.0
+- [ ] member.py:133 - finish
+- [ ] deck_builder.py:152 - finish
+- [ ] utils.py:147 - add error if friend is busy message pops up
+- [ ] cache_handler.py:78 - rename in 2.0 to _cache
+- [ ] nif.py:9 - finish
+- [ ] wad.py:76 - why is this stored but not used in half the methods
+- [ ] handler.py:174 - replace error
+- [ ] handler.py:177 - make this faster
+- [ ] hooks.py:15 - 2.0 delete (useless)
+- [ ] hooks.py:139 - tell handler those bytes are free now?
+- [ ] hooks.py:558 - fix this hacky class
+- [ ] instance_finder.py:91 - add worker tasks with workers kwarg and default of 3
+- [ ] memory_object.py:21 - add .find_instances that find instances of whichever class used it
+- [ ] memory_object.py:207 - rework this into from_offset and add read_vector which takes an address
+- [ ] memory_object.py:337 - ensure this is always the case
+- [ ] memory_reader.py:36 - 2.0 make this a property
+- [ ] memory_reader.py:254 - figure out how params works
+- [ ] README.md:12 - 
+- [ ] automatus.py:37 - Display more error information - this is called whenever there is an error in the bot definition
+- [ ] automatus.py:45 - - WAITING ON THIS TO BE FIXED IN THE LIBRARY
+- [ ] README.md:14 - >
+- [ ] args.py:42 - Change directory to a bot output directory (if it takes screenshots or the like)
+- [ ] args.py:43 - Support multiple modules and allow a flag to specify the game index
+- [ ] args.py:44 - Figure out support for multiple bots on multiple clients
+- [ ] args.py:85 - allow user to specify location of bot module
+- [ ] flow.py:7 - ###
+- [ ] flow.py:26 - try to hook to second client if first already hooked
+- [ ] flow.py:30 - automatic launch functionality
+- [ ] flow.py:49 - complete stats system")
+- [ ] locomotion.py:8 - REFACTOR THIS FUNCTION - Lots of duplicated code!
+- [ ] map.py:39 - - USE WORLDNAME TO CHECK IF WORLD MATCHES AND GOTO DIFFERENT WORLD IF NOT
+- [ ] utils.py:122 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:126 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:118 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:122 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:99 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:103 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] utils.py:99 - rework logic and make this stop getting clients from get_open_clients
+- [ ] utils.py:103 - rework logic and make this stop getting clients from get_open_clients
+- [ ] worlds_collide.py:392 - Should this be transposed or not? Transposed because the cubes are distorted otherwise
+- [ ] gear.py:162 - 
+- [ ] mouse.py:291 - find fastest way out of rect
+- [ ] wad.py:35 - allow for `file` that doesnt exist yet
+- [ ] wad.py:160 - finish
+- [ ] wad.py:212 - why don't we just write a file full of zeros instead of an empty file
+- [ ] __main__.py:110 - raise an error if it isn't a valid wad file
+- [ ] application.py:6 - delete this file in 2.0
+- [ ] client.py:148 - 2.0 remove the base_ here and in sub methods
+- [ ] client.py:156 - add example
+- [ ] client.py:223 - test this claim on login screen
+- [ ] client.py:315 - check if we also need to check for wndDialogMain child
+- [ ] client.py:345 - replace error
+- [ ] client.py:380 - replace error
+- [ ] client.py:437 - 2.0 remove move_after as it isn't needed anymore
+- [ ] errors.py:164 - remove in 2.0
+- [ ] hotkey.py:121 - remove in 2.0
+- [ ] hotkey.py:144 - remove in 2.0, make sure to also remove janus requirement
+- [ ] hotkey.py:214 - add to self._tasks and cancel in self.close
+- [ ] hotkey.py:318 - 2.0: make async
+- [ ] mouse_handler.py:81 - add errors (HookNotActive)
+- [ ] mouse_handler.py:119 - test passing use_post
+- [ ] utils.py:273 - use login window for this
+- [ ] utils.py:296 - have way to properly check if instances are on login screen
+- [ ] utils.py:353 - 2.0 rename coro to awaitable (do for other wait_for methods also)
+- [ ] utils.py:664 - 2.0 move all these pharse functions to cache_handler, and rename them to parse instead of pharse
+- [ ] __main__.py:47 - 2.0: remove --nowait, make start_instances_with_login not wait if there are no logins
+- [ ] __main__.py:79 - finish
+- [ ] __main__.py:159 - finish
+- [ ] console.py:232 - replace app with walker when WizWalker has run loop
+- [ ] card.py:7 - add way to cast divide spells (remember to click the confirm button after targeting)
+- [ ] card.py:23 - add checks before casting
+- [ ] card.py:107 - 2.0 rename get_* effects to just attr name i.e async def graphical_spell
+- [ ] handler.py:34 - handle this taking longer than planning timer time
+- [ ] handler.py:40 - remove in 2.0
+- [ ] handler.py:199 - add allow_treasure_cards that defaults to False
+- [ ] handler.py:488 - draw tc?
+- [ ] handler.py:494 - maybe flee instead?
+- [ ] handler.py:498 - add method for people to subclass for this?
+- [ ] member.py:17 - remove in 2.0
+- [ ] member.py:133 - finish
+- [ ] deck_builder.py:152 - finish
+- [ ] utils.py:147 - add error if friend is busy message pops up
+- [ ] cache_handler.py:78 - rename in 2.0 to _cache
+- [ ] nif.py:9 - finish
+- [ ] wad.py:76 - why is this stored but not used in half the methods
+- [ ] handler.py:174 - replace error
+- [ ] handler.py:177 - make this faster
+- [ ] hooks.py:15 - 2.0 delete (useless)
+- [ ] hooks.py:139 - tell handler those bytes are free now?
+- [ ] hooks.py:558 - fix this hacky class
+- [ ] instance_finder.py:91 - add worker tasks with workers kwarg and default of 3
+- [ ] memory_object.py:21 - add .find_instances that find instances of whichever class used it
+- [ ] memory_object.py:207 - rework this into from_offset and add read_vector which takes an address
+- [ ] memory_object.py:337 - ensure this is always the case
+- [ ] memory_reader.py:36 - 2.0 make this a property
+- [ ] memory_reader.py:254 - figure out how params works
+- [ ] README.md:12 - 

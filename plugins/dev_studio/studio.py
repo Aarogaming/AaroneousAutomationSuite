@@ -13,6 +13,7 @@ class DevStudio:
     def run_build(self, target: str = "maelstrom") -> str:
         """
         Executes a build command from within AAS.
+        Saves results to artifacts/handoff/reports/BUILD_REPORT.md for HealthAggregator.
         """
         try:
             if target == "maelstrom":
@@ -23,6 +24,14 @@ class DevStudio:
             logger.info(f"DevStudio: Starting build for {target}...")
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
+            status = "SUCCESS" if result.returncode == 0 else "FAILED"
+            report_content = f"# BUILD REPORT: {target}\nStatus: {status}\n\n## Output\n```\n{result.stdout if result.returncode == 0 else result.stderr}\n```"
+            
+            report_path = "artifacts/handoff/reports/BUILD_REPORT.md"
+            os.makedirs(os.path.dirname(report_path), exist_ok=True)
+            with open(report_path, "w", encoding="utf-8") as f:
+                f.write(report_content)
+
             if result.returncode == 0:
                 logger.success(f"DevStudio: Build {target} successful.")
                 return result.stdout
@@ -31,12 +40,3 @@ class DevStudio:
                 return result.stderr
         except Exception as e:
             return f"DevStudio Error: {str(e)}"
-
-    def save_file(self, relative_path: str, content: str):
-        """
-        Internal editor save hook.
-        """
-        full_path = os.path.join(self.project_root, relative_path)
-        with open(full_path, "w") as f:
-            f.write(content)
-        logger.info(f"DevStudio: Saved {relative_path}")

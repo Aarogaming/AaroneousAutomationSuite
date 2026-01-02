@@ -3,9 +3,11 @@
 ## Overview
 Aaroneous Automation Suite is an open-source, multi-purpose automation ecosystem. It is designed to act as a central hub for high-performance game management, home automation, and AI-assisted research.
 
-## Dual-Core Architecture
+## Unified Ecosystem Architecture
 - **AAS Hub (Python):** The central orchestrator for plugins, AI assistance, and home server management.
-- **Project Maelstrom (C#):** The specialized game manager for Wizard101, handling memory-level state and UI automation.
+- **Project Maelstrom (C#):** Located in `game_manager/maelstrom`, handling memory-level state and UI automation.
+- **Deimos (Python):** Located in `core/deimos`, providing advanced logic and questing capabilities.
+- **DanceBot (Python):** Located in `plugins/dance_bot`, specialized automation for game mini-games.
 
 ## Key Features
 - **Resilient Configuration:** Type-safe validation with Pydantic and secure local secret management.
