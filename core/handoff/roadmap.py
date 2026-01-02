@@ -30,6 +30,6 @@ class RoadmapManager:
             "\n### Phase 4: Watch and Learn",
             "- [ ] Imitation Learning Plugin"
         ]
-        with open(self.roadmap_path, "w") as f:
+        with open(self.roadmap_path, "w", encoding="utf-8") as f:
             f.write("\n".join(content))
         logger.info("Roadmap initialized.")

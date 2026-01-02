@@ -1,4 +1,3 @@
-import os
 from typing import Optional
 from pydantic import SecretStr, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,7 +29,8 @@ class AASConfig(BaseSettings):
 
 def load_config() -> AASConfig:
     try:
-        config = AASConfig()
+        # Pydantic BaseSettings will automatically pull from environment variables or .env file
+        config = AASConfig() # type: ignore
         logger.info("Resilient Configuration loaded successfully.")
         return config
     except Exception as e:
