@@ -11,16 +11,16 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
  | AAS-006 | High | Enhance Health Monitoring | AAS-005 | Done | Copilot | 2026-01-02 | 2026-01-02 | 
  | AAS-004 | High | Connect Linear API (Bi-directional Sync) | AAS-003 | Done | Sixth | 2026-01-02 | 2026-01-02 | 
  | AAS-007 | High | Integrate LangGraph for Agentic Workflows | AAS-003 | Done | Sixth | 2026-01-02 | 2026-01-02 | 
- | AAS-012 | Medium | AutoWizard101 Migration | - | queued | - | 2026-01-02 | 2026-01-02 | 
+ | AAS-012 | Medium | AutoWizard101 Migration | - | Done | Sixth | 2026-01-02 | 2026-01-02 | 
  | AAS-008 | Medium | Local LLM Support (Ollama) | AAS-003 | Done | Copilot | 2026-01-02 | 2026-01-02 | 
- | AAS-009 | Medium | Home Assistant Integration | AAS-003 | In Progress | Sixth | 2026-01-02 | 2026-01-02 | 
- | AAS-010 | Medium | Multi-Modal Vision Research | AAS-007 | queued | - | 2026-01-02 | 2026-01-02 | 
- | AAS-011 | Medium | Autonomous SysAdmin | AAS-006 | queued | - | 2026-01-02 | 2026-01-02 | 
- | AAS-013 | Low | Deimos-Wizard101 Port | AAS-012 | queued | - | 2026-01-02 | 2026-01-02 | 
+ | AAS-009 | Medium | Home Assistant Integration | AAS-003 | Done | Sixth | 2026-01-02 | 2026-01-02 | 
+ | AAS-010 | Medium | Multi-Modal Vision Research | AAS-007 | Done | Sixth | 2026-01-02 | 2026-01-02 | 
+ | AAS-011 | Medium | Autonomous SysAdmin | AAS-006 | Done | Sixth | 2026-01-02 | 2026-01-02 | 
+ | AAS-013 | Low | Deimos-Wizard101 Port | AAS-012 | Done | Sixth | 2026-01-02 | 2026-01-02 | 
  | AAS-014 | Low | DanceBot Integration | AAS-012 | queued | - | 2026-01-02 | 2026-01-02 | 
  | AAS-104 | High | Integrate OpenAI Agents SDK | AAS-003, AAS-032 | queued | - | 2026-01-02 | 2026-01-02 |
  | AAS-105 | Medium | Build ChatKit Agent Dashboard | AAS-033, AAS-104 | queued | - | 2026-01-02 | 2026-01-02 |
- | AAS-106 | High | Migrate to OpenAI Responses API | AAS-003 | queued | - | 2026-01-02 | 2026-01-02 | 
+ | AAS-106 | High | Migrate to OpenAI Responses API | AAS-003 | In Progress | Sixth | 2026-01-02 | 2026-01-02 | 
 
 ## Task Details
 
