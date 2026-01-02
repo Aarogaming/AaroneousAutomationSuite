@@ -24,6 +24,7 @@ class AIAssistant:
         self.prefer_local = prefer_local
         self.llm_provider = LLMProvider(config)
         self.model = config.openai_model
+        self.last_response_id: Optional[str] = None
         
         # Legacy OpenAI client for direct access when needed
         self.client = openai.OpenAI(api_key=config.openai_api_key.get_secret_value())
