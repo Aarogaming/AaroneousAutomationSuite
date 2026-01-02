@@ -1,0 +1,36 @@
+# Security
+.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Build/Distribution
+dist/
+build/
+*.spec
+publish/
+
+# C# / .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Handoff / Artifacts
+artifacts/handoff/from_codex/
+artifacts/handoff/to_codex/
+!artifacts/handoff/registry.json
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,23 @@
+{
+  "registry_version": "1.0.0",
+  "projects": [
+    {
+      "id": "aas-core",
+      "name": "Aaroneous Automation Suite",
+      "root": "./",
+      "language": "python",
+      "type": "hub"
+    },
+    {
+      "id": "maelstrom-gm",
+      "name": "Project Maelstrom",
+      "root": "../AutoWizard101/ProjectMaelstrom",
+      "language": "csharp",
+      "type": "game_manager"
+    }
+  ],
+  "handoff_config": {
+    "base_url": "NEEDS_INPUT: HANDOFF_BASE_URL",
+    "auth_type": "NEEDS_INPUT: HANDOFF_AUTH_TYPE"
+  }
+}
