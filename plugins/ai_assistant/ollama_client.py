@@ -409,6 +409,16 @@ class LLMProvider:
                 if tool_calls_info:
                     logger.info(f"✓ Responses API executed tools: {', '.join(tool_calls_info)}")
                 
+                # If no text content was extracted, provide helpful fallback message
+                if not text_content.strip():
+                    if tool_calls_info:
+                        text_content = f"[Tool execution completed: {', '.join(tool_calls_info)}]"
+                    else:
+                        # This should not happen with a valid response, log for debugging
+                        logger.warning(f"Empty response from Responses API. Response ID: {response.id}")
+                        logger.debug(f"Response output: {response.output}")
+                        text_content = "I processed your request but didn't generate a text response. This may indicate an API issue."
+                
                 return {
                     "content": text_content,
                     "response_id": response.id,
