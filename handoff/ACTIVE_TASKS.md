@@ -21,6 +21,10 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
  | AAS-104 | High | Integrate OpenAI Agents SDK | AAS-003, AAS-032 | queued | - | 2026-01-02 | 2026-01-02 |
  | AAS-105 | Medium | Build ChatKit Agent Dashboard | AAS-033, AAS-104 | queued | - | 2026-01-02 | 2026-01-02 |
  | AAS-106 | High | Migrate to OpenAI Responses API | AAS-003 | In Progress | Sixth | 2026-01-02 | 2026-01-02 | 
+ | AAS-107 | Urgent | Implement CLI Task Management | AAS-003 | Done | Copilot | 2026-01-02 | 2026-01-02 | 
+ | AAS-108 | High | Build a Multi-Modal Research Agent | - | queued | - | 2026-01-02 | 2026-01-02 | 
+ | AAS-109 | Medium | Integrate Penpot Design System | AAS-003 | queued | - | 2026-01-02 | 2026-01-02 | 
+ | AAS-110 | Medium | Integrate DevToys SDK Extensions | AAS-003 | queued | - | 2026-01-02 | 2026-01-02 | 
 
 ## Task Details
 
@@ -151,3 +155,58 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
   - [ ] Documentation updated
 - **Type**: enhancement
 - **Resources**: https://platform.openai.com/docs/guides/migrate-to-responses
+### AAS-107: Implement CLI Task Management
+- **Description**: Enhance core/main.py CLI with complete task lifecycle management (create, update, transition, search, validate dependencies).
+- **Dependencies**: AAS-003 (Pydantic RCS) ✅
+- **Priority**: Urgent
+- **Rationale**: Currently agents manually edit ACTIVE_TASKS.md - error-prone and lacks validation. Need robust CLI for task operations.
+- **Features**:
+  - **Task Creation**: `python -m core.main task create "Title" --priority High --depends AAS-003,AAS-005`
+  - **Status Transitions**: `python -m core.main task start AAS-107` (queued→In Progress), `python -m core.main task complete AAS-107`
+  - **Task Search**: `python -m core.main task list --status queued --priority High` (shows available tasks)
+  - **Dependency Validation**: Auto-checks if dependencies are Done before allowing claiming
+  - **Batch Operations**: `python -m core.main task blocked` (shows all blocked tasks with reasons)
+  - **Task Info**: `python -m core.main task show AAS-107` (full details including deps, assignee, dates)
+- **Benefits**:
+  - Prevents double-claiming via atomic file locking
+  - Validates dependencies before state transitions
+  - Auto-updates timestamps on status changes
+  - Provides structured output for agent parsing
+  - Reduces manual editing errors
+- **Deliverables**:
+  - Extend core/main.py with task subcommands
+  - Add TaskManager class for CRUD operations
+  - Implement state transition validation
+  - Add dependency resolution logic
+  - Create batch query commands (blocked, available, mine)
+  - Write comprehensive tests
+  - Document all CLI commands in README
+- **Acceptance Criteria**:
+  - [ ] `task create` command working with validation
+  - [ ] `task start/complete/abandon` transitions with checks
+  - [ ] `task list` with filtering (status, priority, assignee)
+  - [ ] `task show` displays full task details
+  - [ ] `task blocked` shows dependency chains
+  - [ ] `task available` shows claimable tasks only
+  - [ ] All operations use file locking to prevent conflicts
+  - [ ] Comprehensive test suite (10+ tests)
+  - [ ] CLI help documentation complete
+- **Type**: enhancement
+- **Est. Time**: 1-2 agent sessions
+### AAS-108: Build a Multi-Modal Research Agent
+- **Description**: Create an agent that can process images, text, and web search to generate research reports.
+- **Type**: research
+- **Acceptance Criteria**:
+    - [ ] Initial implementation
+
+### AAS-109: Integrate Penpot Design System
+- **Description**: Integrate Penpot (open-source design tool) for UI/UX design workflows. Features: code inspection (SVG/CSS/HTML), web standards-based, CSS Grid/Flexbox layouts, free & self-hostable. Use cases: Design DevStudio visual scripting UI, Maelstrom UI mockups, AAS dashboard designs.
+- **Dependencies**: AAS-003
+- **Priority**: Medium
+- **Type**: enhancement
+
+### AAS-110: Integrate DevToys SDK Extensions
+- **Description**: Integrate DevToys 2.0 SDK for developer utilities. DevToys is a Swiss Army knife for developers with cross-platform extension API. Create AAS extensions for: config validation, task board visualization, IPC debugging, health report generation. SDK supports Windows/macOS/Linux.
+- **Dependencies**: AAS-003
+- **Priority**: Medium
+- **Type**: enhancement
