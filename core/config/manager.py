@@ -35,6 +35,28 @@ class AASConfig(BaseSettings):
         description="Linear team ID for issue creation"
     )
     
+    # ==================== OpenAI Responses API ====================
+    responses_api_enabled: bool = Field(
+        default=True,
+        alias="RESPONSES_API_ENABLED",
+        description="Enable the new OpenAI Responses API"
+    )
+    enable_web_search: bool = Field(
+        default=True,
+        alias="ENABLE_WEB_SEARCH",
+        description="Enable native web search tool"
+    )
+    enable_file_search: bool = Field(
+        default=True,
+        alias="ENABLE_FILE_SEARCH",
+        description="Enable native file search tool"
+    )
+    enable_code_interpreter: bool = Field(
+        default=True,
+        alias="ENABLE_CODE_INTERPRETER",
+        description="Enable native code interpreter tool"
+    )
+    
     # ==================== Core Settings ====================
     debug_mode: bool = Field(
         default=False,
