@@ -3,9 +3,10 @@ Ollama Local LLM Client for AAS.
 
 Provides a unified interface for interacting with locally-hosted LLMs via Ollama.
 Supports fallback to OpenAI when local models are unavailable.
+Migrated to OpenAI Responses API for better performance and agentic capabilities.
 """
 import requests
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from loguru import logger
 from core.config.manager import AASConfig
 
