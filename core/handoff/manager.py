@@ -127,6 +127,121 @@ class HandoffManager:
             f.writelines(lines)
         logger.success(f"Task {task_id} marked as Done.")
         return True
+    
+    def get_blocked_tasks(self) -> list[dict[str, Any]]:
+        """
+        Returns a list of tasks that are blocked by incomplete dependencies.
+        
+        Returns:
+            List of task dicts with 'id', 'title', 'blocking_tasks' fields
+        """
+        lines, tasks, status_map = self.parse_board()
+        blocked = []
+        
+        for t in tasks:
+            if t["status"].lower() == "queued" and t["depends_on"] and t["depends_on"] != "-":
+                dep_ids = [d.strip() for d in t["depends_on"].split(",")]
+                incomplete_deps = [dep_id for dep_id in dep_ids if status_map.get(dep_id) != "Done"]
+                
+                if incomplete_deps:
+                    blocked.append({
+                        "id": t["id"],
+                        "title": t["title"],
+                        "priority": t["priority"],
+                        "blocking_tasks": incomplete_deps,
+                        "depends_on": t["depends_on"]
+                    })
+        
+        return blocked
+    
+    def get_task_board_health(self) -> dict[str, Any]:
+        """
+        Analyzes the task board health and returns issues.
+        
+        Returns:
+            Dict with 'stale_tasks', 'unassigned_high_priority', 'missing_artifacts'
+        """
+        lines, tasks, _ = self.parse_board()
+        
+        health = {
+            "stale_tasks": [],
+            "unassigned_high_priority": [],
+            "missing_artifacts": [],
+            "summary": {}
+        }
+        
+        now = datetime.now()
+        stale_threshold_days = 3
+        
+        for t in tasks:
+            task_id = t["id"]
+            
+            # Check for stale tasks (In Progress > 3 days)
+            if t["status"] == "In Progress":
+                try:
+                    updated = datetime.strptime(t["updated"], "%Y-%m-%d")
+                    days_old = (now - updated).days
+                    if days_old > stale_threshold_days:
+                        health["stale_tasks"].append({
+                            "id": task_id,
+                            "title": t["title"],
+                            "assignee": t["assignee"],
+                            "days_old": days_old,
+                            "updated": t["updated"]
+                        })
+                except ValueError:
+                    logger.warning(f"Invalid date format for task {task_id}")
+            
+            # Check for unassigned high-priority tasks
+            if t["status"] == "queued" and (t["priority"].lower() in ["urgent", "high"]):
+                if not t["assignee"] or t["assignee"] == "-":
+                    health["unassigned_high_priority"].append({
+                        "id": task_id,
+                        "title": t["title"],
+                        "priority": t["priority"]
+                    })
+            
+            # Check for missing artifact directories (for In Progress/Done tasks)
+            if t["status"] in ["In Progress", "Done"]:
+                artifact_path = os.path.join(self.artifact_dir, task_id)
+                if not os.path.exists(artifact_path):
+                    health["missing_artifacts"].append({
+                        "id": task_id,
+                        "title": t["title"],
+                        "status": t["status"],
+                        "expected_path": artifact_path
+                    })
+        
+        # Generate summary
+        health["summary"] = {
+            "total_tasks": len(tasks),
+            "stale_count": len(health["stale_tasks"]),
+            "unassigned_high_priority_count": len(health["unassigned_high_priority"]),
+            "missing_artifacts_count": len(health["missing_artifacts"]),
+            "health_score": self._calculate_health_score(health, len(tasks))
+        }
+        
+        return health
+    
+    def _calculate_health_score(self, health: dict, total_tasks: int) -> str:
+        """Calculate overall health score based on issues detected."""
+        if total_tasks == 0:
+            return "N/A"
+        
+        issue_count = (
+            len(health["stale_tasks"]) +
+            len(health["unassigned_high_priority"]) +
+            len(health["missing_artifacts"])
+        )
+        
+        if issue_count == 0:
+            return "Excellent"
+        elif issue_count <= 2:
+            return "Good"
+        elif issue_count <= 5:
+            return "Fair"
+        else:
+            return "Needs Attention"
 
     def add_task(self, priority: str, title: str, description: str, depends_on: str = "-", task_type: str = "feature") -> str:
         """
@@ -178,40 +293,88 @@ class HandoffManager:
 
     def generate_health_report(self) -> str:
         """
-        Aggregates errors, warnings, and TODOs into a HEALTH_REPORT.md
+        Aggregates errors, warnings, TODOs, and task board health into HEALTH_REPORT.md
         """
         from core.handoff.health import HealthAggregator
         aggregator = HealthAggregator()
         scan_results = aggregator.scan()
+        task_health = self.get_task_board_health()
 
         report = [
             "# AAS HEALTH REPORT",
             f"Timestamp: {datetime.now().isoformat()}",
-            "\n## 🔴 Errors", "None detected.",
-            "\n## 🟡 Warnings", "None detected.",
-            "\n## 📝 To-Do List"
+            f"\n## 📊 Task Board Health",
+            f"**Health Score**: {task_health['summary']['health_score']}",
+            f"**Total Tasks**: {task_health['summary']['total_tasks']}",
+            ""
         ]
-
-        # Add scanned TODOs
-        if scan_results["TODO"]:
-            report.extend([f"- [ ] {t}" for t in scan_results["TODO"]])
         
-        # Add scanned FIXMEs
-        if scan_results["FIXME"]:
-            report.append("\n## 🛠️ Fixmes")
-            report.extend([f"- {f}" for f in scan_results["FIXME"]])
+        # Stale Tasks Section
+        if task_health["stale_tasks"]:
+            report.append("### ⏰ Stale Tasks (In Progress > 3 days)")
+            for task in task_health["stale_tasks"]:
+                report.append(f"- **{task['id']}**: {task['title']}")
+                report.append(f"  - Assignee: {task['assignee']}")
+                report.append(f"  - Last Updated: {task['updated']} ({task['days_old']} days ago)")
+        else:
+            report.append("### ⏰ Stale Tasks")
+            report.append("✅ No stale tasks detected")
+        
+        # Unassigned High-Priority Tasks
+        report.append("")
+        if task_health["unassigned_high_priority"]:
+            report.append("### 🚨 Unassigned High-Priority Tasks")
+            for task in task_health["unassigned_high_priority"]:
+                report.append(f"- **{task['id']}** [{task['priority'].upper()}]: {task['title']}")
+        else:
+            report.append("### 🚨 Unassigned High-Priority Tasks")
+            report.append("✅ All high-priority tasks are assigned")
+        
+        # Missing Artifact Directories
+        report.append("")
+        if task_health["missing_artifacts"]:
+            report.append("### 📁 Missing Artifact Directories")
+            for task in task_health["missing_artifacts"]:
+                report.append(f"- **{task['id']}** [{task['status']}]: Missing `{task['expected_path']}`")
+        else:
+            report.append("### 📁 Artifact Directories")
+            report.append("✅ All active task artifacts present")
 
-        # Add Audit/Build results
+        # Errors and Warnings (placeholder for future integration)
+        report.append("\n## 🔴 Errors")
+        report.append("None detected.")
+        
+        report.append("\n## 🟡 Warnings")
+        report.append("None detected.")
+        
+        # Code TODOs
+        report.append("\n## 📝 Code To-Do Items")
+        if scan_results["TODO"]:
+            report.extend([f"- [ ] {t}" for t in scan_results["TODO"][:10]])  # Show first 10
+            if len(scan_results["TODO"]) > 10:
+                report.append(f"- ... and {len(scan_results['TODO']) - 10} more")
+        else:
+            report.append("None found.")
+        
+        # FIXMEs
+        if scan_results["FIXME"]:
+            report.append("\n## 🛠️ Code Fixmes")
+            report.extend([f"- {f}" for f in scan_results["FIXME"][:10]])
+            if len(scan_results["FIXME"]) > 10:
+                report.append(f"- ... and {len(scan_results['FIXME']) - 10} more")
+
+        # Audit/Build results
         if scan_results["AUDIT"]:
             report.append("\n## 🔍 Audit & Build Status")
             report.extend([f"- {a}" for a in scan_results["AUDIT"]])
 
-        if not scan_results["TODO"] and not scan_results["FIXME"]:
-            report.append("All critical setup tasks completed.")
-
         report_path = os.path.join(self.artifact_dir, "reports", "HEALTH_REPORT.md")
         with open(report_path, "w", encoding="utf-8") as f:
             f.write("\n".join(report))
+        
+        logger.info(f"Health report generated: {report_path}")
+        logger.info(f"Task Board Health Score: {task_health['summary']['health_score']}")
+        
         return report_path
 
     def report_event(self, task_id: str, event_type: str, message: str):
@@ -234,6 +397,32 @@ class HandoffManager:
                 description=f"Event ID: {event['event_id']}\nTask ID: {task_id}\nMessage: {message}"
             )
 
+    def decompose_task(self, task_id: str):
+        """
+        Uses LangGraph to decompose a complex task into sub-tasks.
+        """
+        from core.handoff.agent import create_decomposition_graph
+        
+        lines, tasks, _ = self.parse_board()
+        target_task = next((t for t in tasks if t["id"] == task_id), None)
+        
+        if not target_task:
+            logger.error(f"Task {task_id} not found for decomposition.")
+            return
+
+        logger.info(f"Triggering agentic decomposition for {task_id}...")
+        
+        graph = create_decomposition_graph()
+        initial_state = {
+            "task_id": task_id,
+            "title": target_task["title"],
+            "description": target_task.get("description", "No description provided."),
+            "sub_tasks": [],
+            "status": "started"
+        }
+        
+        graph.invoke(initial_state)
+
     def sync_linear_tasks(self, team_id: str):
         """
         Syncs active tasks from Linear to local state.
@@ -242,10 +431,45 @@ class HandoffManager:
             logger.warning("Linear sync skipped: API not initialized.")
             return
 
-        tasks = self.linear.get_active_tasks(team_id)
-        logger.info(f"Synced {len(tasks)} tasks from Linear.")
+        linear_tasks = self.linear.get_active_tasks(team_id)
+        logger.info(f"Fetched {len(linear_tasks)} tasks from Linear.")
         
-        # Update local ROADMAP.md or TASK_BOARD.md based on Linear state
-        # This is a placeholder for more complex sync logic
-        for task in tasks:
-            logger.debug(f"Task: {task['title']} ({task['status']['name']})")
+        lines, local_tasks, _ = self.parse_board()
+        
+        for lt in linear_tasks:
+            # Check if task already exists locally by title (or ID if we store it)
+            exists = any(lt["title"].lower() == t["title"].lower() for t in local_tasks)
+            
+            if not exists:
+                logger.info(f"Importing new task from Linear: {lt['title']}")
+                # Map Linear status to local status
+                status_map = {
+                    "Todo": "queued",
+                    "In Progress": "In Progress",
+                    "Done": "Done",
+                    "Canceled": "canceled",
+                    "Backlog": "queued"
+                }
+                local_status = status_map.get(lt["status"]["name"], "queued")
+                
+                self.add_task(
+                    priority="medium", # Default
+                    title=lt["title"],
+                    description=lt["description"] or "Imported from Linear",
+                    task_type="feature"
+                )
+
+    def push_local_to_linear(self, team_id: str):
+        """
+        Pushes local task updates to Linear.
+        """
+        if not self.linear:
+            return
+
+        _, local_tasks, _ = self.parse_board()
+        
+        for t in local_tasks:
+            # This is a simplified version. In a real app, we'd store the Linear Issue ID
+            # in the local task board to avoid duplicates and enable updates.
+            # For now, we'll just log what we would do.
+            logger.debug(f"Would push local task {t['id']} to Linear if not already there.")

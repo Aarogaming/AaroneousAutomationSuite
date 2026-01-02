@@ -45,6 +45,8 @@ async def main():
             return
         elif cmd == "board":
             _, tasks, status_map = handoff.parse_board()
+            blocked_tasks = handoff.get_blocked_tasks()
+            
             print("\n--- AAS ACTIVE TASK BOARD ---")
             print(f"{'ID':<10} | {'Priority':<10} | {'Status':<12} | {'Title'}")
             print("-" * 80)
@@ -59,13 +61,44 @@ async def main():
                 
                 status = f"BLOCKED" if blocked and t["status"] == "queued" else t["status"]
                 print(f"{t['id']:<10} | {t['priority']:<10} | {status:<12} | {t['title']}{dep_str}")
-            print("------------------------------\n")
+            print("-" * 80)
+            
+            # Show summary statistics
+            total = len(tasks)
+            done = sum(1 for t in tasks if t["status"] == "Done")
+            in_progress = sum(1 for t in tasks if t["status"] == "In Progress")
+            queued = sum(1 for t in tasks if t["status"] == "queued")
+            blocked_count = len(blocked_tasks)
+            
+            print(f"\n📊 Summary: {done} Done | {in_progress} In Progress | {queued} Queued | {blocked_count} Blocked")
+            
+            if blocked_tasks:
+                print(f"\n🔒 Blocked Tasks ({blocked_count}):")
+                for bt in blocked_tasks[:5]:  # Show first 5
+                    print(f"   - {bt['id']} waiting on {', '.join(bt['blocking_tasks'])}")
+                if len(blocked_tasks) > 5:
+                    print(f"   ... and {len(blocked_tasks) - 5} more")
+            
+            print()
             return
-
-    handoff.generate_health_report()
-    logger.info("Handoff Protocol active.")
-
-    # 3. Start IPC Bridge
+        elif cmd == "blocked":
+            blocked_tasks = handoff.get_blocked_tasks()
+            
+            if not blocked_tasks:
+                print("\n✅ No blocked tasks! All dependencies are satisfied.\n")
+                return
+            
+            print(f"\n🔒 BLOCKED TASKS ({len(blocked_tasks)})")
+            print("-" * 80)
+            
+            for bt in blocked_tasks:
+                blocking = ", ".join(bt['blocking_tasks'])
+                print(f"\n{bt['id']} [{bt['priority'].upper()}]: {bt['title']}")
+                print(f"   Waiting on: {blocking}")
+            
+            print("\n" + "-" * 80)
+            print(f"Total: {len(blocked_tasks)} tasks blocked\n")
+            return
     ipc_task = asyncio.create_task(serve_ipc(port=config.ipc_port))
 
     logger.success("AAS Hub is now running and awaiting Maelstrom connection.")
