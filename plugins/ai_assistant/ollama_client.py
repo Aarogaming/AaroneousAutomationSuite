@@ -327,13 +327,28 @@ class LLMProvider:
             
             client = OpenAI(api_key=self.config.openai_api_key.get_secret_value())
             
-            response = client.chat.completions.create(
-                model=self.config.openai_model,
-                messages=messages,
-                temperature=temperature
-            )
-            
-            return response.choices[0].message.content
+            if self.config.responses_api_enabled:
+                # Use new Responses API for chat
+                # Convert messages to input format (simplified for now)
+                last_user_msg = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
+                system_msg = next((m["content"] for m in messages if m["role"] == "system"), "You are a helpful AAS assistant.")
+                
+                response = client.responses.create(
+                    model=self.config.openai_model,
+                    instructions=system_msg,
+                    input=last_user_msg,
+                    temperature=temperature,
+                    store=True
+                )
+                text_outputs = [item.text for item in response.output if hasattr(item, 'text')]
+                return "\n".join(text_outputs)
+            else:
+                response = client.chat.completions.create(
+                    model=self.config.openai_model,
+                    messages=messages,
+                    temperature=temperature
+                )
+                return response.choices[0].message.content
             
         except Exception as e:
             logger.error(f"OpenAI chat fallback failed: {e}")

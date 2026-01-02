@@ -39,22 +39,46 @@ class VisionClient:
         default_prompt = "Describe this game screenshot in detail. Focus on UI elements, player health/mana, and the current environment."
         final_prompt = prompt or default_prompt
 
-        message = HumanMessage(
-            content=[
-                {"type": "text", "text": final_prompt},
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
-                },
-            ]
-        )
+        if self.config.responses_api_enabled:
+            # Use new Responses API for vision
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=self.config.openai_api_key.get_secret_value())
+                
+                response = client.responses.create(
+                    model="gpt-4o",
+                    input=[
+                        {"type": "input_text", "text": final_prompt},
+                        {
+                            "type": "input_image",
+                            "image_url": f"data:image/jpeg;base64,{base64_image}",
+                        },
+                    ],
+                    store=True
+                )
+                text_outputs = [item.text for item in response.output if hasattr(item, 'text')]
+                return "\n".join(text_outputs)
+            except Exception as e:
+                logger.error(f"Vision analysis (Responses API) failed: {e}")
+                return f"Error: {e}"
+        else:
+            # Legacy Chat Completions
+            message = HumanMessage(
+                content=[
+                    {"type": "text", "text": final_prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
+                    },
+                ]
+            )
 
-        try:
-            response = await self.llm.ainvoke([message])
-            return str(response.content)
-        except Exception as e:
-            logger.error(f"Vision analysis failed: {e}")
-            return f"Error: {e}"
+            try:
+                response = await self.llm.ainvoke([message])
+                return str(response.content)
+            except Exception as e:
+                logger.error(f"Vision analysis failed: {e}")
+                return f"Error: {e}"
 
     async def detect_ui_elements(self, image_path: str) -> Dict[str, Any]:
         """
