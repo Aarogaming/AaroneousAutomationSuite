@@ -1,7 +1,7 @@
 import openai
 from pydantic import SecretStr
 from loguru import logger
-from typing import Optional
+from typing import Optional, Any
 from core.config.manager import AASConfig
 from plugins.ai_assistant.ollama_client import LLMProvider
 
