@@ -1,5 +1,7 @@
 {
     "recommendations": [
-        "danielsanmedium.dscodegpt"
+        "danielsanmedium.dscodegpt",
+        "github.copilot",
+        "sixth.sixth-ai"
     ]
 }
