@@ -91,13 +91,19 @@ class AIAssistant:
             logger.error(f"Strategy generation failed: {e}")
             return "// Strategy generation failed - check logs for details."
     
-    def chat(self, messages: list[dict[str, str]], use_local: Optional[bool] = None) -> str:
+    def chat(
+        self, 
+        messages: list[dict[str, str]], 
+        use_local: Optional[bool] = None,
+        tools: Optional[list[dict[str, Any]]] = None
+    ) -> str:
         """
         Multi-turn conversation with message history.
         
         Args:
             messages: List of message dicts with 'role' and 'content'
             use_local: Override prefer_local setting
+            tools: Optional list of tools for the model
             
         Returns:
             AI response
@@ -105,13 +111,18 @@ class AIAssistant:
         try:
             prefer_local = use_local if use_local is not None else self.prefer_local
             
-            response = self.llm_provider.chat(
+            response_data = self.llm_provider.chat(
                 messages=messages,
                 temperature=0.7,
-                prefer_local=prefer_local
+                prefer_local=prefer_local,
+                previous_response_id=self.last_response_id,
+                tools=tools
             )
             
-            return response
+            # Update stateful context ID
+            self.last_response_id = response_data.get("response_id")
+            
+            return response_data.get("content", "")
             
         except Exception as e:
             logger.error(f"Chat failed: {e}")
