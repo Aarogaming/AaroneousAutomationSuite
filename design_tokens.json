@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "theme": "AAS_Midnight",
+  "colors": {
+    "back": "#12182E",
+    "surface": "#161E38",
+    "control_back": "#1E2A48",
+    "control_fore": "#F3ECDB",
+    "border": "#604416",
+    "accent": "#E3B127",
+    "accent_alt": "#BF4F00",
+    "fore": "#F3ECDB",
+    "text_muted": "#C6BEA9"
+  },
+  "typography": {
+    "primary": "Bahnschrift",
+    "secondary": "Segoe UI",
+    "base_size": 10
+  },
+  "geometry": {
+    "border_radius": 8,
+    "border_weight": 1,
+    "standard_padding": 10
+  }
+}
