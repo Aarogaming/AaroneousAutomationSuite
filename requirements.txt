@@ -24,3 +24,4 @@ pyperclip>=1.9.0
 requests>=2.32.3
 pypresence>=4.3.0
 pywin32>=306
+openai>=2.0.0
