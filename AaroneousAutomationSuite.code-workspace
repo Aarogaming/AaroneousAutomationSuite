@@ -5,6 +5,7 @@
 		}
 	],
 	"settings": {
-		"python.defaultInterpreterPath": "c:\\Users\\aarog\\Documents\\GitHub\\AaroneousAutomationSuite\\.venv\\Scripts\\python.exe"
+		"python.defaultInterpreterPath": "c:\\Users\\aarog\\Documents\\GitHub\\AaroneousAutomationSuite\\.venv\\Scripts\\python.exe",
+		"CodeGPT.apiKey": "OpenAI"
 	}
 }
