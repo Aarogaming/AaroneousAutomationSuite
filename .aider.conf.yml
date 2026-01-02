@@ -1,0 +1,23 @@
+# Aider Configuration for AAS
+# Optimized for local Ollama and background execution
+
+# Model settings
+model: ollama/llama3
+edit-format: diff
+
+# Auto-commit settings
+auto-commit: true
+dirty-commits: true
+attribute-author: true
+attribute-committer: true
+
+# UI settings
+stream: false
+dark-mode: true
+
+# File settings
+gitignore: true
+restore-chat-history: true
+
+# AAS Specific
+map-tokens: 1024
