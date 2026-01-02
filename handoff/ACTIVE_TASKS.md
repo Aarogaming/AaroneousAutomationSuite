@@ -22,9 +22,11 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
  | AAS-105 | Medium | Build ChatKit Agent Dashboard | AAS-033, AAS-104 | queued | - | 2026-01-02 | 2026-01-02 |
  | AAS-106 | High | Migrate to OpenAI Responses API | AAS-003 | In Progress | Sixth | 2026-01-02 | 2026-01-02 | 
  | AAS-107 | Urgent | Implement CLI Task Management | AAS-003 | Done | Copilot | 2026-01-02 | 2026-01-02 | 
- | AAS-108 | High | Build a Multi-Modal Research Agent | - | queued | - | 2026-01-02 | 2026-01-02 | 
+ | AAS-108 | High | Build a Multi-Modal Research Agent | - | Done | - | 2026-01-02 | 2026-01-02 | 
  | AAS-109 | Medium | Integrate Penpot Design System | AAS-003 | queued | - | 2026-01-02 | 2026-01-02 | 
  | AAS-110 | Medium | Integrate DevToys SDK Extensions | AAS-003 | queued | - | 2026-01-02 | 2026-01-02 | 
+ | AAS-111 | High | Build a Multi-Modal Research Agent | - | queued | - | 2026-01-02 | 2026-01-02 | 
+ | AAS-112 | Medium | Integrate ngrok Tunneling for Development | AAS-003 | queued | - | 2026-01-02 | 2026-01-02 | 
 
 ## Task Details
 
@@ -207,6 +209,18 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
 
 ### AAS-110: Integrate DevToys SDK Extensions
 - **Description**: Integrate DevToys 2.0 SDK for developer utilities. DevToys is a Swiss Army knife for developers with cross-platform extension API. Create AAS extensions for: config validation, task board visualization, IPC debugging, health report generation. SDK supports Windows/macOS/Linux.
+- **Dependencies**: AAS-003
+- **Priority**: Medium
+- **Type**: enhancement
+
+### AAS-111: Build a Multi-Modal Research Agent
+- **Description**: Create an agent that can process images, text, and web search to generate research reports.
+- **Type**: research
+- **Acceptance Criteria**:
+    - [ ] Initial implementation
+
+### AAS-112: Integrate ngrok Tunneling for Development
+- **Description**: Integrate ngrok for secure public access to local services. Use cases: Expose IPC server for remote Maelstrom testing, webhook endpoints for Linear integration, demo AAS Hub remotely. Features: localhost tunneling, HTTPS encryption, webhook inspection, TCP tunnels. Free tier: 1GB bandwidth/month, sufficient for development. Add ngrok config to Pydantic RCS, create tunnel manager utility.
 - **Dependencies**: AAS-003
 - **Priority**: Medium
 - **Type**: enhancement
