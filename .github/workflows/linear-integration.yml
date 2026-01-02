@@ -1,0 +1,69 @@
+name: Linear Integration
+
+on:
+  issues:
+    types: [opened, edited, closed]
+  pull_request:
+    types: [opened, edited, closed, merged]
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  sync-linear:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, 'AAS-') || contains(github.event.pull_request.body, 'AAS-') || contains(github.event.issue.body, 'AAS-')
+    
+    steps:
+      - name: Extract Linear Issue ID
+        id: linear
+        run: |
+          # Extract AAS-XXX from commit message, PR body, or issue body
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            MESSAGE="${{ github.event.head_commit.message }}"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            MESSAGE="${{ github.event.pull_request.body }}"
+          else
+            MESSAGE="${{ github.event.issue.body }}"
+          fi
+          
+          ISSUE_ID=$(echo "$MESSAGE" | grep -oP 'AAS-\d+' | head -1)
+          echo "issue_id=$ISSUE_ID" >> $GITHUB_OUTPUT
+          echo "Found Linear issue: $ISSUE_ID"
+      
+      - name: Comment on Linear Issue
+        if: steps.linear.outputs.issue_id != ''
+        run: |
+          # Post comment to Linear via API
+          curl -X POST https://api.linear.app/graphql \
+            -H "Authorization: ${{ secrets.LINEAR_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "query": "mutation { commentCreate(input: { issueId: \"${{ steps.linear.outputs.issue_id }}\", body: \"GitHub Activity: ${{ github.event_name }} in ${{ github.repository }}\\n${{ github.event.head_commit.message || github.event.pull_request.title || github.event.issue.title }}\\n\\n[View on GitHub](${{ github.event.head_commit.url || github.event.pull_request.html_url || github.event.issue.html_url }})\" }) { success } }"
+            }'
+
+  update-task-board:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests pydantic loguru
+      
+      - name: Sync ACTIVE_TASKS to Linear
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: |
+          # Run Linear sync script (if you want automated sync)
+          # python scripts/sync_linear.py
+          echo "Task board sync would run here"
