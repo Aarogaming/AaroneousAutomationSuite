@@ -26,11 +26,38 @@ obj/
 *.userosscache
 *.sln.docstates
 
+# Artifacts & Builds (Keep small logs/reports, exclude binaries)
+artifacts/builds/
+artifacts/batch/outputs/
+artifacts/*.exe
+artifacts/*.dll
+artifacts/*.pdb
+artifacts/*.zip
+artifacts/*.tar.gz
+
 # Handoff / Artifacts
 artifacts/handoff/from_codex/
 artifacts/handoff/to_codex/
 !artifacts/handoff/registry.json
 
+# Large Files (>5MB)
+*.exe
+*.dll
+*.pdb
+*.so
+*.dylib
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.iso
+*.bin
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs (keep small ones, exclude large dumps)
+*.log.*.gz
+*.log.[0-9]*
+*-large.log
