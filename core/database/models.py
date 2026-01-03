@@ -201,3 +201,124 @@ class ConfigEntry(Base):
     
     def __repr__(self):
         return f"<ConfigEntry {self.key}>"
+
+
+class Client(Base):
+    """
+    Local client registry model.
+    
+    Tracks connected local instances and their health.
+    """
+    __tablename__ = "clients"
+    
+    id = Column(String(50), primary_key=True)  # Unique client ID
+    hostname = Column(String(100), nullable=False)
+    client_type = Column(String(20), nullable=False)  # "worker", "monitor", "cli"
+    status = Column(String(20), nullable=False, default="online")  # "online", "offline", "busy"
+    
+    # Health metrics
+    last_heartbeat = Column(DateTime, nullable=False, default=datetime.utcnow)
+    cpu_usage = Column(Integer, nullable=True)
+    mem_usage = Column(Integer, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<Client {self.id} ({self.status})>"
+
+
+class AgentSession(Base):
+    """
+    Active agent session tracking for multi-agent collaboration.
+    
+    Tracks AI agents (Copilot, ChatGPT, Claude, etc.) working on tasks.
+    """
+    __tablename__ = "agent_sessions"
+    
+    id = Column(String(50), primary_key=True)  # session-uuid
+    agent_name = Column(String(50), nullable=False)
+    agent_version = Column(String(20), nullable=True)
+    capabilities = Column(JSON, nullable=False)  # Capability profile
+    status = Column(String(20), nullable=False, default="active")  # active, idle, offline
+    current_task_id = Column(String(20), ForeignKey("tasks.id"), nullable=True)
+    
+    # Session metadata
+    checked_in_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    last_activity = Column(DateTime, nullable=False, default=datetime.utcnow)
+    heartbeat_interval = Column(Integer, default=300)  # 5 minutes
+    
+    # Workload tracking
+    active_tasks_count = Column(Integer, default=0)
+    completed_tasks_count = Column(Integer, default=0)
+    help_requests_count = Column(Integer, default=0)
+    
+    # Relationships
+    current_task = relationship("Task", foreign_keys=[current_task_id])
+    
+    def __repr__(self):
+        return f"<AgentSession {self.agent_name} ({self.status})>"
+
+
+class HelpRequest(Base):
+    """
+    Help request between agents for collaborative problem-solving.
+    
+    Enables agents to request assistance without losing task ownership.
+    """
+    __tablename__ = "help_requests"
+    
+    id = Column(String(50), primary_key=True)
+    task_id = Column(String(20), ForeignKey("tasks.id"), nullable=False)
+    requester_session_id = Column(String(50), ForeignKey("agent_sessions.id"), nullable=False)
+    helper_session_id = Column(String(50), ForeignKey("agent_sessions.id"), nullable=True)
+    
+    # Request details
+    help_type = Column(String(50), nullable=False)  # code_review, debugging, architecture, testing
+    context = Column(Text, nullable=False)
+    urgency = Column(String(20), default="medium")  # low, medium, high, critical
+    estimated_time = Column(Integer, nullable=True)  # minutes
+    
+    # Status tracking
+    status = Column(String(20), nullable=False, default="open")  # open, accepted, completed, cancelled
+    response_message = Column(Text, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    accepted_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    task = relationship("Task", foreign_keys=[task_id])
+    requester = relationship("AgentSession", foreign_keys=[requester_session_id])
+    helper = relationship("AgentSession", foreign_keys=[helper_session_id])
+    
+    def __repr__(self):
+        return f"<HelpRequest {self.id}: {self.help_type} ({self.status})>"
+
+
+class TaskLock(Base):
+    """
+    Fine-grained task locking for conflict prevention.
+    
+    Prevents multiple agents from working on the same task simultaneously.
+    Types: active (full control), soft (intent), helper (read-only).
+    """
+    __tablename__ = "task_locks"
+    
+    task_id = Column(String(20), ForeignKey("tasks.id"), primary_key=True)
+    session_id = Column(String(50), ForeignKey("agent_sessions.id"), nullable=False)
+    lock_type = Column(String(20), nullable=False)  # "active", "soft", "helper"
+    
+    # Lock metadata
+    acquired_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)  # Auto-release after timeout
+    last_heartbeat = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relationships
+    task = relationship("Task")
+    session = relationship("AgentSession")
+    
+    def __repr__(self):
+        return f"<TaskLock {self.task_id} by {self.session_id} ({self.lock_type})>"

@@ -10,7 +10,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Optional
 from loguru import logger
 
 # Base class for all database models
@@ -144,19 +144,24 @@ class DatabaseManager:
         Returns:
             Dictionary with table names and row counts
         """
+        from sqlalchemy import text
         stats = {}
         with self.engine.connect() as connection:
             for table in Base.metadata.tables.keys():
-                result = connection.execute(
-                    f"SELECT COUNT(*) FROM {table}"
-                )
-                count = result.scalar()
-                stats[table] = count
+                try:
+                    result = connection.execute(
+                        text(f"SELECT COUNT(*) FROM {table}")
+                    )
+                    count = result.scalar()
+                    stats[table] = count
+                except Exception as e:
+                    logger.warning(f"Failed to get stats for table {table}: {e}")
+                    stats[table] = -1
         return stats
 
 
 # Global database manager instance
-_db_manager: DatabaseManager = None
+_db_manager: Optional[DatabaseManager] = None
 
 
 def get_db_manager(

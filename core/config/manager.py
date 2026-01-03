@@ -133,6 +133,30 @@ class AASConfig(BaseSettings):
         alias="OLLAMA_URL",
         description="Ollama API endpoint for local LLM"
     )
+    
+    # ==================== ngrok Development Tunneling ====================
+    ngrok_enabled: bool = Field(
+        default=False,
+        alias="NGROK_ENABLED",
+        description="Enable ngrok tunneling for development"
+    )
+    ngrok_authtoken: Optional[str] = Field(
+        default=None,
+        alias="NGROK_AUTHTOKEN",
+        description="ngrok authentication token (optional for basic usage)"
+    )
+    ngrok_region: str = Field(
+        default="us",
+        alias="NGROK_REGION",
+        description="ngrok server region (us, eu, ap, au, sa, jp, in)"
+    )
+    ngrok_port: int = Field(
+        default=8000,
+        alias="NGROK_PORT",
+        ge=1024,
+        le=65535,
+        description="Local port to expose via ngrok tunnel"
+    )
 
     # ==================== Validators ====================
     @field_validator('projects', mode='before')

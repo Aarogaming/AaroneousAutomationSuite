@@ -1,0 +1,25 @@
+UI Audit Pack (self-capture)
+01_main_100.png -> Main @100% | Captured | 
+02_plugins_100.png -> Plugins @100% | Captured | 
+03_policy_100.png -> Policy @100% | Captured | 
+04_overlay_100.png -> Overlay @100% | Captured | 
+05_manage_scripts_100.png -> ManageScripts @100% | Captured | 
+06_github_install_100.png -> GitHubInstall @100% | Captured | 
+01_main_125.png -> Main @125% | Captured | 
+02_plugins_125.png -> Plugins @125% | Captured | 
+03_policy_125.png -> Policy @125% | Captured | 
+04_overlay_125.png -> Overlay @125% | Captured | 
+05_manage_scripts_125.png -> ManageScripts @125% | Captured | 
+06_github_install_125.png -> GitHubInstall @125% | Captured | 
+01_main_150.png -> Main @150% | Captured | 
+02_plugins_150.png -> Plugins @150% | Captured | 
+03_policy_150.png -> Policy @150% | Captured | 
+04_overlay_150.png -> Overlay @150% | Captured | 
+05_manage_scripts_150.png -> ManageScripts @150% | Captured | 
+06_github_install_150.png -> GitHubInstall @150% | Captured | 
+01_main_175.png -> Main @175% | Captured | 
+02_plugins_175.png -> Plugins @175% | Captured | 
+03_policy_175.png -> Policy @175% | Captured | 
+04_overlay_175.png -> Overlay @175% | Captured | 
+05_manage_scripts_175.png -> ManageScripts @175% | Captured | 
+06_github_install_175.png -> GitHubInstall @175% | Captured | 

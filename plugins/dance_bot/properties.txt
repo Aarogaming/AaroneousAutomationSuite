@@ -1,3 +1,0 @@
-# Refers to the main screen which the game is located
-screenScale=1.0
-screenResolution=1280x800
