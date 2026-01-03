@@ -39,7 +39,8 @@ class TaskManager(ManagerProtocol):
         workspace: Optional[Any] = None,
         artifacts: Optional[Any] = None,
         batch: Optional[Any] = None,
-        handoff: Optional[Any] = None
+        handoff: Optional[Any] = None,
+        ipc: Optional[Any] = None
     ):
         """Initialize the unified task manager."""
         # Use dummy key for initialization if missing (for CLI/AI context)
@@ -60,6 +61,7 @@ class TaskManager(ManagerProtocol):
         self.handoff = handoff or HandoffManager(config=self.config)
         
         self.batch_manager = batch
+        self.ipc = ipc
         
         # Task tracking
         self.board_path = Path("handoff/ACTIVE_TASKS.md")
@@ -188,6 +190,20 @@ class TaskManager(ManagerProtocol):
         eligible.sort(key=lambda x: priority_map.get(x["priority"].lower(), 4))
         return eligible[0]
     
+    async def _broadcast_task_event(self, task: Task, event_type: str):
+        """Broadcast task event via IPC if available."""
+        if self.ipc:
+            try:
+                await self.ipc.broadcast_task_update(
+                    task_id=task.id,
+                    title=task.title,
+                    status=task.status.value if hasattr(task.status, 'value') else str(task.status),
+                    assignee=task.assignee or "-",
+                    event_type=event_type
+                )
+            except Exception as e:
+                logger.warning(f"Failed to broadcast task update: {e}")
+
     def claim_task(self, task_id: Optional[str] = None, actor_name: str = "GitHub Copilot") -> Optional[Dict[str, Any]]:
         """
         Claim a task (either specific task or next available) using DB locking.
@@ -270,6 +286,11 @@ class TaskManager(ManagerProtocol):
             # Sync back to Markdown (for human visibility)
             self._sync_task_to_markdown(task)
             
+            # Broadcast update
+            if self.ipc:
+                import asyncio
+                asyncio.create_task(self._broadcast_task_event(task, "CLAIMED"))
+            
             logger.success(f"Claimed task {task_id_val}: {task_title_val}")
             return {"id": task_id_val, "title": task_title_val, "priority": task_priority_val}
 
@@ -338,6 +359,12 @@ class TaskManager(ManagerProtocol):
             task.updated_at = datetime.utcnow() # type: ignore
             
             self._sync_task_to_markdown(task)
+            
+            # Broadcast update
+            if self.ipc:
+                import asyncio
+                asyncio.create_task(self._broadcast_task_event(task, "COMPLETED"))
+                
             logger.success(f"Task {task_id} marked as Done")
             return True
 
@@ -371,13 +398,18 @@ class TaskManager(ManagerProtocol):
             # Sync to Markdown
             self._add_task_to_markdown(task, task_type)
             
+            # Broadcast update
+            if self.ipc:
+                import asyncio
+                asyncio.create_task(self._broadcast_task_event(task, "CREATED"))
+                
             logger.success(f"Added new task {new_id}: {title}")
             return new_id
 
     def _add_task_to_markdown(self, task: Task, task_type: str):
         """Helper to append a new task to ACTIVE_TASKS.md."""
         try:
-            lines, tasks, _ = self.parse_board()
+            lines, tasks, _ = self.handoff.parse_board()
             today = datetime.now().strftime("%Y-%m-%d")
             
             # Create table row

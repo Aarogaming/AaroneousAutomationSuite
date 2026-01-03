@@ -2,6 +2,7 @@ import asyncio
 import sys
 import argparse
 from loguru import logger
+from typing import Optional
 from core.config.manager import load_config
 from core.ipc.server import serve_ipc
 from core.handoff.manager import HandoffManager
@@ -12,7 +13,7 @@ class TaskCLI:
     def __init__(self, handoff: HandoffManager):
         self.handoff = handoff
     
-    def create_task(self, title: str, priority: str = "Medium", depends: str = None, description: str = None):
+    def create_task(self, title: str, priority: str = "Medium", depends: Optional[str] = None, description: Optional[str] = None):
         """Create a new task"""
         _, tasks, _ = self.handoff.parse_board()
         
@@ -106,7 +107,7 @@ class TaskCLI:
         """Mark task as complete"""
         return self.handoff.complete_task(task_id)
     
-    def list_tasks(self, status: str = None, priority: str = None, assignee: str = None):
+    def list_tasks(self, status: Optional[str] = None, priority: Optional[str] = None, assignee: Optional[str] = None):
         """List tasks with optional filters"""
         _, tasks, _ = self.handoff.parse_board()
         
@@ -392,7 +393,11 @@ async def main():
             print("\n" + "-" * 80)
             print(f"Total: {len(blocked_tasks)} tasks blocked\n")
             return
-    ipc_task = asyncio.create_task(serve_ipc(port=config.ipc_port))
+    # 2. Initialize Manager Hub (Unified access to all managers)
+    from core.managers import ManagerHub
+    hub = ManagerHub.create(config=config)
+    
+    ipc_task = asyncio.create_task(serve_ipc(port=config.ipc_port, service=hub.ipc))
 
     logger.success("AAS Hub is now running and awaiting Maelstrom connection.")
     

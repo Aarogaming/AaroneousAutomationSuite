@@ -45,6 +45,11 @@ class BridgeStub(object):
                 request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotRequest.SerializeToString,
                 response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotResponse.FromString,
                 _registered_method=True)
+        self.SubscribeToTasks = channel.unary_stream(
+                '/aas.ipc.Bridge/SubscribeToTasks',
+                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskSubscriptionRequest.SerializeToString,
+                response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.FromString,
+                _registered_method=True)
 
 
 class BridgeServicer(object):
@@ -65,6 +70,13 @@ class BridgeServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SubscribeToTasks(self, request, context):
+        """Subscribe to real-time task updates
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_BridgeServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -77,6 +89,11 @@ def add_BridgeServicer_to_server(servicer, server):
                     servicer.StreamSnapshots,
                     request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotRequest.FromString,
                     response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotResponse.SerializeToString,
+            ),
+            'SubscribeToTasks': grpc.unary_stream_rpc_method_handler(
+                    servicer.SubscribeToTasks,
+                    request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskSubscriptionRequest.FromString,
+                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -134,6 +151,33 @@ class Bridge(object):
             '/aas.ipc.Bridge/StreamSnapshots',
             core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotRequest.SerializeToString,
             core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SubscribeToTasks(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/aas.ipc.Bridge/SubscribeToTasks',
+            core_dot_ipc_dot_protos_dot_bridge__pb2.TaskSubscriptionRequest.SerializeToString,
+            core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.FromString,
             options,
             channel_credentials,
             insecure,

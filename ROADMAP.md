@@ -1,41 +1,43 @@
-# AAS MASTER ROADMAP
+# AAS Development Roadmap
 
-This document tracks the high-level milestones and strategic evolution of the Aaroneous Automation Suite (AAS).
+This roadmap outlines the 5-phase strategy for evolving the Aaroneous Automation Suite into a best-in-class, AI-native automation platform.
 
-## 🎯 Current Milestone: Phase 1 - The Shared Brain
-- [x] Initialize AAS Repository
-- [x] Secure Key Infrastructure
-- [x] Bootstrap Shared Brain (.sixthrules)
-- [x] Implement Resilient Config
-- [x] Build gRPC Bridge (Protos Generated)
-- [x] Implement FCFS Handoff Protocol (Local-First)
+## Phase 1: Observability & Core UX (Immediate Impact)
+Focus: Real-time visibility and streamlined configuration.
+- [x] **AAS-113**: Unified Task Manager with Workspace Monitor
+- [x] **AAS-114**: gRPC Task Broadcasting
+- [ ] **AAS-213**: Live Event Stream (WebSockets)
+- [ ] **AAS-214**: Mission Control Dashboard
+- [ ] **AAS-201**: Centralized Config Service
+- [ ] **AAS-223**: Automated Documentation Generator
 
-## 🚀 Future Milestones
+## Phase 2: Stability & Multi-Agent Coordination (The Foundation)
+Focus: Robustness and standardized agent collaboration.
+- [ ] **AAS-212**: Agent Handoff Protocol
+- [ ] **AAS-203**: Client Heartbeat & Auto-Release
+- [ ] **AAS-220**: Plugin Test Suite
+- [ ] **AAS-205**: Virtual File System (VFS)
 
-### Phase 2: Resilient Core & IPC
-- [ ] Implement Pydantic RCS (Resilient Configuration System)
-- [ ] Connect Linear API (Bi-directional Sync)
-- [ ] Establish Policy Continuity (Project Maelstrom)
-- [ ] **Agentic Workflows**: Integrate frameworks like `LangGraph` or `CrewAI` for autonomous goal decomposition.
-- [ ] **Local LLM Support**: Add fallback to local models (Ollama/Llama.cpp) for privacy and offline use.
+## Phase 3: Intelligence & Self-Healing (The Brain)
+Focus: Vector-backed memory and automated recovery.
+- [ ] **AAS-207**: Multi-Modal Knowledge Graph
+- [ ] **AAS-208**: Agentic Self-Healing Protocol
+- [ ] **AAS-209**: Semantic Error Clustering
+- [ ] **AAS-211**: Automated Task Decomposition
 
-### Phase 3: Plugin Ecosystem & Intelligence
-- [ ] Home Assistant Integration (Voice-to-Automation Pipeline)
-- [ ] Onboard AI Assistant (CodeGPT Delegation)
-- [ ] **Multi-Modal Vision Research**: GPT-4o/VLM integration for UI analysis in Maelstrom.
-- [ ] **Autonomous SysAdmin**: Self-healing server monitoring in `home_server` plugin.
+## Phase 4: Ecosystem & Visual Scripting (The Growth)
+Focus: Community expansion and low-code workflows.
+- [ ] **AAS-215**: Visual Scripting Editor (dev_studio)
+- [ ] **AAS-224**: Community Forge (Marketplace)
+- [ ] **AAS-221**: Multi-Game Adapter (Roblox/Minecraft)
+- [ ] **AAS-222**: Home Assistant Voice Bridge
 
-### Phase 4: Watch, Learn & Master
-- [ ] Imitation Learning Plugin (Recorder/Player)
-- [ ] **Reinforcement Learning (RL) Loop**: "Try and Master" training orchestrator.
-- [ ] **Universal Game Adapter**: Standardized interface for controlling any windowed application.
+## Phase 5: Autonomy & Evolution (The Stars)
+Focus: Self-evolving plugins and agentic swarms.
+- [ ] **AAS-301**: Swarm Orchestration Protocol
+- [ ] **AAS-302**: Vision-to-Code Generator
+- [ ] **AAS-303**: Behavioral Cloning (Ghost Mode)
+- [ ] **AAS-304**: Federated Learning Mesh
 
-### Phase 5: Developer Experience & Security
-- [ ] **Node-Based Visual Scripting**: Visual flow editor for DeimosLang in `dev_studio`.
-- [ ] **Zero-Trust Security**: mTLS for the gRPC bridge.
-- [ ] **Decentralized Handoff**: Research local Git (Gitea) or decentralized protocols for artifacts.
-
-## 📦 Consolidated Ecosystem (Migration from Legacy Repos)
-- [ ] **AutoWizard101 Integration**: Migrate `HandoffTray` and `MaelstromBot.Server` into AAS Plugins.
-- [ ] **Deimos-Wizard101 Integration**: Port `DeimosLang` VM and Questing logic to AAS Core.
-- [ ] **DanceBot Integration**: Unify `Wizard101_DanceBot` assets and logic into AAS `game_manager`.
+---
+*Last Updated: January 3, 2026*

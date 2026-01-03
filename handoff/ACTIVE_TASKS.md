@@ -8,7 +8,7 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
 |:---|:---|:---|:---|:---|:---|:---|:---|
 | AAS-002 | High | Test FCFS Claiming | AAS-001 | Done | CodeGPT | 2026-01-02 | 2026-01-02 |
 | AAS-113 | Medium | Build Unified Task Manager with Workspace Monitor | - | Done | GitHub Copilot | 2026-01-02 | 2026-01-02 |
-| AAS-114 | High | Implement gRPC Task Broadcasting | AAS-113 | queued | - | 2026-01-02 | 2026-01-02 |
+| AAS-114 | High | Implement gRPC Task Broadcasting | AAS-113 | Done | Sixth | 2026-01-02 | 2026-01-03 |
 | AAS-213 | High | Implement Live Event Stream (WebSockets) | AAS-113 | queued | - | 2026-01-02 | 2026-01-02 |
 | AAS-214 | High | Scaffold Mission Control Dashboard | AAS-213 | queued | - | 2026-01-02 | 2026-01-02 |
 | AAS-201 | Medium | Centralized Config Service | AAS-113 | queued | - | 2026-01-02 | 2026-01-02 |
@@ -57,10 +57,10 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
 - **Description**: Enhance the IPC Bridge to broadcast task updates to all connected clients in real-time.
 - **Dependencies**: AAS-113 (Unified Task Manager)
 - **Acceptance Criteria**:
-    - [ ] Update `bridge.proto` with `SubscribeToTasks` rpc
-    - [ ] Implement pub/sub logic in `BridgeService`
-    - [ ] Update `TaskManager` to trigger broadcasts on task state changes
-    - [ ] Add client-side listener in CLI
+    - [x] Update `bridge.proto` with `SubscribeToTasks` rpc
+    - [x] Implement pub/sub logic in `BridgeService`
+    - [x] Update `TaskManager` to trigger broadcasts on task state changes
+    - [x] Add client-side listener in CLI
 
 ### AAS-213: Implement Live Event Stream (WebSockets)
 - **Description**: Real-time action broadcasting from clients to Hub via WebSockets.
@@ -178,3 +178,91 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
     - [ ] Add tunnel management commands
     - [ ] Integrate with IPC and Home Assistant plugins
     - [ ] Add configuration for tunnel persistence
+
+### AAS-212: Implement Agent Handoff Protocol
+- **Description**: Standardize context sharing between specialized AI agents.
+- **Dependencies**: AAS-113
+- **Acceptance Criteria**:
+    - [ ] Define `HandoffObject` schema
+    - [ ] Implement `AgentCollaborationManager.relay_handoff()`
+    - [ ] Add handoff history tracking in DB
+
+### AAS-223: Automated Documentation Generator
+- **Description**: Keep `INDEX.md` and API docs in sync with code changes.
+- **Dependencies**: AAS-113
+- **Acceptance Criteria**:
+    - [ ] Implement docstring parser
+    - [ ] Generate markdown files for all core managers
+    - [ ] Add CLI command `aas docs generate`
+
+### AAS-209: Semantic Error Clustering
+- **Description**: Group similar failures in the DB to identify systemic bugs.
+- **Dependencies**: AAS-207
+- **Acceptance Criteria**:
+    - [ ] Implement error pattern extraction
+    - [ ] Add clustering logic using vector embeddings
+    - [ ] Create Dashboard view for error clusters
+
+### AAS-211: Automated Task Decomposition
+- **Description**: Use LangGraph to break complex goals into actionable DAGs.
+- **Dependencies**: AAS-113
+- **Acceptance Criteria**:
+    - [ ] Implement decomposition graph in `core/agents/`
+    - [ ] Add sub-task generation with dependency mapping
+    - [ ] Integrate with `TaskManager.add_task()`
+
+### AAS-215: Visual Scripting Editor (dev_studio)
+- **Description**: Node-based workflow builder in the Dashboard.
+- **Dependencies**: AAS-214
+- **Acceptance Criteria**:
+    - [ ] Integrate React Flow into Dashboard
+    - [ ] Implement node registry (Action, Logic, Trigger)
+    - [ ] Add graph-to-Python compiler
+
+### AAS-221: Multi-Game Adapter (Roblox/Minecraft)
+- **Description**: Generalize the `game_manager` for other platforms.
+- **Dependencies**: AAS-113
+- **Acceptance Criteria**:
+    - [ ] Create `RobloxAdapter` and `MinecraftAdapter`
+    - [ ] Standardize window detection for non-Win32 games
+    - [ ] Implement basic input injection for new platforms
+
+### AAS-222: Home Assistant Voice Bridge
+- **Description**: Trigger automations via voice commands.
+- **Dependencies**: AAS-113
+- **Acceptance Criteria**:
+    - [ ] Set up voice intent parser
+    - [ ] Map intents to AAS plugin methods
+    - [ ] Integrate with Home Assistant Assist
+
+### AAS-301: Swarm Orchestration Protocol
+- **Description**: Implement multi-agent consensus and red-teaming.
+- **Dependencies**: AAS-212
+- **Acceptance Criteria**:
+    - [ ] Implement `SwarmManager` for agent orchestration
+    - [ ] Add consensus voting logic
+    - [ ] Implement red-team agent for code verification
+
+### AAS-302: Vision-to-Code Generator
+- **Description**: Automatically generate adapters by analyzing game windows.
+- **Dependencies**: AAS-207
+- **Acceptance Criteria**:
+    - [ ] Implement UI element detection via Vision API
+    - [ ] Generate `GameAdapter` boilerplate from detection results
+    - [ ] Add automated verification of generated code
+
+### AAS-303: Behavioral Cloning (Ghost Mode)
+- **Description**: Train RL agents by watching human gameplay.
+- **Dependencies**: AAS-113
+- **Acceptance Criteria**:
+    - [ ] Implement input recorder in `imitation_learning` plugin
+    - [ ] Add state-action pair dataset generation
+    - [ ] Train base model using behavioral cloning
+
+### AAS-304: Federated Learning Mesh
+- **Description**: Securely share healing strategies across decentralized Hubs.
+- **Dependencies**: AAS-207
+- **Acceptance Criteria**:
+    - [ ] Implement Hub-to-Hub gRPC communication
+    - [ ] Add anonymized error/solution sharing
+    - [ ] Implement local model fine-tuning from shared data

@@ -9,6 +9,22 @@ service Bridge {
   
   // Streams game state snapshots from Maelstrom to AAS
   rpc StreamSnapshots (SnapshotRequest) returns (stream SnapshotResponse) {}
+
+  // Subscribe to real-time task updates
+  rpc SubscribeToTasks (TaskSubscriptionRequest) returns (stream TaskUpdate) {}
+}
+
+message TaskSubscriptionRequest {
+  string client_id = 1;
+}
+
+message TaskUpdate {
+  string task_id = 1;
+  string title = 2;
+  string status = 3;
+  string assignee = 4;
+  string event_type = 5; // e.g., "CREATED", "CLAIMED", "COMPLETED", "UPDATED"
+  int64 timestamp = 6;
 }
 
 message CommandRequest {

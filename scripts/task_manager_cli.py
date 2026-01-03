@@ -16,6 +16,7 @@ Usage:
     python scripts/task_manager_cli.py detect-runaway
     python scripts/task_manager_cli.py workspace-defrag [--dry-run]
     python scripts/task_manager_cli.py heartbeat [--client-id ID]
+    python scripts/task_manager_cli.py subscribe [--client-id ID]
 """
 
 import asyncio
@@ -283,6 +284,31 @@ async def run_heartbeat(tm: TaskManager, client_id: str | None = None):
         await asyncio.sleep(30)
 
 
+async def subscribe_tasks(client_id: str | None = None):
+    """Subscribe to real-time task updates via gRPC."""
+    import grpc
+    from core.ipc.protos import bridge_pb2, bridge_pb2_grpc
+    
+    if not client_id:
+        client_id = f"subscriber-{socket.gethostname()}"
+        
+    print(f"\n📡 Subscribing to task updates as {client_id}...")
+    
+    async with grpc.aio.insecure_channel('localhost:50051') as channel:
+        stub = bridge_pb2_grpc.BridgeStub(channel)
+        request = bridge_pb2.TaskSubscriptionRequest(client_id=client_id)
+        
+        try:
+            async for update in stub.SubscribeToTasks(request):
+                print(f"\n🔔 [TASK {update.event_type}] {update.task_id}: {update.title}")
+                print(f"   Status: {update.status} | Assignee: {update.assignee}")
+                print(f"   Time: {datetime.fromtimestamp(update.timestamp).strftime('%H:%M:%S')}")
+        except grpc.aio.AioRpcError as e:
+            print(f"\n❌ gRPC Error: {e.details()}")
+        except KeyboardInterrupt:
+            print("\n👋 Unsubscribing...")
+
+
 async def main():
     """Main CLI entry point."""
     if len(sys.argv) < 2:
@@ -366,6 +392,14 @@ async def main():
                 if len(sys.argv) > idx + 1:
                     client_id = sys.argv[idx + 1]
             await run_heartbeat(tm, client_id)
+            
+        elif command == "subscribe":
+            client_id = None
+            if "--client-id" in sys.argv:
+                idx = sys.argv.index("--client-id")
+                if len(sys.argv) > idx + 1:
+                    client_id = sys.argv[idx + 1]
+            await subscribe_tasks(client_id)
             
         else:
             print(f"❌ Unknown command: {command}")

@@ -24,21 +24,25 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x63ore/ipc/protos/bridge.proto\x12\x07\x61\x61s.ipc\"<\n\x0e\x43ommandRequest\x12\x14\n\x0c\x63ommand_type\x18\x01 \x01(\t\x12\x14\n\x0cpayload_json\x18\x02 \x01(\t\"3\n\x0f\x43ommandResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"&\n\x0fSnapshotRequest\x12\x13\n\x0binterval_ms\x18\x01 \x01(\x05\"<\n\x10SnapshotResponse\x12\x15\n\rsnapshot_json\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x32\x9b\x01\n\x06\x42ridge\x12\x45\n\x0e\x45xecuteCommand\x12\x17.aas.ipc.CommandRequest\x1a\x18.aas.ipc.CommandResponse\"\x00\x12J\n\x0fStreamSnapshots\x12\x18.aas.ipc.SnapshotRequest\x1a\x19.aas.ipc.SnapshotResponse\"\x00\x30\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x63ore/ipc/protos/bridge.proto\x12\x07\x61\x61s.ipc\",\n\x17TaskSubscriptionRequest\x12\x11\n\tclient_id\x18\x01 \x01(\t\"u\n\nTaskUpdate\x12\x0f\n\x07task_id\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06status\x18\x03 \x01(\t\x12\x10\n\x08\x61ssignee\x18\x04 \x01(\t\x12\x12\n\nevent_type\x18\x05 \x01(\t\x12\x11\n\ttimestamp\x18\x06 \x01(\x03\"<\n\x0e\x43ommandRequest\x12\x14\n\x0c\x63ommand_type\x18\x01 \x01(\t\x12\x14\n\x0cpayload_json\x18\x02 \x01(\t\"3\n\x0f\x43ommandResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"&\n\x0fSnapshotRequest\x12\x13\n\x0binterval_ms\x18\x01 \x01(\x05\"<\n\x10SnapshotResponse\x12\x15\n\rsnapshot_json\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\x03\x32\xea\x01\n\x06\x42ridge\x12\x45\n\x0e\x45xecuteCommand\x12\x17.aas.ipc.CommandRequest\x1a\x18.aas.ipc.CommandResponse\"\x00\x12J\n\x0fStreamSnapshots\x12\x18.aas.ipc.SnapshotRequest\x1a\x19.aas.ipc.SnapshotResponse\"\x00\x30\x01\x12M\n\x10SubscribeToTasks\x12 .aas.ipc.TaskSubscriptionRequest\x1a\x13.aas.ipc.TaskUpdate\"\x00\x30\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'core.ipc.protos.bridge_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_COMMANDREQUEST']._serialized_start=41
-  _globals['_COMMANDREQUEST']._serialized_end=101
-  _globals['_COMMANDRESPONSE']._serialized_start=103
-  _globals['_COMMANDRESPONSE']._serialized_end=154
-  _globals['_SNAPSHOTREQUEST']._serialized_start=156
-  _globals['_SNAPSHOTREQUEST']._serialized_end=194
-  _globals['_SNAPSHOTRESPONSE']._serialized_start=196
-  _globals['_SNAPSHOTRESPONSE']._serialized_end=256
-  _globals['_BRIDGE']._serialized_start=259
-  _globals['_BRIDGE']._serialized_end=414
+  _globals['_TASKSUBSCRIPTIONREQUEST']._serialized_start=41
+  _globals['_TASKSUBSCRIPTIONREQUEST']._serialized_end=85
+  _globals['_TASKUPDATE']._serialized_start=87
+  _globals['_TASKUPDATE']._serialized_end=204
+  _globals['_COMMANDREQUEST']._serialized_start=206
+  _globals['_COMMANDREQUEST']._serialized_end=266
+  _globals['_COMMANDRESPONSE']._serialized_start=268
+  _globals['_COMMANDRESPONSE']._serialized_end=319
+  _globals['_SNAPSHOTREQUEST']._serialized_start=321
+  _globals['_SNAPSHOTREQUEST']._serialized_end=359
+  _globals['_SNAPSHOTRESPONSE']._serialized_start=361
+  _globals['_SNAPSHOTRESPONSE']._serialized_end=421
+  _globals['_BRIDGE']._serialized_start=424
+  _globals['_BRIDGE']._serialized_end=658
 # @@protoc_insertion_point(module_scope)

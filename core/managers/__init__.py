@@ -64,20 +64,25 @@ class ManagerHub:
         self.artifacts = ArtifactManager(base_dir=self.config.artifact_dir)
         self.workspace = WorkspaceCoordinator(workspace_root=".")
         
-        # 4. Initialize Batch Processing
+        # 4. Initialize IPC Bridge (Communication)
+        from core.ipc.server import BridgeService
+        self.ipc = BridgeService()
+        
+        # 5. Initialize Batch Processing
         self.batch_manager = BatchManager(config=self.config)
         
-        # 5. Initialize Collaboration (Multi-agent coordination)
+        # 6. Initialize Collaboration (Multi-agent coordination)
         self.collaboration = AgentCollaborationManager(db=self.db)
         
-        # 6. Initialize Orchestrator (Tasks)
+        # 7. Initialize Orchestrator (Tasks)
         # We pass the already initialized managers to TaskManager to avoid redundancy
         self.tasks = TaskManager(
             config=self.config,
             db=self.db,
             workspace=self.workspace,
             artifacts=self.artifacts,
-            batch=self.batch_manager
+            batch=self.batch_manager,
+            ipc=self.ipc
         )
         
         logger.info("ManagerHub initialized with unified dependency injection + collaboration")
@@ -95,7 +100,7 @@ class ManagerHub:
     @property
     def batch(self):
         """Legacy access to batch processor via TaskManager."""
-        return self.tasks.batch_processor
+        return self.tasks.batch_manager
 
     def get_summary(self) -> dict:
         """
