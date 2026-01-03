@@ -32,24 +32,26 @@ artifacts/batch/outputs/
 artifacts/*.exe
 artifacts/*.dll
 artifacts/*.pdb
-artifacts/*.zip
-artifacts/*.tar.gz
 
 # Handoff / Artifacts
 artifacts/handoff/from_codex/
 artifacts/handoff/to_codex/
 !artifacts/handoff/registry.json
 
-# Large Files (>5MB)
+# Large Files (>50MB - GitHub hard limit is 100MB)
+# We use 50MB to avoid warnings
+# Exception: Source archives for deps are OK if compressed and <50MB
 *.exe
 *.dll
 *.pdb
 *.so
 *.dylib
-*.zip
-*.tar.gz
-*.rar
-*.7z
+
+# Large Archives (>50MB)
+# Small archives (<50MB) are OK if they're source code or data
+*-large.zip
+*-large.tar.gz
+*-large.rar
 *.iso
 *.bin
 
