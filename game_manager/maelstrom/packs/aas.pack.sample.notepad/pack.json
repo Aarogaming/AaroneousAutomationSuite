@@ -1,0 +1,15 @@
+{
+  "id": "aas.pack.sample.notepad",
+  "name": "AAS Sample Notepad Pack",
+  "version": "1.0.0",
+  "description": "Sample offline Notepad automation scenarios.",
+  "scenarios": [
+    {
+      "id": "notepad.hello",
+      "name": "Notepad Hello",
+      "description": "Open Notepad and type Hello.",
+      "entry": "scenarios/notepad.hello.json"
+    }
+  ]
+}
+

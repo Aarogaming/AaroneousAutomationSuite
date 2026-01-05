@@ -9,6 +9,7 @@ Automatically creates tasks based on:
 """
 
 import json
+import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -26,6 +27,12 @@ class TaskGenerator:
         self.task_board = Path("handoff/ACTIVE_TASKS.md")
         self.issues_log = Path("artifacts/issues/known_issues.json")
         self.issues_log.parent.mkdir(parents=True, exist_ok=True)
+        self.roadmap_files = [
+            Path("docs/MASTER_ROADMAP.md"),
+            Path("docs/AUTOMATION_ROADMAP.md"),
+            Path("docs/DESKTOP_GUI_ROADMAP.md"),
+            Path("docs/GAME_AUTOMATION_ROADMAP.md")
+        ]
     
     def get_total_task_count(self) -> int:
         """Count total tasks on the board (excluding archived ones)"""
@@ -38,6 +45,105 @@ class TaskGenerator:
             if line.strip().startswith('|') and 'AAS-' in line and '---' not in line and '| ID |' not in line:
                 count += 1
         return count
+
+    def parse_roadmap(self, roadmap_path: Path) -> List[Dict[str, Any]]:
+        """
+        Parse a roadmap markdown file and extract unchecked tasks.
+        
+        Looks for patterns like:
+        - [ ] Task description
+        - [ ] **AAS-XXX**: Task with ID
+        
+        Returns:
+            List of task dictionaries with title, description, priority, phase
+        """
+        if not roadmap_path.exists():
+            logger.debug(f"Roadmap not found: {roadmap_path}")
+            return []
+        
+        try:
+            content = roadmap_path.read_text(encoding='utf-8')
+            tasks = []
+            current_phase = "Unknown"
+            current_section = "Unknown"
+            
+            # Pattern for unchecked markdown checkboxes
+            checkbox_pattern = re.compile(r'^\s*-\s*\[\s*\]\s*(.+)$', re.MULTILINE)
+            
+            # Pattern to extract task ID if present
+            task_id_pattern = re.compile(r'\*\*([A-Z]+-\d+)\*\*:?\s*(.+)')
+            
+            # Track current phase/section for context
+            phase_pattern = re.compile(r'^#+\s*.*Phase\s+(\d+)[:\s]*(.+)$', re.IGNORECASE)
+            section_pattern = re.compile(r'^#+\s*(.+)$')
+            
+            lines = content.split('\n')
+            
+            for i, line in enumerate(lines):
+                # Update current phase context
+                phase_match = phase_pattern.match(line)
+                if phase_match:
+                    phase_num = phase_match.group(1)
+                    phase_desc = phase_match.group(2).strip()
+                    current_phase = f"Phase {phase_num}: {phase_desc}"
+                    continue
+                
+                # Update section context
+                section_match = section_pattern.match(line)
+                if section_match and not phase_match:
+                    current_section = section_match.group(1).strip()
+                
+                # Find unchecked tasks
+                checkbox_match = checkbox_pattern.match(line)
+                if checkbox_match:
+                    task_text = checkbox_match.group(1).strip()
+                    
+                    # Try to extract task ID
+                    task_id = None
+                    description = task_text
+                    task_id_match = task_id_pattern.match(task_text)
+                    if task_id_match:
+                        task_id = task_id_match.group(1)
+                        description = task_id_match.group(2).strip()
+                    
+                    # Look ahead for additional context (next few lines)
+                    additional_context = []
+                    for j in range(i+1, min(i+4, len(lines))):
+                        next_line = lines[j].strip()
+                        if next_line and not next_line.startswith('#') and not next_line.startswith('-'):
+                            additional_context.append(next_line)
+                        elif next_line.startswith('- [ ]') or next_line.startswith('#'):
+                            break
+                    
+                    # Determine priority from keywords
+                    priority = 'medium'
+                    text_lower = task_text.lower()
+                    if any(word in text_lower for word in ['critical', 'urgent', 'high priority']):
+                        priority = 'urgent'
+                    elif any(word in text_lower for word in ['important', 'high']):
+                        priority = 'high'
+                    elif any(word in text_lower for word in ['low priority', 'nice to have', 'optional']):
+                        priority = 'low'
+                    
+                    tasks.append({
+                        'title': description[:100],  # Limit title length
+                        'description': f"{description}\n\nContext: {current_phase} → {current_section}\n" + 
+                                      (f"\nDetails:\n" + '\n'.join(additional_context) if additional_context else ""),
+                        'priority': priority,
+                        'phase': current_phase,
+                        'section': current_section,
+                        'task_id': task_id,
+                        'source': f'roadmap:{roadmap_path.stem}',
+                        'type': 'feature',
+                        'auto_generated': True
+                    })
+            
+            logger.info(f"Parsed {len(tasks)} unchecked tasks from {roadmap_path.name}")
+            return tasks
+            
+        except Exception as e:
+            logger.error(f"Failed to parse roadmap {roadmap_path}: {e}")
+            return []
 
     async def review_project_progress(self) -> List[Dict[str, Any]]:
         """
@@ -130,18 +236,41 @@ class TaskGenerator:
                 'source': 'progress_review'
             })
         
-        # 3. No queued work?
-        if task_stats['queued'] + task_stats['todo'] < 3:
+        # 3. ROADMAP INTEGRATION: Parse roadmaps for unchecked tasks
+        roadmap_tasks = []
+        for roadmap_path in self.roadmap_files:
+            roadmap_tasks.extend(self.parse_roadmap(roadmap_path))
+        
+        # If board is low on tasks, suggest from roadmap
+        if task_stats['queued'] + task_stats['todo'] < 5:
+            if roadmap_tasks:
+                logger.info(f"Found {len(roadmap_tasks)} unchecked roadmap tasks")
+                # Add top priority roadmap tasks (limit to 5)
+                priority_order = {'urgent': 0, 'high': 1, 'medium': 2, 'low': 3}
+                sorted_roadmap = sorted(roadmap_tasks, key=lambda t: priority_order.get(t['priority'], 2))
+                suggestions.extend(sorted_roadmap[:5])
+            else:
+                suggestions.append({
+                    'title': 'Plan Next Sprint Tasks',
+                    'description': "Task backlog is low. Review roadmap and create new tasks for upcoming features.",
+                    'priority': 'medium',
+                    'type': 'planning',
+                    'auto_generated': True,
+                    'source': 'progress_review'
+                })
+        elif roadmap_tasks and len(roadmap_tasks) > 20:
+            # If many roadmap tasks exist, suggest a review
             suggestions.append({
-                'title': 'Plan Next Sprint Tasks',
-                'description': "Task backlog is low. Review roadmap and create new tasks for upcoming features.",
-                'priority': 'medium',
+                'title': f'Review {len(roadmap_tasks)} Pending Roadmap Items',
+                'description': f"Found {len(roadmap_tasks)} unchecked tasks across roadmaps. Consider prioritizing and scheduling these items.\n\nTop priorities:\n" +
+                              '\n'.join([f"- [{t['phase']}] {t['title'][:60]}" for t in roadmap_tasks[:5]]),
+                'priority': 'low',
                 'type': 'planning',
                 'auto_generated': True,
-                'source': 'progress_review'
+                'source': 'roadmap_analysis'
             })
         
-        logger.success(f"Generated {len(suggestions)} suggestions from progress review")
+        logger.success(f"Generated {len(suggestions)} suggestions from progress review (including {len([s for s in suggestions if 'roadmap' in s.get('source', '')])} from roadmap)")
         return suggestions
     
     async def scan_for_issues(self) -> List[Dict[str, Any]]:
@@ -226,12 +355,44 @@ class TaskGenerator:
         - Test coverage
         - Documentation gaps
         - Performance opportunities
+        - AI Readiness (Type hints, docstrings)
         
         Returns list of improvement tasks.
         """
         logger.info("Analyzing improvement opportunities...")
         
         improvements = []
+        
+        # 0. Check for AI Readiness (Type hints and Docstrings)
+        ai_readiness_gaps = []
+        for py_file in Path("core").rglob("*.py"):
+            if py_file.name == "__init__.py":
+                continue
+            
+            content = py_file.read_text(encoding='utf-8', errors='ignore')
+            
+            # Simple heuristic for missing type hints in function definitions
+            if "def " in content and ":" in content and "->" not in content:
+                ai_readiness_gaps.append(f"Missing type hints in {py_file.name}")
+            
+            # Simple heuristic for missing docstrings
+            if "def " in content and '"""' not in content and "'''" not in content:
+                ai_readiness_gaps.append(f"Missing docstrings in {py_file.name}")
+                
+            if len(ai_readiness_gaps) >= 5:
+                break
+        
+        if ai_readiness_gaps:
+            improvements.append({
+                'title': 'Improve AI Readiness: Type Hints & Docstrings',
+                'description': f"Found AI readiness gaps in core modules:\n- " + "\n- ".join(ai_readiness_gaps[:5]) + "\n\nStandardizing these improves AI context understanding.",
+                'priority': 'low',
+                'type': 'ai_readiness',
+                'auto_generated': True,
+                'source': 'ai_readiness_check',
+                'delegatable': True,
+                'target_manager': 'batch'
+            })
         
         # 1. Check for missing tests
         test_files = list(Path("scripts").glob("test_*.py"))

@@ -17,6 +17,10 @@ Usage:
     python scripts/task_manager_cli.py workspace-defrag [--dry-run]
     python scripts/task_manager_cli.py heartbeat [--client-id ID]
     python scripts/task_manager_cli.py subscribe [--client-id ID]
+    python scripts/task_manager_cli.py docs-generate
+    python scripts/task_manager_cli.py decompose --goal "GOAL" [--priority PRIORITY] [--type TYPE]
+    python scripts/task_manager_cli.py devtoys [task_name] [--text TEXT] [--pattern PATTERN]
+    python scripts/task_manager_cli.py ngrok [start|stop|status] [--port PORT]
 """
 
 import asyncio
@@ -30,7 +34,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from loguru import logger
-from core.handoff.task_manager import TaskManager
+from core.managers.tasks import TaskManager
 from core.config.manager import AASConfig
 
 
@@ -107,6 +111,31 @@ async def task_status(tm: TaskManager, task_id: str):
         return
     
     print_task(status, include_batch_status=True)
+
+
+async def add_task(tm: TaskManager, priority: str, title: str, description: str, task_type: str = "feature", depends_on: str = "-"):
+    """Add a new task."""
+    task_id = tm.add_task(priority, title, description, depends_on, task_type)
+    print(f"\n✅ Successfully added task {task_id}")
+    return task_id
+
+
+async def complete_task(tm: TaskManager, task_id: str):
+    """Complete a task."""
+    success = tm.complete_task(task_id)
+    if success:
+        print(f"\n✅ Successfully completed task {task_id}")
+    else:
+        print(f"\n❌ Failed to complete task {task_id}")
+    return success
+
+
+async def decompose_goal(tm: TaskManager, goal: str, priority: str = "medium", task_type: str = "feature"):
+    """Decompose a goal into sub-tasks."""
+    print(f"\n🧠 Decomposing goal: {goal}...")
+    task_ids = await tm.decompose_and_add_tasks(goal, priority, task_type)
+    print(f"✅ Successfully created {len(task_ids)} sub-tasks: {', '.join(task_ids)}")
+    return task_ids
 
 
 async def batch_task(tm: TaskManager, task_id: str):
@@ -284,6 +313,56 @@ async def run_heartbeat(tm: TaskManager, client_id: str | None = None):
         await asyncio.sleep(30)
 
 
+async def generate_docs():
+    """Generate API documentation for core managers."""
+    print("\n📚 Generating API documentation...")
+    from scripts.docs_generator import DocsGenerator
+    generator = DocsGenerator()
+    generator.run()
+    print("\n✅ Documentation generated in docs/api/")
+
+
+async def run_devtoys(task_name: str, text: str = "", pattern: str = ""):
+    """Run a DevToys utility."""
+    print(f"\n🛠️  Running DevToys task: {task_name}...")
+    from plugins.devtoys.devtoys_plugin import DevToysPlugin
+    from plugins.devtoys.config import DevToysConfig
+    
+    config = DevToysConfig(sdk_path=Path(".")) # Dummy path for now
+    plugin = DevToysPlugin(config)
+    
+    result = await plugin.run_task(task_name, text=text, pattern=pattern)
+    print(f"\nResult:\n{result}")
+
+
+async def run_ngrok(action: str, port: int = 8000):
+    """Manage ngrok tunnel."""
+    from core.services.ngrok import NgrokPlugin, NgrokConfig
+    from pydantic import SecretStr
+    import os
+    
+    auth_token = os.getenv("NGROK_AUTH_TOKEN", "dummy_token")
+    config = NgrokConfig(auth_token=SecretStr(auth_token), port=port)
+    plugin = NgrokPlugin(config)
+    
+    if action == "start":
+        print(f"\n🚀 Starting ngrok tunnel on port {port}...")
+        url = await plugin.start()
+        if url:
+            print(f"✅ Tunnel started: {url}")
+        else:
+            print("❌ Failed to start tunnel")
+    elif action == "stop":
+        print("\n🛑 Stopping ngrok tunnel...")
+        await plugin.stop()
+        print("✅ Tunnel stopped")
+    elif action == "status":
+        status = plugin.status
+        print(f"\n📊 ngrok Status:")
+        print(f"  Running: {status['is_running']}")
+        print(f"  URL: {status['public_url']}")
+
+
 async def subscribe_tasks(client_id: str | None = None):
     """Subscribe to real-time task updates via gRPC."""
     import grpc
@@ -400,6 +479,85 @@ async def main():
                 if len(sys.argv) > idx + 1:
                     client_id = sys.argv[idx + 1]
             await subscribe_tasks(client_id)
+            
+        elif command == "docs-generate":
+            await generate_docs()
+            
+        elif command == "devtoys":
+            if len(sys.argv) < 3:
+                print("❌ Error: task_name required")
+                sys.exit(1)
+            
+            task_name = sys.argv[2]
+            text = ""
+            pattern = ""
+            
+            if "--text" in sys.argv:
+                text = sys.argv[sys.argv.index("--text") + 1]
+            if "--pattern" in sys.argv:
+                pattern = sys.argv[sys.argv.index("--pattern") + 1]
+                
+            await run_devtoys(task_name, text, pattern)
+
+        elif command == "ngrok":
+            if len(sys.argv) < 3:
+                print("❌ Error: action [start|stop|status] required")
+                sys.exit(1)
+            
+            action = sys.argv[2]
+            port = 8000
+            if "--port" in sys.argv:
+                port = int(sys.argv[sys.argv.index("--port") + 1])
+                
+            await run_ngrok(action, port)
+
+        elif command == "add":
+            priority = "medium"
+            title = ""
+            description = ""
+            task_type = "feature"
+            depends_on = "-"
+            
+            if "--priority" in sys.argv:
+                priority = sys.argv[sys.argv.index("--priority") + 1]
+            if "--title" in sys.argv:
+                title = sys.argv[sys.argv.index("--title") + 1]
+            if "--description" in sys.argv:
+                description = sys.argv[sys.argv.index("--description") + 1]
+            if "--type" in sys.argv:
+                task_type = sys.argv[sys.argv.index("--type") + 1]
+            if "--depends" in sys.argv:
+                depends_on = sys.argv[sys.argv.index("--depends") + 1]
+                
+            if not title:
+                print("❌ Error: --title required")
+                sys.exit(1)
+                
+            await add_task(tm, priority, title, description, task_type, depends_on)
+            
+        elif command == "complete":
+            if len(sys.argv) < 3:
+                print("❌ Error: task_id required")
+                sys.exit(1)
+            await complete_task(tm, sys.argv[2])
+
+        elif command == "decompose":
+            goal = ""
+            priority = "medium"
+            task_type = "feature"
+
+            if "--goal" in sys.argv:
+                goal = sys.argv[sys.argv.index("--goal") + 1]
+            if "--priority" in sys.argv:
+                priority = sys.argv[sys.argv.index("--priority") + 1]
+            if "--type" in sys.argv:
+                task_type = sys.argv[sys.argv.index("--type") + 1]
+
+            if not goal:
+                print("❌ Error: --goal required")
+                sys.exit(1)
+
+            await decompose_goal(tm, goal, priority, task_type)
             
         else:
             print(f"❌ Unknown command: {command}")

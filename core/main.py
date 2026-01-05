@@ -1,102 +1,37 @@
 import asyncio
 import sys
 import argparse
+import uvicorn
 from loguru import logger
 from typing import Optional
 from core.config.manager import load_config
 from core.ipc.server import serve_ipc
-from core.handoff.manager import HandoffManager
+from core.web.app import create_app
 
 class TaskCLI:
     """CLI interface for task management operations"""
     
-    def __init__(self, handoff: HandoffManager):
-        self.handoff = handoff
+    def __init__(self, task_manager):
+        self.task_manager = task_manager
     
     def create_task(self, title: str, priority: str = "Medium", depends: Optional[str] = None, description: Optional[str] = None):
         """Create a new task"""
-        _, tasks, _ = self.handoff.parse_board()
-        
-        # Generate next task ID
-        max_id = max([int(t['id'].split('-')[1]) for t in tasks if t['id'].startswith('AAS-')], default=106)
-        new_id = f"AAS-{max_id + 1}"
-        
-        # Format dependencies
-        deps_str = depends if depends else "-"
-        desc_str = description if description else title
-        
-        # Read current board
-        with open("handoff/ACTIVE_TASKS.md", "r") as f:
-            content = f.read()
-        
-        # Add to task table
-        import datetime
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        new_row = f" | {new_id} | {priority} | {title} | {deps_str} | queued | - | {today} | {today} | \n"
-        
-        # Insert before "## Task Details"
-        content = content.replace("\n## Task Details", f"{new_row}\n## Task Details")
-        
-        # Add task detail section
-        detail = f"\n### {new_id}: {title}\n- **Description**: {desc_str}\n"
-        if depends:
-            detail += f"- **Dependencies**: {depends}\n"
-        detail += f"- **Priority**: {priority}\n- **Type**: enhancement\n"
-        
-        content += detail
-        
-        # Write back
-        with open("handoff/ACTIVE_TASKS.md", "w") as f:
-            f.write(content)
-        
+        new_id = self.task_manager.add_task(
+            priority=priority,
+            title=title,
+            description=description or title,
+            depends_on=depends or "-"
+        )
         print(f"\n[OK] Created task {new_id}: {title}")
-        print(f"     Priority: {priority} | Dependencies: {deps_str}\n")
+        print(f"     Priority: {priority} | Dependencies: {depends or '-'}\n")
         return new_id
     
     def start_task(self, task_id: str, actor: str = "Copilot"):
         """Start (claim) a task"""
-        _, tasks, status_map = self.handoff.parse_board()
-        
-        # Find task
-        task = next((t for t in tasks if t['id'] == task_id), None)
+        task = self.task_manager.claim_task(task_id=task_id, actor_name=actor)
         if not task:
-            print(f"\n[ERROR] Task {task_id} not found\n")
+            print(f"\n[ERROR] Task {task_id} not found or cannot be claimed\n")
             return False
-        
-        # Check if already started
-        if task['status'] != 'queued':
-            print(f"\n[ERROR] Task {task_id} is already {task['status']}\n")
-            return False
-        
-        # Check dependencies
-        if task['depends_on'] and task['depends_on'] != '-':
-            dep_ids = [d.strip() for d in task['depends_on'].split(',')]
-            unmet = [d for d in dep_ids if status_map.get(d.split()[0]) != 'Done' and '[OK]' not in d]
-            if unmet:
-                print(f"\n[ERROR] Cannot start {task_id} - blocked by: {', '.join(unmet)}\n")
-                return False
-        
-        # Update status
-        with open("handoff/ACTIVE_TASKS.md", "r") as f:
-            content = f.read()
-        
-        import datetime, re
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
-        
-        # Update table row
-        old_row = f" | {task_id} | {task['priority']} | {task['title']} | {task['depends_on']} | queued | - |"
-        new_row = f" | {task_id} | {task['priority']} | {task['title']} | {task['depends_on']} | In Progress | {actor} |"
-        content = content.replace(old_row, new_row)
-        
-        # Update the date in the row
-        content = re.sub(
-            rf"\| {task_id} \| {task['priority']} \| {task['title']} \| {task['depends_on']} \| In Progress \| {actor} \| [^|]+ \| [^|]+ \|",
-            f"| {task_id} | {task['priority']} | {task['title']} | {task['depends_on']} | In Progress | {actor} | {task.get('created', today)} | {today} |",
-            content
-        )
-        
-        with open("handoff/ACTIVE_TASKS.md", "w") as f:
-            f.write(content)
         
         print(f"\n[OK] Task {task_id} claimed by {actor}")
         print(f"     Title: {task['title']}")
@@ -105,11 +40,15 @@ class TaskCLI:
     
     def complete_task(self, task_id: str):
         """Mark task as complete"""
-        return self.handoff.complete_task(task_id)
+        return self.task_manager.complete_task(task_id)
     
     def list_tasks(self, status: Optional[str] = None, priority: Optional[str] = None, assignee: Optional[str] = None):
         """List tasks with optional filters"""
-        _, tasks, _ = self.handoff.parse_board()
+        if not self.task_manager.handoff:
+            print("\n[ERROR] Handoff board not available\n")
+            return
+            
+        _, tasks, _ = self.task_manager.handoff.parse_board()
         
         # Apply filters
         filtered = tasks
@@ -137,67 +76,37 @@ class TaskCLI:
     
     def show_task(self, task_id: str):
         """Show full task details"""
-        _, tasks, status_map = self.handoff.parse_board()
-        
-        task = next((t for t in tasks if t['id'] == task_id), None)
-        if not task:
-            print(f"\n[ERROR] Task {task_id} not found\n")
+        status = self.task_manager.get_task_status(task_id)
+        if "error" in status:
+            print(f"\n[ERROR] {status['error']}\n")
             return
         
         print(f"\nTASK DETAILS: {task_id}")
         print("=" * 80)
-        print(f"Title:        {task['title']}")
-        print(f"Priority:     {task['priority']}")
-        print(f"Status:       {task['status']}")
-        print(f"Assignee:     {task.get('assignee', 'Unassigned')}")
-        print(f"Dependencies: {task.get('depends_on', 'None')}")
-        
-        # Check if blocked
-        if task['depends_on'] and task['depends_on'] != '-':
-            dep_ids = [d.strip() for d in task['depends_on'].split(',')]
-            unmet = [d for d in dep_ids if status_map.get(d.split()[0]) != 'Done' and '[OK]' not in d]
-            if unmet:
-                print(f"[!] BLOCKED BY:  {', '.join(unmet)}")
-        
-        print(f"Created:      {task.get('created', 'Unknown')}")
-        print(f"Updated:      {task.get('updated', 'Unknown')}")
+        print(f"Title:        {status['title']}")
+        print(f"Priority:     {status['priority']}")
+        print(f"Status:       {status['status']}")
+        print(f"Assignee:     {status.get('assignee', 'Unassigned')}")
+        print(f"Dependencies: {status.get('depends_on', 'None')}")
+        print(f"Created:      {status.get('created', 'Unknown')}")
+        print(f"Updated:      {status.get('updated', 'Unknown')}")
         print("=" * 80 + "\n")
     
     def available_tasks(self):
         """Show tasks that can be claimed (queued with met dependencies)"""
-        _, tasks, status_map = self.handoff.parse_board()
+        task = self.task_manager.find_next_claimable_task()
         
-        available = []
-        for t in tasks:
-            if t['status'] != 'queued':
-                continue
-            
-            # Check dependencies
-            if not t['depends_on'] or t['depends_on'] == '-':
-                available.append(t)
-            else:
-                dep_ids = [d.strip() for d in t['depends_on'].split(',')]
-                if all(status_map.get(d.split()[0]) == 'Done' or '[OK]' in d for d in dep_ids):
-                    available.append(t)
-        
-        if not available:
+        if not task:
             print("\n[!] No tasks available to claim right now\n")
             return
         
-        # Sort by priority
-        priority_order = {'Urgent': 0, 'High': 1, 'Medium': 2, 'Low': 3}
-        available.sort(key=lambda x: priority_order.get(x['priority'], 4))
-        
-        print(f"\nAVAILABLE TASKS ({len(available)})")
+        print(f"\nNEXT AVAILABLE TASK")
         print("-" * 100)
-        print(f"{'ID':<12} | {'Priority':<10} | {'Title'}")
+        print(f"ID:       {task['id']}")
+        print(f"Priority: {task['priority']}")
+        print(f"Title:    {task['title']}")
         print("-" * 100)
-        
-        for t in available:
-            print(f"{t['id']:<12} | {t['priority']:<10} | {t['title']}")
-        
-        print("-" * 100)
-        print(f"\nUse: python -m core.main task start <ID> [actor_name]\n")
+        print(f"\nUse: python -m core.main task start {task['id']} [actor_name]\n")
 
 async def main():
     logger.info("Initializing Aaroneous Automation Suite (AAS) Hub...")
@@ -209,9 +118,12 @@ async def main():
         logger.critical("Failed to load configuration. Hub cannot start.")
         return
 
-    # 2. Initialize Handoff Manager
-    handoff = HandoffManager()
-    task_cli = TaskCLI(handoff)
+    # 2. Initialize Manager Hub (Unified access to all managers)
+    from core.managers import ManagerHub
+    hub = ManagerHub.create(config=config)
+    
+    # 3. Initialize Task CLI
+    task_cli = TaskCLI(hub.tasks)
     
     # Handle CLI commands
     if len(sys.argv) > 1:
@@ -313,11 +225,183 @@ async def main():
                 print(f"\n[ERROR] Unknown task command: {subcmd}\n")
             
             return
+
+        # Workspace hygiene and health
+        if cmd == "workspace":
+            from core.managers.workspace import WorkspaceCoordinator
+            wc = WorkspaceCoordinator()
+            
+            if len(sys.argv) < 3:
+                print("\n🧹 Workspace Management\n")
+                print("Available commands:")
+                print("  report     - Generate workspace health report")
+                print("  defrag     - Consolidate build outputs and docs")
+                print("  cleanup    - Remove duplicates and temp files")
+                print("  diagnose   - Capture diagnostic pack\n")
+                print("Usage: python -m core.main workspace <command>\n")
+                return
+            
+            subcmd = sys.argv[2].lower()
+            
+            if subcmd == "report":
+                report = wc.generate_workspace_report()
+                print(f"\n--- WORKSPACE HEALTH REPORT ---")
+                print(f"Health Score: {report['health_score']}")
+                print(f"Duplicates:   {report['duplicates']['redundant_files']} files ({report['duplicates']['wasted_space_mb']} MB)")
+                print(f"Temp Files:   {report['temp_files']['count']} files ({report['temp_files']['wasted_space_mb']} MB)")
+                print(f"Large Files:  {report['large_files']['count']} (>50MB)")
+                print(f"Runaway Bot:  {'YES' if report['runaway_bot_check']['is_runaway'] else 'No'}")
+                print("-" * 30 + "\n")
+                wc.save_report(report)
+            
+            elif subcmd == "defrag":
+                results = wc.defrag_workspace(dry_run=False)
+                print("\n✓ Defragmentation complete:")
+                for r in results:
+                    print(f"  - {r}")
+                print()
+            
+            elif subcmd == "cleanup":
+                deleted_dupes = wc.cleanup_duplicates(dry_run=False)
+                deleted_temp = wc.cleanup_temp_files(dry_run=False)
+                print(f"\n✓ Cleanup complete:")
+                print(f"  - Removed {len(deleted_dupes)} duplicate files")
+                print(f"  - Removed {len(deleted_temp)} temporary files\n")
+            
+            elif subcmd == "diagnose":
+                path = wc.capture_diagnostic_pack()
+                print(f"\n✓ Diagnostic pack captured: {path}\n")
+            
+            elif subcmd == "audit":
+                print("\n🔍 Running AI-Readiness Audit...")
+                from core.batch.task_generator import TaskGenerator
+                # Mocking dependencies for audit
+                tg = TaskGenerator(None, None, wc)
+                suggestions = await tg.suggest_improvements()
+                ai_tasks = [s for s in suggestions if s.get('type') == 'ai_readiness']
+                
+                if ai_tasks:
+                    print(f"Found {len(ai_tasks)} AI-readiness gaps:")
+                    for task in ai_tasks:
+                        print(f"  - {task['title']}")
+                        print(f"    {task['description']}")
+                else:
+                    print("✓ No AI-readiness gaps found!")
+                print()
+
+            elif subcmd == "patch":
+                if len(sys.argv) < 4:
+                    print("\nUsage: python -m core.main workspace patch <module_name>\n")
+                    return
+                module_name = sys.argv[3]
+                if hub.patch.reload_module(module_name):
+                    print(f"\n✓ Successfully patched module: {module_name}\n")
+                else:
+                    print(f"\n❌ Failed to patch module: {module_name}\n")
+
+            else:
+                print(f"\n❌ Unknown workspace command: {subcmd}\n")
+            
+            return
+        
+        # Batch operations (50% cost savings)
+        if cmd == "batch":
+            if not hub.batch_manager:
+                print("\n❌ Batch API not configured - set OPENAI_API_KEY in .env\n")
+                return
+            
+            if len(sys.argv) < 3:
+                print("\n🚀 Batch Operations (50% Cost Savings, ≤24h Completion)\n")
+                print("Available commands:")
+                print("  submit [max]   - Submit eligible tasks (default: 50, use aggressively!)")
+                print("  status         - List all active batches")
+                print("  check <id>     - Check specific batch status")
+                print("  task <id>      - Batch a single task\n")
+                print("💡 Best Practice: Batch aggressively - all tasks complete within 24 hours\n")
+                print("Usage: python -m core.main batch <command>\n")
+                return
+            
+            subcmd = sys.argv[2].lower()
+            
+            if subcmd == "submit":
+                max_tasks = int(sys.argv[3]) if len(sys.argv) > 3 else 50
+                unbatched = hub.tasks.find_unbatched_tasks(max_count=max_tasks)
+                
+                if not unbatched:
+                    print("\n[!] No eligible tasks for batching\n")
+                    return
+                
+                print(f"\n[*] Found {len(unbatched)} unbatched tasks")
+                batch_id = await hub.tasks.batch_multiple_tasks(max_tasks=max_tasks)
+                
+                if batch_id:
+                    print(f"\n✅ Batch submitted: {batch_id}")
+                    print(f"   Tasks: {len(unbatched)}")
+                    print(f"   Cost savings: ~50%\n")
+                else:
+                    print("\n❌ Batch submission failed\n")
+            
+            elif subcmd == "status":
+                active = hub.batch_manager.list_active_batches()
+                if not active:
+                    print("\n[!] No active batches\n")
+                    return
+                
+                print(f"\nACTIVE BATCHES ({len(active)})")
+                print("-" * 80)
+                for b in active:
+                    print(f"ID:     {b['id']}")
+                    print(f"Status: {b['status']}")
+                    if b.get('metadata'):
+                        print(f"Meta:   {b['metadata']}")
+                    print("-" * 80)
+                print()
+            
+            elif subcmd == "check":
+                if len(sys.argv) < 4:
+                    print("\nUsage: python -m core.main batch check <batch_id>\n")
+                    return
+                
+                batch_id = sys.argv[3]
+                try:
+                    status = hub.batch_manager.get_batch_status(batch_id)
+                    print(f"\nBATCH STATUS: {batch_id}")
+                    print("=" * 80)
+                    print(f"Status:    {status['status']}")
+                    print(f"Total:     {status['request_counts']['total']}")
+                    print(f"Completed: {status['request_counts']['completed']}")
+                    print(f"Failed:    {status['request_counts']['failed']}")
+                    print("=" * 80 + "\n")
+                except Exception as e:
+                    print(f"\n❌ Error: {e}\n")
+            
+            elif subcmd == "task":
+                if len(sys.argv) < 4:
+                    print("\nUsage: python -m core.main batch task <task_id>\n")
+                    return
+                task_id = sys.argv[3]
+                batch_id = await hub.tasks.batch_task(task_id)
+                if batch_id:
+                    print(f"\n✓ Batch submitted: {batch_id}\n")
+                else:
+                    print(f"\n❌ Failed to batch task {task_id}\n")
+            
+            elif subcmd == "multiple":
+                batch_id = await hub.tasks.batch_multiple_tasks()
+                if batch_id:
+                    print(f"\n✓ Batch submitted: {batch_id}\n")
+                else:
+                    print(f"\n❌ No tasks available to batch or batching failed\n")
+            
+            else:
+                print(f"\n❌ Unknown batch command: {subcmd}\n")
+            
+            return
         
         # Legacy commands (maintained for backward compatibility)
         if cmd == "claim":
             actor = sys.argv[2] if len(sys.argv) > 2 else "Sixth"
-            task = handoff.claim_next_task(actor)
+            task = hub.tasks.claim_task(actor_name=actor)
             if task:
                 print(f"\n--- TASK CLAIMED BY {actor.upper()} ---")
                 print(f"ID: {task['id']}")
@@ -332,39 +416,50 @@ async def main():
                 print("\nUsage: python core/main.py complete [TaskID]\n")
                 return
             task_id = sys.argv[2]
-            if handoff.complete_task(task_id):
+            if hub.tasks.complete_task(task_id):
                 print(f"\nTask {task_id} marked as Done.\n")
             else:
                 print(f"\nTask {task_id} not found or already completed.\n")
             return
         elif cmd == "board":
-            _, tasks, status_map = handoff.parse_board()
-            blocked_tasks = handoff.get_blocked_tasks()
+            if not hub.tasks.handoff:
+                print("\n[ERROR] Handoff board not available\n")
+                return
+            _, tasks, status_map = hub.tasks.handoff.parse_board()
             
-            print("\n--- AAS ACTIVE TASK BOARD ---")
-            print(f"{'ID':<10} | {'Priority':<10} | {'Status':<12} | {'Title'}")
-            print("-" * 80)
-            for t in tasks:
-                # Check if blocked
-                blocked = False
-                dep_str = ""
-                if t["depends_on"] and t["depends_on"] != "-":
-                    dep_ids = [d.strip() for d in t["depends_on"].split(",")]
-                    blocked = any(status_map.get(dep_id) != "Done" for dep_id in dep_ids)
-                    dep_str = f" (Blocked by: {t['depends_on']})" if blocked else ""
-                
-                status = f"BLOCKED" if blocked and t["status"] == "queued" else t["status"]
-                print(f"{t['id']:<10} | {t['priority']:<10} | {status:<12} | {t['title']}{dep_str}")
-            print("-" * 80)
+            # Filter for claimed but uncompleted tasks (In Progress)
+            active_tasks = [t for t in tasks if t["status"] == "In Progress"]
             
+            # Priority mapping for sorting
+            priority_order = {"High": 0, "Medium": 1, "Low": 2}
+            active_tasks.sort(key=lambda x: priority_order.get(x["priority"], 3))
+            
+            print("\n--- AAS ACTIVE TASK BOARD (In Progress) ---")
+            
+            if not active_tasks:
+                print("\n[!] No tasks currently in progress.\n")
+            else:
+                current_priority = None
+                for t in active_tasks:
+                    if t["priority"] != current_priority:
+                        current_priority = t["priority"]
+                        print(f"\n[{current_priority.upper()} PRIORITY]")
+                        print("-" * 80)
+                        print(f"{'ID':<10} | {'Assignee':<12} | {'Title'}")
+                        print("-" * 80)
+                    
+                    assignee = t.get('assignee', 'Unassigned')
+                    print(f"{t['id']:<10} | {assignee:<12} | {t['title'][:60]}")
+            
+            print("\n" + "=" * 80)
             # Show summary statistics
-            total = len(tasks)
             done = sum(1 for t in tasks if t["status"] == "Done")
-            in_progress = sum(1 for t in tasks if t["status"] == "In Progress")
+            in_progress = len(active_tasks)
             queued = sum(1 for t in tasks if t["status"] == "queued")
+            blocked_tasks = hub.tasks.handoff.get_blocked_tasks()
             blocked_count = len(blocked_tasks)
             
-            print(f"\n Summary: {done} Done | {in_progress} In Progress | {queued} Queued | {blocked_count} Blocked")
+            print(f" Summary: {done} Done | {in_progress} In Progress | {queued} Queued | {blocked_count} Blocked")
             
             if blocked_tasks:
                 print(f"\n Blocked Tasks ({blocked_count}):")
@@ -376,7 +471,10 @@ async def main():
             print()
             return
         elif cmd == "blocked":
-            blocked_tasks = handoff.get_blocked_tasks()
+            if not hub.tasks.handoff:
+                print("\n[ERROR] Handoff board not available\n")
+                return
+            blocked_tasks = hub.tasks.handoff.get_blocked_tasks()
             
             if not blocked_tasks:
                 print("\n[OK] No blocked tasks! All dependencies are satisfied.\n")
@@ -393,18 +491,56 @@ async def main():
             print("\n" + "-" * 80)
             print(f"Total: {len(blocked_tasks)} tasks blocked\n")
             return
-    # 2. Initialize Manager Hub (Unified access to all managers)
-    from core.managers import ManagerHub
-    hub = ManagerHub.create(config=config)
-    
-    ipc_task = asyncio.create_task(serve_ipc(port=config.ipc_port, service=hub.ipc))
 
-    logger.success("AAS Hub is now running and awaiting Maelstrom connection.")
+    # 4. Start IPC and Web Servers
+    ipc_task = asyncio.create_task(serve_ipc(port=config.ipc_port, service=hub.ipc))
+    
+    # Start FastAPI in a separate thread or as a task
+    app = create_app(hub)
+    web_config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
+    web_server = uvicorn.Server(web_config)
+    
+    # 5. Start background batch monitor (always running, checks config dynamically)
+    batch_monitor_task = None
+    if hub.batch_manager:
+        async def run_batch_monitor():
+            """Background task to monitor and auto-submit batch jobs (checks config on each iteration)."""
+            logger.info("Starting background batch monitor (60s scan interval, toggle-enabled)")
+            while True:
+                try:
+                    await asyncio.sleep(60)  # Check every minute
+                    
+                    # Check if auto-monitor is enabled (allows runtime toggling)
+                    if not hub.config.batch_auto_monitor:
+                        continue
+                    
+                    # Find eligible unbatched tasks (scan up to 50)
+                    unbatched = hub.tasks.find_unbatched_tasks(max_count=50)
+                    if len(unbatched) >= 3:  # Batch aggressively when 3+ tasks available
+                        logger.info(f"Found {len(unbatched)} unbatched tasks - auto-submitting (≤24h completion)")
+                        batch_id = await hub.tasks.batch_multiple_tasks(max_tasks=50)
+                        if batch_id:
+                            logger.success(f"Auto-submitted batch: {batch_id} ({len(unbatched)} tasks)")
+                except Exception as e:
+                    logger.error(f"Batch monitor error: {e}")
+        
+        batch_monitor_task = asyncio.create_task(run_batch_monitor())
+    
+    logger.success("AAS Hub is now running (IPC: 50051, Web: 8000)")
+    if batch_monitor_task:
+        status = "ENABLED" if config.batch_auto_monitor else "DISABLED"
+        logger.info(f"Batch auto-monitor: {status} (aggressive batching, ≤24h completion, runtime toggle)")
+
     
     try:
-        await asyncio.gather(ipc_task)
+        tasks = [ipc_task, web_server.serve()]
+        if batch_monitor_task:
+            tasks.append(batch_monitor_task)
+        await asyncio.gather(*tasks)
     except asyncio.CancelledError:
         logger.info("AAS Hub shutting down...")
+        if batch_monitor_task:
+            batch_monitor_task.cancel()
 
 if __name__ == "__main__":
     asyncio.run(main())

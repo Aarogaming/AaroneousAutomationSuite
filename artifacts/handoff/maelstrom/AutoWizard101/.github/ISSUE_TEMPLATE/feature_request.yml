@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an enhancement
+labels: []
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What is the user problem?
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks / guardrails
+      description: Note runtime guards (e.g., ALLOW_LIVE_AUTOMATION), policy boundaries, or safety considerations.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria

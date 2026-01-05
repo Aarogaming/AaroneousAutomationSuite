@@ -1,41 +1,53 @@
 {
-  "timestamp": "2026-01-02T20:48:39.921589",
+  "timestamp": "2026-01-04T03:04:48.993795",
   "workspace_root": "C:\\Users\\aarog\\Documents\\GitHub\\AaroneousAutomationSuite",
   "duplicates": {
-    "duplicate_sets": 0,
-    "redundant_files": 0,
-    "wasted_space_mb": 0
+    "duplicate_sets": 11,
+    "redundant_files": 40,
+    "wasted_space_mb": 0.52
   },
   "large_files": {
-    "count": 7,
+    "count": 27,
     "top_10": [
       {
-        "path": "game_manager\\maelstrom\\Installer\\publish\\Installer.exe",
-        "size_mb": 242.19
+        "path": "artifacts\\builds\\maelstrom_publish\\win-x64\\ProjectMaelstrom.exe.part001",
+        "size_mb": 45.0
       },
       {
-        "path": "game_manager\\maelstrom\\publish\\win-x64\\ProjectMaelstrom.exe",
-        "size_mb": 218.52
+        "path": "artifacts\\builds\\maelstrom_publish\\win-x64\\ProjectMaelstrom.exe.part002",
+        "size_mb": 45.0
       },
       {
-        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\win-x86\\ProjectMaelstrom.exe",
-        "size_mb": 127.42
+        "path": "artifacts\\builds\\maelstrom_publish\\win-x64\\ProjectMaelstrom.exe.part003",
+        "size_mb": 45.0
       },
       {
-        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\win-x64\\ProjectMaelstrom-win-x64.zip",
-        "size_mb": 109.06
+        "path": "artifacts\\builds\\maelstrom_publish\\win-x64\\ProjectMaelstrom.exe.part004",
+        "size_mb": 45.0
       },
       {
-        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\ProjectMaelstrom-win-x64.zip",
-        "size_mb": 109.05
+        "path": "game_manager\\maelstrom\\Installer\\publish\\Installer.exe.part001",
+        "size_mb": 45.0
       },
       {
-        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\ProjectMaelstrom-win-x86.zip",
-        "size_mb": 83.7
+        "path": "game_manager\\maelstrom\\Installer\\publish\\Installer.exe.part002",
+        "size_mb": 45.0
       },
       {
-        "path": "game_manager\\maelstrom\\Plugins\\SampleOverlayWidgetsPlugin\\bin\\Debug\\net9.0-windows10.0.22621.0\\Scripts\\Library\\Deimos-Wizard101\\Deimos.exe",
-        "size_mb": 17.3
+        "path": "game_manager\\maelstrom\\Installer\\publish\\Installer.exe.part003",
+        "size_mb": 45.0
+      },
+      {
+        "path": "game_manager\\maelstrom\\Installer\\publish\\Installer.exe.part004",
+        "size_mb": 45.0
+      },
+      {
+        "path": "game_manager\\maelstrom\\Installer\\publish\\Installer.exe.part005",
+        "size_mb": 45.0
+      },
+      {
+        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\ProjectMaelstrom-win-x64.zip.part001",
+        "size_mb": 45.0
       }
     ]
   },
@@ -45,10 +57,10 @@
   },
   "runaway_bot_check": {
     "is_runaway": false,
-    "recent_files_count": 2,
-    "files_per_minute": 0.4,
+    "recent_files_count": 3,
+    "files_per_minute": 0.6,
     "recent_duplicates": 0,
-    "max_files_in_single_dir": 1,
+    "max_files_in_single_dir": 2,
     "time_window_minutes": 5,
     "threshold_exceeded": {
       "excessive_creation": false,
@@ -56,11 +68,10 @@
       "directory_overload": false
     }
   },
-  "health_score": "Excellent",
-  "task_board": {
-    "total_tasks": 8,
-    "active_tasks": 0,
-    "blocked_tasks": 0,
-    "health_score": "Good"
-  }
+  "git_compatibility": {
+    "is_compatible": true,
+    "limit_mb": 50,
+    "issues": []
+  },
+  "health_score": "Excellent"
 }

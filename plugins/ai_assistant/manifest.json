@@ -1,0 +1,8 @@
+{
+  "name": "ai_assistant",
+  "version": "1.0.0",
+  "description": "Onboard AI Assistant with local LLM support",
+  "entry_point": "src/assistant.py",
+  "dependencies": ["openai", "pydantic", "loguru"],
+  "capabilities": ["chat", "strategy_generation", "research"]
+}

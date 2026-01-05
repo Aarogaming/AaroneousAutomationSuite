@@ -17,11 +17,12 @@ from core.managers.protocol import ManagerProtocol
 class BatchManager(ManagerProtocol):
     """Unified manager for OpenAI Batch API operations."""
     
-    def __init__(self, config):
+    def __init__(self, config, ws_manager=None):
         self.config = config
         self.client = openai.OpenAI(api_key=config.openai_api_key.get_secret_value())
         self.batch_dir = Path("artifacts/batch")
         self.batch_dir.mkdir(parents=True, exist_ok=True)
+        self.ws_manager = ws_manager
         logger.info("BatchManager initialized")
 
     async def submit_batch(
@@ -52,6 +53,19 @@ class BatchManager(ManagerProtocol):
             )
             
             logger.success(f"Submitted batch {batch.id}: {description}")
+            
+            # Broadcast event if WebSocket manager available
+            if self.ws_manager:
+                from datetime import datetime
+                import asyncio
+                asyncio.create_task(self.ws_manager.broadcast({
+                    "event_type": "BATCH_SUBMITTED",
+                    "batch_id": batch.id,
+                    "description": description,
+                    "task_count": len(requests),
+                    "timestamp": datetime.now().isoformat()
+                }))
+            
             return batch.id
             
         except Exception as e:

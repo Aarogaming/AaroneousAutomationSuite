@@ -1,0 +1,25 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node", "vitest/globals"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@repo/db/*": ["../database/src/*"],
+      "@repo/shared/*": ["src/*"],
+      "@repo/components/*": ["../components/src/*"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "__tests__/**/*",
+    "jest.*.ts",
+    "vitest.*.ts",
+    "../database/src/**/*",
+    "../components/src/**/*",
+  ],
+  "exclude": ["node_modules", "dist"]
+}

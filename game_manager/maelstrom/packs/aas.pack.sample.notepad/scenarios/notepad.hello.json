@@ -1,0 +1,9 @@
+{
+  "id": "notepad.hello",
+  "summary": "Open Notepad and type Hello.",
+  "steps": [
+    "Launch notepad",
+    "Type: Hello from AAS"
+  ]
+}
+

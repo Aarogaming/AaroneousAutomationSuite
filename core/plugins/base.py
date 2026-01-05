@@ -23,7 +23,21 @@ class PluginBase(ABC):
         self.name = name
         self.config = config
         self.hub = hub
+        self._ws_client = None
         logger.info(f"Plugin '{self.name}' initialized")
+
+    async def broadcast_event(self, event_type: str, payload: Dict[str, Any]):
+        """
+        Broadcast an event to the Hub via WebSockets.
+        """
+        if hasattr(self.hub, "ws") and self.hub.ws:
+            full_payload = {
+                "plugin": self.name,
+                "event_type": event_type,
+                "data": payload,
+                "timestamp": getattr(self.hub, "get_timestamp", lambda: None)()
+            }
+            await self.hub.ws.broadcast(full_payload)
 
     @abstractmethod
     async def setup(self) -> bool:
@@ -52,3 +66,17 @@ class PluginBase(ABC):
             "type": self.__class__.__name__,
             "version": getattr(self, "version", "1.0.0")
         }
+
+    def safe_execute(self, func, *args, **kwargs):
+        """
+        Execute a function with automated self-healing on failure.
+        """
+        if hasattr(self.hub, "self_healing"):
+            return self.hub.self_healing.wrap_execute(func, *args, **kwargs)
+        else:
+            # Fallback if self_healing manager is not available
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Plugin '{self.name}' execution failed: {e}")
+                raise

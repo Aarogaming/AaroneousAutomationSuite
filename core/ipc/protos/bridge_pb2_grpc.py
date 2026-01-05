@@ -50,6 +50,16 @@ class BridgeStub(object):
                 request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskSubscriptionRequest.SerializeToString,
                 response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.FromString,
                 _registered_method=True)
+        self.GetConfig = channel.unary_unary(
+                '/aas.ipc.Bridge/GetConfig',
+                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigRequest.SerializeToString,
+                response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.FromString,
+                _registered_method=True)
+        self.SetConfig = channel.unary_unary(
+                '/aas.ipc.Bridge/SetConfig',
+                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SetConfigRequest.SerializeToString,
+                response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.FromString,
+                _registered_method=True)
 
 
 class BridgeServicer(object):
@@ -77,6 +87,20 @@ class BridgeServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetConfig(self, request, context):
+        """Get configuration from the centralized service
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetConfig(self, request, context):
+        """Set configuration in the centralized service
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_BridgeServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -94,6 +118,16 @@ def add_BridgeServicer_to_server(servicer, server):
                     servicer.SubscribeToTasks,
                     request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskSubscriptionRequest.FromString,
                     response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.SerializeToString,
+            ),
+            'GetConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetConfig,
+                    request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigRequest.FromString,
+                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.SerializeToString,
+            ),
+            'SetConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetConfig,
+                    request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SetConfigRequest.FromString,
+                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -178,6 +212,60 @@ class Bridge(object):
             '/aas.ipc.Bridge/SubscribeToTasks',
             core_dot_ipc_dot_protos_dot_bridge__pb2.TaskSubscriptionRequest.SerializeToString,
             core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/aas.ipc.Bridge/GetConfig',
+            core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigRequest.SerializeToString,
+            core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetConfig(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/aas.ipc.Bridge/SetConfig',
+            core_dot_ipc_dot_protos_dot_bridge__pb2.SetConfigRequest.SerializeToString,
+            core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.FromString,
             options,
             channel_credentials,
             insecure,

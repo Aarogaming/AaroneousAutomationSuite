@@ -1,0 +1,57 @@
+2026-01-04 06:09:13.139 | INFO     | __main__:main:112 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-04 06:09:13.159 | INFO     | core.database.manager:__init__:80 - Database initialized at artifacts\aas.db
+2026-01-04 06:09:13.215 | DEBUG    | core.database.manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-04 06:09:13.217 | INFO     | core.database.manager:create_tables:85 - Database tables created successfully
+2026-01-04 06:09:13.237 | DEBUG    | core.config.manager:from_db:276 - Overrode openai_model from database
+2026-01-04 06:09:13.237 | DEBUG    | core.config.manager:from_db:276 - Overrode debug_mode from database
+2026-01-04 06:09:13.238 | DEBUG    | core.config.manager:from_db:276 - Overrode projects from database
+2026-01-04 06:09:13.238 | WARNING  | core.database.repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-04 06:09:13.239 | ERROR    | core.database.repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-04 06:09:13.239 | INFO     | core.config.manager:load_config:303 - \u2713 Resilient Configuration System loaded successfully
+2026-01-04 06:09:13.240 | DEBUG    | core.config.manager:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-04 06:09:13.681 | INFO     | core.database.manager:__init__:80 - Database initialized at artifacts\aas.db
+2026-01-04 06:09:13.681 | DEBUG    | core.database.manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-04 06:09:13.681 | DEBUG    | core.database.manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-04 06:09:13,682 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-04 06:09:13,682 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("tasks")
+2026-01-04 06:09:13,682 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,682 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("task_executions")
+2026-01-04 06:09:13,682 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,682 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("events")
+2026-01-04 06:09:13,682 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("plugins")
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("config_entries")
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("clients")
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("agent_sessions")
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("help_requests")
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("task_locks")
+2026-01-04 06:09:13,683 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,684 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("knowledge_nodes")
+2026-01-04 06:09:13,684 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,684 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("knowledge_edges")
+2026-01-04 06:09:13,684 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,684 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("handoffs")
+2026-01-04 06:09:13,684 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-04 06:09:13,684 INFO sqlalchemy.engine.Engine COMMIT
+2026-01-04 06:09:13.684 | INFO     | core.database.manager:create_tables:85 - Database tables created successfully
+2026-01-04 06:09:13.685 | INFO     | core.managers.artifacts:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-04 06:09:13.685 | INFO     | core.managers.workspace:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-04 06:09:13.728 | INFO     | core.managers.batch:__init__:26 - BatchManager initialized
+2026-01-04 06:09:13.728 | INFO     | core.managers.patch:__init__:20 - PatchManager initialized
+2026-01-04 06:09:13.736 | INFO     | core.managers.batch:__init__:26 - BatchManager initialized
+2026-01-04 06:09:13.736 | INFO     | core.handoff.manager:__init__:21 - \u2713 Batch API processor initialized - 50% cost savings enabled
+2026-01-04 06:09:13.737 | INFO     | core.managers.tasks:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-04 06:09:13.737 | INFO     | core.managers:__init__:120 - ManagerHub initialized with unified dependency injection + intelligence
+2026-01-04 06:09:13.760 | SUCCESS  | __main__:main:529 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-04 06:09:13.760 | INFO     | __main__:main:532 - Batch auto-monitor: DISABLED (aggressive batching, \u226424h completion, runtime toggle)
+2026-01-04 06:09:13.763 | INFO     | core.ipc.server:serve_ipc:130 - Starting AAS IPC Bridge on port 50051...
+2026-01-04 06:09:13.763 | INFO     | __main__:run_batch_monitor:508 - Starting background batch monitor (60s scan interval, toggle-enabled)
+INFO:     Started server process [30424]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)

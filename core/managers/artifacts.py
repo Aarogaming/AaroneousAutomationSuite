@@ -26,6 +26,12 @@ class ArtifactManager(ManagerProtocol):
     """
     
     def __init__(self, base_dir: str = "artifacts"):
+        """
+        Initialize the ArtifactManager.
+
+        Args:
+            base_dir (str): The base directory for storing artifacts. Defaults to "artifacts".
+        """
         self.base_dir = Path(base_dir).resolve()
         self.handoff_dir = self.base_dir / "handoff"
         self.builds_dir = self.base_dir / "builds"
@@ -35,13 +41,21 @@ class ArtifactManager(ManagerProtocol):
         self._ensure_dirs()
         logger.info(f"ArtifactManager initialized at {self.base_dir}")
 
-    def _ensure_dirs(self):
+    def _ensure_dirs(self) -> None:
         """Ensure core artifact directories exist."""
         for d in [self.handoff_dir, self.builds_dir, self.reports_dir, self.ui_audits_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
     def get_task_dir(self, task_id: str) -> Path:
-        """Get the artifact directory for a specific task."""
+        """
+        Get the artifact directory for a specific task.
+
+        Args:
+            task_id (str): The unique identifier for the task.
+
+        Returns:
+            Path: The path to the task's artifact directory.
+        """
         task_dir = self.handoff_dir / task_id
         task_dir.mkdir(parents=True, exist_ok=True)
         return task_dir
@@ -68,6 +82,13 @@ class ArtifactManager(ManagerProtocol):
         target_dir.mkdir(parents=True, exist_ok=True)
         
         report_path = target_dir / name
+        
+        # Git-friendly size check
+        content_bytes = content.encode("utf-8")
+        size_mb = len(content_bytes) / (1024 * 1024)
+        if size_mb > 50:
+            logger.warning(f"Report {name} exceeds 50MB ({size_mb:.2f}MB). Consider splitting or external storage.")
+
         with open(report_path, "w", encoding="utf-8") as f:
             f.write(content)
             

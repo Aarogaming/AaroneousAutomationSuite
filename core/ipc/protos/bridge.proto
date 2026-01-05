@@ -12,6 +12,29 @@ service Bridge {
 
   // Subscribe to real-time task updates
   rpc SubscribeToTasks (TaskSubscriptionRequest) returns (stream TaskUpdate) {}
+
+  // Get configuration from the centralized service
+  rpc GetConfig (ConfigRequest) returns (ConfigResponse) {}
+
+  // Set configuration in the centralized service
+  rpc SetConfig (SetConfigRequest) returns (ConfigResponse) {}
+}
+
+message ConfigRequest {
+  string key = 1; // Optional: if empty, returns all non-secret configs
+}
+
+message SetConfigRequest {
+  string key = 1;
+  string value = 2;
+  string value_type = 3; // "string", "int", "bool", "json"
+  bool is_secret = 4;
+}
+
+message ConfigResponse {
+  bool success = 1;
+  string message = 2;
+  map<string, string> configs = 3; // key -> value (JSON stringified)
 }
 
 message TaskSubscriptionRequest {
