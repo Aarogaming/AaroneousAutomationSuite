@@ -322,3 +322,80 @@ class TaskLock(Base):
     
     def __repr__(self):
         return f"<TaskLock {self.task_id} by {self.session_id} ({self.lock_type})>"
+
+
+class KnowledgeNode(Base):
+    """
+    Node in the Multi-Modal Knowledge Graph.
+    Represents an entity, concept, error pattern, or solution.
+    """
+    __tablename__ = "knowledge_nodes"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    content = Column(Text, nullable=False)
+    node_type = Column(String(50), nullable=False)  # "error", "solution", "concept", "task_result"
+    
+    # Vector embedding (stored as BLOB for sqlite-vec)
+    embedding = Column(Text, nullable=True)  # JSON string or BLOB depending on implementation
+    
+    # Metadata
+    metadata_json = Column(JSON, nullable=True)
+    source_task_id = Column(String(20), ForeignKey("tasks.id"), nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relationships
+    source_task = relationship("Task")
+    
+    def __repr__(self):
+        return f"<KnowledgeNode {self.id}: {self.node_type} - {self.content[:30]}>"
+
+
+class KnowledgeEdge(Base):
+    """
+    Directed edge between KnowledgeNodes.
+    Represents relationships like "SOLVES", "CAUSED_BY", "RELATED_TO".
+    """
+    __tablename__ = "knowledge_edges"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source_id = Column(Integer, ForeignKey("knowledge_nodes.id"), nullable=False)
+    target_id = Column(Integer, ForeignKey("knowledge_nodes.id"), nullable=False)
+    relationship_type = Column(String(50), nullable=False)  # "solves", "causes", "related"
+    weight = Column(Integer, default=1)
+    
+    # Timestamps
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relationships
+    source = relationship("KnowledgeNode", foreign_keys=[source_id])
+    target = relationship("KnowledgeNode", foreign_keys=[target_id])
+    
+    def __repr__(self):
+        return f"<KnowledgeEdge {self.source_id} --[{self.relationship_type}]--> {self.target_id}>"
+
+
+class Handoff(Base):
+    """
+    Persistent record of agent handoffs for audit and context recovery.
+    """
+    __tablename__ = "handoffs"
+    
+    id = Column(String(50), primary_key=True)
+    task_id = Column(String(20), ForeignKey("tasks.id"), nullable=False)
+    source_agent = Column(String(50), nullable=False)
+    target_agent = Column(String(50), nullable=True)
+    
+    context_summary = Column(Text, nullable=False)
+    technical_details = Column(JSON, nullable=True)
+    relevant_files = Column(JSON, nullable=True)
+    pending_actions = Column(JSON, nullable=True)
+    
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relationships
+    task = relationship("Task")
+    
+    def __repr__(self):
+        return f"<Handoff {self.id} for {self.task_id}>"

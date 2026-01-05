@@ -1,8 +1,9 @@
-from typing import Optional, Any, Literal
+from typing import Optional, Any, Literal, Dict
 from pydantic import SecretStr, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from loguru import logger
 import json
+import os
 
 class AASConfig(BaseSettings):
     """
@@ -23,6 +24,11 @@ class AASConfig(BaseSettings):
         default="gpt-4",
         alias="OPENAI_MODEL",
         description="OpenAI model to use for AI assistant"
+    )
+    batch_auto_monitor: bool = Field(
+        default=False,
+        alias="BATCH_AUTO_MONITOR",
+        description="Enable automatic background batch monitoring and submission"
     )
     linear_api_key: Optional[SecretStr] = Field(
         default=None,
@@ -72,6 +78,13 @@ class AASConfig(BaseSettings):
         default="artifacts/handoff",
         alias="ARTIFACT_DIR",
         description="Directory for handoff artifacts and reports"
+    )
+
+    # ==================== Distribution & Privacy ====================
+    is_private_version: bool = Field(
+        default=False,
+        alias="IS_PRIVATE_VERSION",
+        description="Whether this is the private version with full features"
     )
     
     # ==================== Project Registry ====================
@@ -140,6 +153,50 @@ class AASConfig(BaseSettings):
         alias="NGROK_ENABLED",
         description="Enable ngrok tunneling for development"
     )
+    ngrok_auth_token: Optional[SecretStr] = Field(
+        default=None,
+        alias="NGROK_AUTH_TOKEN",
+        description="ngrok authentication token"
+    )
+    ngrok_region: str = Field(
+        default="us",
+        alias="NGROK_REGION",
+        description="ngrok region (us, eu, ap, au, sa, jp, in)"
+    )
+    ngrok_port: int = Field(
+        default=8000,
+        alias="NGROK_PORT",
+        description="Local port to expose via ngrok"
+    )
+    
+    # ==================== Penpot Design System ====================
+    penpot_enabled: bool = Field(
+        default=False,
+        alias="PENPOT_ENABLED",
+        description="Enable Penpot design system integration"
+    )
+    penpot_api_key: Optional[SecretStr] = Field(
+        default=None,
+        alias="PENPOT_API_KEY",
+        description="Penpot API authentication key"
+    )
+    penpot_api_url: str = Field(
+        default="https://design.penpot.app/api",
+        alias="PENPOT_API_URL",
+        description="Penpot API base URL"
+    )
+    
+    # ==================== DevToys SDK Extensions ====================
+    devtoys_enabled: bool = Field(
+        default=False,
+        alias="DEVTOYS_ENABLED",
+        description="Enable DevToys SDK extensions"
+    )
+    devtoys_sdk_path: Optional[str] = Field(
+        default=None,
+        alias="DEVTOYS_SDK_PATH",
+        description="Path to DevToys SDK installation"
+    )
     ngrok_authtoken: Optional[str] = Field(
         default=None,
         alias="NGROK_AUTHTOKEN",
@@ -194,9 +251,38 @@ class AASConfig(BaseSettings):
         case_sensitive=False
     )
 
-def load_config() -> AASConfig:
+    @classmethod
+    def from_db(cls, db_manager=None) -> "AASConfig":
+        """
+        Load configuration from database, with DB values taking precedence over environment variables.
+        """
+        from core.database.manager import get_db_manager
+        from core.database.repositories import ConfigRepository
+        
+        db_manager = db_manager or get_db_manager()
+        
+        # 1. Start with env-based config
+        config = cls() # type: ignore
+        
+        # 2. Override with DB values
+        try:
+            with db_manager.get_session() as session:
+                entries = ConfigRepository.get_all(session)
+                for entry in entries:
+                    key_str = str(entry.key)
+                    value = ConfigRepository.get(session, key_str)
+                    if value is not None and hasattr(config, key_str):
+                        setattr(config, key_str, value)
+                        logger.debug(f"Overrode {key_str} from database")
+        except Exception as e:
+            logger.warning(f"Failed to load configs from DB: {e}")
+
+        return config
+
+def load_config(use_db: bool = True) -> AASConfig:
     """
     Loads and validates the AAS configuration from environment variables and .env file.
+    Optionally merges with configuration from the database.
     
     Implements graceful fallback for non-critical errors:
     - Missing optional fields: Uses defaults
@@ -210,7 +296,10 @@ def load_config() -> AASConfig:
         SystemExit: If critical configuration (OPENAI_API_KEY) is missing
     """
     try:
-        config = AASConfig() # type: ignore
+        if use_db:
+            config = AASConfig.from_db()
+        else:
+            config = AASConfig() # type: ignore
         logger.info("✓ Resilient Configuration System loaded successfully")
         
         # Log configuration summary (without secrets)

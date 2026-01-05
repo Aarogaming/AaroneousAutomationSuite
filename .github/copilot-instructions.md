@@ -1,9 +1,20 @@
 # Aaroneous Automation Suite (AAS) - AI Agent Guidelines
 
+> **IMPORTANT**: Before starting work, review [AI_AGENT_GUIDELINES.md](../AI_AGENT_GUIDELINES.md) for collaboration protocols.  
+> Quick reference: [AGENTS.md](../AGENTS.md)
+
 ## Project Overview
 AAS is a Python-based orchestration hub for multi-purpose automation: game management (Wizard101), home automation, and AI-assisted research. It communicates with **Project Maelstrom** (C# game client) via gRPC and integrates with Linear for autonomous task management.
 
 **Key Architecture Pattern:** The "Autonomous Handoff Protocol (AHP)" - a feedback loop between AAS Hub, Linear, and AI agents (ChatGPT, Sixth) to delegate, execute, and report on tasks.
+
+## Agent Workflow
+1. **Check-In**: Identify yourself, review active work, acknowledge other agents
+2. **Evaluate**: Assess workspace health and task suitability
+3. **Plan**: Create clear execution plan with todo list
+4. **Execute**: Follow project standards, "leave it better"
+5. **Verify**: Test, lint, format before committing
+6. **Check-Out**: Report completion, handoff notes, improvements made
 
 ## Core Components
 
@@ -138,7 +149,8 @@ except SpecificError as e:
 ## Key Files to Review
 - [README.md](README.md) - Project mission and features
 - [ROADMAP.md](ROADMAP.md) - Current development phase
-- [EVOLUTION_PLAN.md](EVOLUTION_PLAN.md) - Long-term vision
+- [GAME_AUTOMATION_ROADMAP.md](GAME_AUTOMATION_ROADMAP.md) - ML/RL learning pipeline (6 phases)
+- [GAME_LEARNING_INTEGRATION.md](GAME_LEARNING_INTEGRATION.md) - Developer integration guide for ML
 - [AGENTS.md](AGENTS.md) - AI collaboration protocols (used by ChatGPT/Copilot)
 
 ## Testing Strategy

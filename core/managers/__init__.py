@@ -41,17 +41,24 @@ class ManagerHub:
     def __init__(self, config: Optional[Any] = None):
         """
         Initialize the manager hub and all core components.
+
+        Args:
+            config (Optional[Any]): AAS configuration instance. If None, loads default config.
         """
-        from core.config.manager import AASConfig
+        from core.config.manager import AASConfig, load_config
         from core.database.manager import DatabaseManager
         from core.managers.artifacts import ArtifactManager
         from core.managers.workspace import WorkspaceCoordinator
         from core.managers.tasks import TaskManager
         from core.managers.batch import BatchManager
         from core.managers.collaboration import AgentCollaborationManager
+        from core.managers.knowledge import KnowledgeManager
+        from core.managers.self_healing import SelfHealingManager
+        from core.managers.protocol import AgentHandoffProtocol
+        from core.managers.patch import PatchManager
         
         # 1. Load Config
-        self.config: AASConfig = config or AASConfig() # type: ignore
+        self.config: AASConfig = config or load_config()
         
         # 2. Initialize Foundation (Database)
         self.db = DatabaseManager(
@@ -66,15 +73,39 @@ class ManagerHub:
         
         # 4. Initialize IPC Bridge (Communication)
         from core.ipc.server import BridgeService
-        self.ipc = BridgeService()
+        from core.ipc.websockets import manager as ws_manager
+        self.ipc = BridgeService(db_manager=self.db)
+        self.ws = ws_manager
         
         # 5. Initialize Batch Processing
-        self.batch_manager = BatchManager(config=self.config)
-        
+        try:
+            self.batch_manager = BatchManager(config=self.config, ws_manager=ws_manager)
+        except Exception as e:
+            logger.warning(f"Failed to initialize BatchManager: {e}")
+            self.batch_manager = None
+
         # 6. Initialize Collaboration (Multi-agent coordination)
-        self.collaboration = AgentCollaborationManager(db=self.db)
+        try:
+            self.collaboration = AgentCollaborationManager(db=self.db, config=self.config)
+        except Exception as e:
+            logger.warning(f"Failed to initialize AgentCollaborationManager: {e}")
+            self.collaboration = None
+
+        # 7. Initialize Intelligence (Knowledge & Healing)
+        try:
+            self.knowledge = KnowledgeManager(config=self.config, db=self.db)
+            self.self_healing = SelfHealingManager(config=self.config, workspace=self.workspace, knowledge=self.knowledge)
+            self.protocol = AgentHandoffProtocol(hub=self)
+        except Exception as e:
+            logger.warning(f"Failed to initialize Intelligence managers: {e}")
+            self.knowledge = None
+            self.self_healing = None
+            self.protocol = None
         
-        # 7. Initialize Orchestrator (Tasks)
+        # 8. Initialize Live Patching
+        self.patch = PatchManager(hub=self)
+
+        # 9. Initialize Orchestrator (Tasks)
         # We pass the already initialized managers to TaskManager to avoid redundancy
         self.tasks = TaskManager(
             config=self.config,
@@ -82,10 +113,11 @@ class ManagerHub:
             workspace=self.workspace,
             artifacts=self.artifacts,
             batch=self.batch_manager,
-            ipc=self.ipc
+            ipc=self.ipc,
+            ws=self.ws
         )
         
-        logger.info("ManagerHub initialized with unified dependency injection + collaboration")
+        logger.info("ManagerHub initialized with unified dependency injection + intelligence")
     
     @classmethod
     def create(cls, config: Optional[Any] = None) -> 'ManagerHub':
@@ -164,6 +196,13 @@ class ManagerHub:
             'managers': {},
             'overall_status': 'healthy'
         }
+
+        # 0. Patch manager status
+        try:
+            health['managers']['patch'] = self.patch.get_status()
+        except Exception as e:
+            logger.error(f"Failed to get patch status: {e}")
+            health['managers']['patch'] = {'status': 'error', 'error': str(e)}
         
         # 1. Task manager health
         try:

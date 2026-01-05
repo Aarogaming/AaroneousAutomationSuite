@@ -42,8 +42,8 @@ class BatchMonitor:
     def __init__(
         self,
         config,
-        scan_interval: int = 300,  # 5 minutes
-        batch_check_interval: int = 1800,  # 30 minutes
+        scan_interval: int = 60,  # 1 minute (responsive to new queued tasks)
+        batch_check_interval: int = 300,  # 5 minutes (check for completed batches)
         max_concurrent_batches: int = 5,
         max_tasks_per_batch: int = 20,
         dry_run: bool = False

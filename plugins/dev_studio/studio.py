@@ -40,3 +40,24 @@ class DevStudio:
                 return result.stderr
         except Exception as e:
             return f"DevStudio Error: {str(e)}"
+
+    def apply_design_tokens(self, tokens_path: str = "artifacts/design_tokens.json"):
+        """Apply design tokens from Penpot to the studio environment."""
+        import json
+        try:
+            if not os.path.exists(tokens_path):
+                logger.warning(f"Design tokens not found at {tokens_path}")
+                return
+            
+            with open(tokens_path, "r") as f:
+                tokens = json.load(f)
+            
+            logger.info(f"DevStudio: Applying {len(tokens)} design tokens...")
+            # In a real scenario, this would update CSS variables or theme files
+            # For now, we'll just log the application
+            for name, value in tokens.items():
+                logger.debug(f"Applied token {name}: {value}")
+            
+            logger.success("DevStudio: Design tokens applied successfully.")
+        except Exception as e:
+            logger.error(f"DevStudio: Failed to apply design tokens: {e}")

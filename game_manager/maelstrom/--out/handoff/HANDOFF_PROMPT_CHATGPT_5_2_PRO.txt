@@ -1,0 +1,32 @@
+COPYABLE HANDOFF PROMPT FOR CHATGPT 5.2 PRO
+Repo: Aarogaming/aaroneous-automation-suite
+Branch: maelstrom/policy-continuity-v1
+Latest commit: d00e9e30a947ca983c3b231b1bdb731498e3e3bf
+Dirty: false
+
+Constraints:
+- Tooling/docs only; no ProjectMaelstrom runtime changes.
+- Single TXT policy (aas.policy.txt); non-bricking with LKG.
+- LIVE means LIVE (no fallback), safe writes under --out, no new prod deps.
+
+Continuity docs:
+- docs/ROADMAP.md
+- docs/GOALS.md
+- docs/COOPERATIVE_EVALUATION.md
+- docs/POLICY_TXT_SPEC.md
+- docs/HandoffTray.md and COOP_WORKFLOW.md
+
+Policy outputs:
+- --out/system/: policy.validate.txt, policy.effective.txt/json, policy.watch.last.txt, policy.lkg.txt/.sha256, policy.rejected.txt
+- --out/policy/history/<hash>/: policy.txt, policy.sha256, effective.txt, eval.md/json
+
+How to verify:
+- dotnet run --project MaelstromToolkit -- aas policy validate --file ./aas.policy.txt --out ./--out
+- dotnet run --project MaelstromToolkit -- aas policy effective --file ./aas.policy.txt --out ./--out --format json
+- dotnet run --project MaelstromToolkit -- aas policy watch --file ./aas.policy.txt --out ./--out
+
+Next tasks:
+- Packs scaffold + sample pack listing/validation (packs folder).
+- AI provider scaffold (pluggable, policy-driven).
+
+Copy this prompt into ChatGPT 5.2 Pro after restart.

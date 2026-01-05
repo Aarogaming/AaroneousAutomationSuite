@@ -4,7 +4,6 @@ Batch API Integration for AAS
 Provides cost-effective async processing using OpenAI's Batch API (50% cost reduction).
 """
 
-from .manager import BatchManager
-from .processor import BatchProcessor
+from core.managers.batch import BatchManager
 
-__all__ = ['BatchManager', 'BatchProcessor']
+__all__ = ['BatchManager']

@@ -5,14 +5,18 @@ Repositories abstract database queries and provide a clean API for
 working with database models using Pydantic schemas.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Any
+import json
+import os
 from datetime import datetime
 from sqlalchemy.orm import Session
 from loguru import logger
+from cryptography.fernet import Fernet
 
 from .models import (
     Task, TaskExecution, Event, Plugin, ConfigEntry,
-    TaskStatus, TaskPriority, EventType, PluginStatus
+    TaskStatus, TaskPriority, EventType, PluginStatus,
+    KnowledgeNode, KnowledgeEdge, Handoff
 )
 from .manager import get_db_manager
 
@@ -73,13 +77,13 @@ class TaskRepository:
         """Update task status and optionally assignee."""
         task = TaskRepository.get_by_id(session, task_id)
         if task:
-            task.status = status
+            task.status = status # type: ignore
             if assignee:
-                task.assignee = assignee
+                task.assignee = assignee # type: ignore
             if status == TaskStatus.IN_PROGRESS and not task.started_at:
-                task.started_at = datetime.utcnow()
+                task.started_at = datetime.utcnow() # type: ignore
             if status == TaskStatus.DONE:
-                task.completed_at = datetime.utcnow()
+                task.completed_at = datetime.utcnow() # type: ignore
             session.commit()
             session.refresh(task)
             logger.info(f"Updated task {task_id} status to {status.value}")
@@ -134,14 +138,15 @@ class TaskExecutionRepository:
         ).first()
         
         if execution:
-            execution.status = status
-            execution.completed_at = datetime.utcnow()
-            execution.duration_seconds = int(
-                (execution.completed_at - execution.started_at).total_seconds()
-            )
-            execution.output = output
-            execution.error_message = error_message
-            execution.artifacts = artifacts or []
+            execution.status = status # type: ignore
+            execution.completed_at = datetime.utcnow() # type: ignore
+            if execution.started_at:
+                execution.duration_seconds = int( # type: ignore
+                    (execution.completed_at - execution.started_at).total_seconds()
+                )
+            execution.output = output # type: ignore
+            execution.error_message = error_message # type: ignore
+            execution.artifacts = artifacts or [] # type: ignore
             session.commit()
             session.refresh(execution)
             logger.info(f"Completed execution {execution_id} with status {status}")
@@ -253,10 +258,10 @@ class PluginRepository:
         """Update plugin status."""
         plugin = PluginRepository.get_by_name(session, name)
         if plugin:
-            plugin.status = status
-            plugin.last_error = error
+            plugin.status = status # type: ignore
+            plugin.last_error = error # type: ignore
             if status != PluginStatus.ERROR:
-                plugin.last_loaded_at = datetime.utcnow()
+                plugin.last_loaded_at = datetime.utcnow() # type: ignore
             session.commit()
             session.refresh(plugin)
             logger.info(f"Updated plugin {name} status to {status.value}")
@@ -264,44 +269,92 @@ class PluginRepository:
 
 
 class ConfigRepository:
-    """Repository for ConfigEntry model operations."""
-    
-    @staticmethod
+    """Repository for ConfigEntry model operations with encryption support."""
+
+    _fernet: Optional[Fernet] = None
+
+    @classmethod
+    def _get_fernet(cls) -> Fernet:
+        """Initialize or return the Fernet instance for encryption."""
+        if cls._fernet is None:
+            key = os.getenv("AAS_ENCRYPTION_KEY")
+            if not key:
+                logger.warning("AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.")
+                key = Fernet.generate_key().decode()
+                # In a real scenario, we'd want to persist this or fail if missing
+            cls._fernet = Fernet(key.encode())
+        return cls._fernet
+
+    @classmethod
     def set(
+        cls,
         session: Session,
         key: str,
-        value: str,
+        value: Any,
         value_type: str = "string",
         description: Optional[str] = None,
         is_secret: bool = False
     ) -> ConfigEntry:
-        """Set a configuration entry."""
+        """Set a configuration entry, encrypting if it's a secret."""
         entry = session.query(ConfigEntry).filter(ConfigEntry.key == key).first()
-        
+
+        # Handle value serialization
+        if value_type == "json":
+            serialized_value = json.dumps(value)
+        else:
+            serialized_value = str(value)
+
+        # Handle encryption
+        if is_secret:
+            fernet = cls._get_fernet()
+            serialized_value = fernet.encrypt(serialized_value.encode()).decode()
+
         if entry:
-            entry.value = value
-            entry.value_type = value_type
+            entry.value = serialized_value # type: ignore
+            entry.value_type = value_type # type: ignore
+            entry.is_secret = is_secret # type: ignore
             if description:
-                entry.description = description
+                entry.description = description # type: ignore
         else:
             entry = ConfigEntry(
                 key=key,
-                value=value,
+                value=serialized_value,
                 value_type=value_type,
                 description=description,
                 is_secret=is_secret
             )
             session.add(entry)
-        
+
         session.commit()
         session.refresh(entry)
-        logger.debug(f"Set config: {key}")
+        logger.debug(f"Set config: {key} (secret={is_secret})")
         return entry
-    
-    @staticmethod
-    def get(session: Session, key: str) -> Optional[ConfigEntry]:
-        """Get a configuration entry."""
-        return session.query(ConfigEntry).filter(ConfigEntry.key == key).first()
+
+    @classmethod
+    def get(cls, session: Session, key: str) -> Optional[Any]:
+        """Get a configuration entry, decrypting if it's a secret."""
+        entry = session.query(ConfigEntry).filter(ConfigEntry.key == key).first()
+        if not entry:
+            return None
+
+        value = entry.value
+        if entry.is_secret:
+            try:
+                fernet = cls._get_fernet()
+                value = fernet.decrypt(value.encode()).decode()
+            except Exception as e:
+                logger.error(f"Failed to decrypt config {key}: {e}")
+                return None
+
+        # Handle deserialization
+        if entry.value_type == "int":
+            return int(value)
+        elif entry.value_type == "bool":
+            return value.lower() in ("true", "1", "yes")
+        elif entry.value_type == "json":
+            return json.loads(value)
+        
+        return value
     
     @staticmethod
     def get_all(session: Session) -> List[ConfigEntry]:
@@ -311,10 +364,126 @@ class ConfigRepository:
     @staticmethod
     def delete(session: Session, key: str) -> bool:
         """Delete a configuration entry."""
-        entry = ConfigRepository.get(session, key)
+        entry = session.query(ConfigEntry).filter(ConfigEntry.key == key).first()
         if entry and entry.is_editable:
             session.delete(entry)
             session.commit()
             logger.debug(f"Deleted config: {key}")
             return True
         return False
+
+
+class KnowledgeRepository:
+    """Repository for KnowledgeNode and KnowledgeEdge operations."""
+
+    @staticmethod
+    def create_node(
+        session: Session,
+        content: str,
+        node_type: str,
+        embedding: Optional[List[float]] = None,
+        metadata: Optional[dict] = None,
+        task_id: Optional[str] = None
+    ) -> KnowledgeNode:
+        """Create a new knowledge node."""
+        node = KnowledgeNode(
+            content=content,
+            node_type=node_type,
+            embedding=json.dumps(embedding) if embedding else None,
+            metadata_json=metadata or {},
+            source_task_id=task_id
+        )
+        session.add(node)
+        session.commit()
+        session.refresh(node)
+        # Expunge from session to allow access after session closes
+        session.expunge(node)
+        logger.info(f"Created knowledge node: {node.id} ({node_type})")
+        return node
+
+    @staticmethod
+    def create_edge(
+        session: Session,
+        source_id: int,
+        target_id: int,
+        relationship_type: str,
+        weight: int = 1
+    ) -> KnowledgeEdge:
+        """Create a relationship between nodes."""
+        edge = KnowledgeEdge(
+            source_id=source_id,
+            target_id=target_id,
+            relationship_type=relationship_type,
+            weight=weight
+        )
+        session.add(edge)
+        session.commit()
+        session.refresh(edge)
+        logger.info(f"Created knowledge edge: {source_id} --[{relationship_type}]--> {target_id}")
+        return edge
+
+    @staticmethod
+    def get_node_by_id(session: Session, node_id: int) -> Optional[KnowledgeNode]:
+        """Get node by ID."""
+        return session.query(KnowledgeNode).filter(KnowledgeNode.id == node_id).first()
+
+    @staticmethod
+    def search_nodes(
+        session: Session,
+        query_embedding: List[float],
+        limit: int = 10,
+        node_type: Optional[str] = None
+    ) -> List[KnowledgeNode]:
+        """
+        Search for similar nodes using vector similarity.
+        Note: This is a placeholder for actual sqlite-vec integration.
+        """
+        # For now, return all nodes of type if specified, or just all nodes
+        query = session.query(KnowledgeNode)
+        if node_type:
+            query = query.filter(KnowledgeNode.node_type == node_type)
+        
+        # In a real implementation, we'd use sqlite-vec's distance functions here
+        return query.limit(limit).all()
+
+
+class HandoffRepository:
+    """Repository for Handoff model operations."""
+
+    @staticmethod
+    def create(
+        session: Session,
+        task_id: str,
+        source_agent: str,
+        context_summary: str,
+        target_agent: Optional[str] = None,
+        technical_details: Optional[dict] = None,
+        relevant_files: Optional[List[str]] = None,
+        pending_actions: Optional[List[str]] = None
+    ) -> Handoff:
+        """Create a new handoff record."""
+        handoff_id = f"handoff-{uuid.uuid4().hex[:12]}" if 'uuid' in globals() else f"handoff-{datetime.utcnow().timestamp()}"
+        # Ensure uuid is imported or use fallback
+        import uuid
+        handoff_id = f"handoff-{uuid.uuid4().hex[:12]}"
+        
+        handoff = Handoff(
+            id=handoff_id,
+            task_id=task_id,
+            source_agent=source_agent,
+            target_agent=target_agent,
+            context_summary=context_summary,
+            technical_details=technical_details or {},
+            relevant_files=relevant_files or [],
+            pending_actions=pending_actions or []
+        )
+        session.add(handoff)
+        session.commit()
+        session.refresh(handoff)
+        logger.info(f"Created handoff record: {handoff_id} for {task_id}")
+        return handoff
+
+    @staticmethod
+    def get_by_task(session: Session, task_id: str) -> List[Handoff]:
+        """Get all handoffs for a task."""
+        return session.query(Handoff).filter(Handoff.task_id == task_id).order_by(Handoff.created_at.desc()).all()

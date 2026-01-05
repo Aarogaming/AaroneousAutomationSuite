@@ -1,7 +1,48 @@
-# Security
+# ==============================================================================
+# Security - Credentials & Secrets
+# ==============================================================================
+# Environment files - Never commit!
 .env
+.env.local
+.env.*.local
+*.env
+
+# API Keys & Tokens
 *.key
 *.pem
+*.pfx
+*.p12
+*.jks
+*.keystore
+
+# SSH & Authentication
+id_rsa
+id_rsa.*
+id_dsa
+id_dsa.*
+id_ecdsa
+id_ecdsa.*
+id_ed25519
+id_ed25519.*
+*.ppk
+
+# Database credentials
+*.db-wal
+*.db-shm
+credentials.json
+service-account*.json
+
+# AWS & Cloud credentials
+.aws/credentials
+.aws/config
+*.cer
+*.crt
+
+# Certificates & Private Keys
+*.cert
+*.certSigningRequest
+private.key
+privatekey.pem
 
 # Python
 __pycache__/
@@ -17,6 +58,9 @@ dist/
 build/
 *.spec
 publish/
+**/publish/
+**/bin/
+**/obj/
 
 # C# / .NET
 bin/
@@ -28,7 +72,9 @@ obj/
 
 # Artifacts & Builds (Keep small logs/reports, exclude binaries)
 artifacts/builds/
+!artifacts/builds/**/*.part*
 artifacts/batch/outputs/
+artifacts/ui_audits/
 artifacts/*.exe
 artifacts/*.dll
 artifacts/*.pdb
@@ -58,6 +104,23 @@ artifacts/handoff/to_codex/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# IDE & Editor specific files
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Backup files
+*.bak
+*.backup
+*~
 
 # Logs (keep small ones, exclude large dumps)
 *.log.*.gz

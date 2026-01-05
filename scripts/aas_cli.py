@@ -377,6 +377,65 @@ def workspace_defrag(ctx, dry_run):
         sys.exit(1)
 
 
+@workspace.command('cleanup')
+@click.option('--dry-run', is_flag=True, help='Show what would be deleted')
+@click.pass_context
+def workspace_cleanup(ctx, dry_run):
+    """Remove duplicate and temporary files"""
+    hub = ctx.obj['hub']
+    
+    try:
+        click.echo(f"🧹 Cleaning up workspace {'(DRY RUN)' if dry_run else ''}...")
+        
+        deleted_dupes = hub.workspace.cleanup_duplicates(dry_run=dry_run)
+        deleted_temp = hub.workspace.cleanup_temp_files(dry_run=dry_run)
+        
+        click.echo(f"\n✅ Cleanup complete:")
+        click.echo(f"   - Removed {len(deleted_dupes)} duplicate files")
+        click.echo(f"   - Removed {len(deleted_temp)} temporary files\n")
+            
+    except Exception as e:
+        click.echo(f"❌ Error cleaning workspace: {e}", err=True)
+        if ctx.obj['DEBUG']:
+            raise
+        sys.exit(1)
+
+
+@workspace.command('audit')
+@click.pass_context
+def workspace_audit(ctx):
+    """Run AI-readiness audit (type hints, docstrings)"""
+    hub = ctx.obj['hub']
+    
+    try:
+        click.echo("\n🔍 Running AI-Readiness Audit...")
+        from core.batch.task_generator import TaskGenerator
+        # Mocking dependencies for audit
+        tg = TaskGenerator(None, None, hub.config)
+        
+        import asyncio
+        async def run_audit():
+            return await tg.suggest_improvements()
+            
+        suggestions = asyncio.run(run_audit())
+        ai_tasks = [s for s in suggestions if s.get('type') == 'ai_readiness']
+        
+        if ai_tasks:
+            click.echo(f"Found {len(ai_tasks)} AI-readiness gaps:")
+            for task in ai_tasks:
+                click.echo(f"  - {task['title']}")
+                click.echo(f"    {task['description']}")
+        else:
+            click.echo("✅ No AI-readiness gaps found!")
+        click.echo("")
+            
+    except Exception as e:
+        click.echo(f"❌ Error auditing workspace: {e}", err=True)
+        if ctx.obj['DEBUG']:
+            raise
+        sys.exit(1)
+
+
 # ============================================================================
 # Multi-Client Commands
 # ============================================================================

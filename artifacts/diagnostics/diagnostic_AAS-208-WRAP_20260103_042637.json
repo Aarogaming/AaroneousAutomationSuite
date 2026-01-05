@@ -1,0 +1,114 @@
+{
+  "timestamp": "2026-01-03T04:26:37.747549",
+  "workspace_root": "C:\\Users\\aarog\\Documents\\GitHub\\AaroneousAutomationSuite",
+  "duplicates": {
+    "duplicate_sets": 11,
+    "redundant_files": 14,
+    "wasted_space_mb": 0.01
+  },
+  "large_files": {
+    "count": 11,
+    "top_10": [
+      {
+        "path": "game_manager\\maelstrom\\Installer\\publish\\Installer.exe",
+        "size_mb": 242.19
+      },
+      {
+        "path": "artifacts\\builds\\maelstrom_publish\\win-x64\\ProjectMaelstrom.exe",
+        "size_mb": 218.52
+      },
+      {
+        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\win-x86\\ProjectMaelstrom.exe",
+        "size_mb": 127.42
+      },
+      {
+        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\win-x64\\ProjectMaelstrom-win-x64.zip",
+        "size_mb": 109.06
+      },
+      {
+        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\ProjectMaelstrom-win-x64.zip",
+        "size_mb": 109.05
+      },
+      {
+        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\ProjectMaelstrom-win-x86.zip",
+        "size_mb": 83.7
+      },
+      {
+        "path": "game_manager\\maelstrom\\Plugins\\SampleOverlayWidgetsPlugin\\bin\\Debug\\net9.0-windows10.0.22621.0\\Scripts\\Library\\Deimos-Wizard101\\Deimos.exe",
+        "size_mb": 17.3
+      },
+      {
+        "path": "aider_repo\\aider\\website\\assets\\copypaste.mp4",
+        "size_mb": 13.05
+      },
+      {
+        "path": "aider_repo\\aider\\website\\assets\\aider-browser-social.mp4",
+        "size_mb": 12.35
+      },
+      {
+        "path": "aider_repo\\aider\\website\\assets\\watch.mp4",
+        "size_mb": 10.81
+      }
+    ]
+  },
+  "temp_files": {
+    "count": 0,
+    "wasted_space_mb": 0
+  },
+  "runaway_bot_check": {
+    "is_runaway": false,
+    "recent_files_count": 4,
+    "files_per_minute": 0.8,
+    "recent_duplicates": 0,
+    "max_files_in_single_dir": 1,
+    "time_window_minutes": 5,
+    "threshold_exceeded": {
+      "excessive_creation": false,
+      "too_many_duplicates": false,
+      "directory_overload": false
+    }
+  },
+  "git_compatibility": {
+    "is_compatible": false,
+    "limit_mb": 50,
+    "issues": [
+      {
+        "path": "game_manager\\maelstrom\\Installer\\publish\\Installer.exe",
+        "size_mb": 242.19,
+        "recommendation": "Compress with gzip, use Git LFS, or move to external storage."
+      },
+      {
+        "path": "artifacts\\builds\\maelstrom_publish\\win-x64\\ProjectMaelstrom.exe",
+        "size_mb": 218.52,
+        "recommendation": "Compress with gzip, use Git LFS, or move to external storage."
+      },
+      {
+        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\win-x86\\ProjectMaelstrom.exe",
+        "size_mb": 127.42,
+        "recommendation": "Compress with gzip, use Git LFS, or move to external storage."
+      },
+      {
+        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\win-x64\\ProjectMaelstrom-win-x64.zip",
+        "size_mb": 109.06,
+        "recommendation": "Compress with gzip, use Git LFS, or move to external storage."
+      },
+      {
+        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\ProjectMaelstrom-win-x64.zip",
+        "size_mb": 109.05,
+        "recommendation": "Compress with gzip, use Git LFS, or move to external storage."
+      },
+      {
+        "path": "game_manager\\maelstrom\\ProjectMaelstrom\\ProjectMaelstrom\\publish\\ProjectMaelstrom-win-x86.zip",
+        "size_mb": 83.7,
+        "recommendation": "Compress with gzip, use Git LFS, or move to external storage."
+      }
+    ]
+  },
+  "health_score": "Needs Attention",
+  "env": {
+    "python_version": "3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cwd": "C:\\Users\\aarog\\Documents\\GitHub\\AaroneousAutomationSuite"
+  }
+}

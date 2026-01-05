@@ -18,6 +18,7 @@ from core.config.manager import AASConfig
 from core.database.manager import DatabaseManager
 from core.database.models import Task, TaskStatus, TaskPriority, Client
 from core.managers.protocol import ManagerProtocol
+from core.workers.background import BackgroundWorker
 
 
 class TaskManager(ManagerProtocol):
@@ -40,7 +41,8 @@ class TaskManager(ManagerProtocol):
         artifacts: Optional[Any] = None,
         batch: Optional[Any] = None,
         handoff: Optional[Any] = None,
-        ipc: Optional[Any] = None
+        ipc: Optional[Any] = None,
+        ws: Optional[Any] = None
     ):
         """Initialize the unified task manager."""
         # Use dummy key for initialization if missing (for CLI/AI context)
@@ -53,18 +55,51 @@ class TaskManager(ManagerProtocol):
         # Initialize or use injected sub-managers
         from core.managers.workspace import WorkspaceCoordinator
         from core.managers.artifacts import ArtifactManager
-        from core.handoff.manager import HandoffManager
         
         self.db = db or DatabaseManager(db_path="artifacts/aas.db")
         self.workspace_coordinator = workspace or WorkspaceCoordinator(workspace_root=".")
         self.artifact_manager = artifacts or ArtifactManager(base_dir=self.config.artifact_dir)
-        self.handoff = handoff or HandoffManager(config=self.config)
+        
+        # Initialize HandoffManager if not provided
+        if not handoff:
+            try:
+                # Try to find HandoffManager in various locations
+                try:
+                    from core.handoff.manager import HandoffManager
+                except ImportError:
+                    # Fallback to a stub if not found
+                    HandoffManager = None
+                
+                if HandoffManager:
+                    self.handoff = HandoffManager(config=self.config)
+                else:
+                    self.handoff = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize HandoffManager: {e}")
+                self.handoff = None
+        else:
+            self.handoff = handoff
         
         self.batch_manager = batch
         self.ipc = ipc
+        self.ws = ws
+        
+        # Background Worker
+        self.worker = BackgroundWorker(self)
         
         # Task tracking
         self.board_path = Path("handoff/ACTIVE_TASKS.md")
+        if not self.board_path.exists():
+            # Try absolute path or other common locations
+            potential_paths = [
+                Path(os.getcwd()) / "handoff" / "ACTIVE_TASKS.md",
+                Path("artifacts/handoff/ACTIVE_TASKS.md")
+            ]
+            for p in potential_paths:
+                if p.exists():
+                    self.board_path = p
+                    break
+            
         self.batch_history_path = Path("artifacts/batch/history.json")
         self.batch_history = self._load_batch_history()
         
@@ -102,6 +137,37 @@ class TaskManager(ManagerProtocol):
         """Check if a task has already been batched."""
         return task_id in self.batch_history["batched_tasks"]
     
+    async def batch_task(self, task_id: str) -> Optional[str]:
+        """Batch a single task for planning."""
+        if not self.batch_manager:
+            logger.warning("Batch manager not initialized")
+            return None
+            
+        status = self.get_task_status(task_id)
+        if "error" in status:
+            return None
+            
+        batch_id = await self.batch_manager.batch_task(task_id, status)
+        if batch_id:
+            self._mark_task_batched(task_id, batch_id)
+        return batch_id
+
+    async def batch_multiple_tasks(self, max_tasks: int = 10) -> Optional[str]:
+        """Batch multiple unbatched tasks."""
+        if not self.batch_manager:
+            logger.warning("Batch manager not initialized")
+            return None
+            
+        unbatched = self.find_unbatched_tasks(max_count=max_tasks)
+        if not unbatched:
+            return None
+            
+        batch_id = await self.batch_manager.batch_multiple_tasks(unbatched)
+        if batch_id:
+            for task in unbatched:
+                self._mark_task_batched(task["id"], batch_id)
+        return batch_id
+
     def find_unbatched_tasks(self, max_count: int = 10) -> List[Dict[str, Any]]:
         """
         Find tasks that are eligible for batching but haven't been batched yet.
@@ -118,6 +184,10 @@ class TaskManager(ManagerProtocol):
         Returns:
             List of task dicts
         """
+        if not self.handoff:
+            logger.warning("Handoff manager not initialized")
+            return []
+            
         lines, tasks, status_map = self.handoff.parse_board()
         
         unbatched = []
@@ -160,6 +230,9 @@ class TaskManager(ManagerProtocol):
         Returns:
             Task dict or None
         """
+        if not self.handoff:
+            return None
+            
         lines, tasks, status_map = self.handoff.parse_board()
         priority_map = {"urgent": 0, "high": 1, "medium": 2, "low": 3}
         
@@ -190,19 +263,36 @@ class TaskManager(ManagerProtocol):
         eligible.sort(key=lambda x: priority_map.get(x["priority"].lower(), 4))
         return eligible[0]
     
-    async def _broadcast_task_event(self, task: Task, event_type: str):
-        """Broadcast task event via IPC if available."""
+    async def _broadcast_task_event(self, task_id: str, title: str, status: str, assignee: str, event_type: str):
+        """Broadcast task event via IPC and WebSockets if available."""
+        payload = {
+            "task_id": task_id,
+            "title": title,
+            "status": status,
+            "assignee": assignee,
+            "event_type": event_type,
+            "timestamp": datetime.now().isoformat()
+        }
+
+        # 1. gRPC Broadcast
         if self.ipc:
             try:
                 await self.ipc.broadcast_task_update(
-                    task_id=task.id,
-                    title=task.title,
-                    status=task.status.value if hasattr(task.status, 'value') else str(task.status),
-                    assignee=task.assignee or "-",
+                    task_id=task_id,
+                    title=title,
+                    status=status,
+                    assignee=assignee,
                     event_type=event_type
                 )
             except Exception as e:
-                logger.warning(f"Failed to broadcast task update: {e}")
+                logger.warning(f"Failed to broadcast gRPC task update: {e}")
+
+        # 2. WebSocket Broadcast
+        if self.ws:
+            try:
+                await self.ws.broadcast(payload)
+            except Exception as e:
+                logger.warning(f"Failed to broadcast WebSocket task update: {e}")
 
     def claim_task(self, task_id: Optional[str] = None, actor_name: str = "GitHub Copilot") -> Optional[Dict[str, Any]]:
         """
@@ -224,15 +314,17 @@ class TaskManager(ManagerProtocol):
                     logger.error(f"Task {task_id} not found in DB")
                     return None
                 
-                if task.status != TaskStatus.QUEUED:
-                    logger.warning(f"Task {task_id} is not queued (status: {task.status.value})")
+                # Use .value for Enum comparison
+                status_val = task.status.value if hasattr(task.status, 'value') else str(task.status)
+                if status_val != TaskStatus.QUEUED.value:
+                    logger.warning(f"Task {task_id} is not queued (status: {status_val})")
                     return None
             else:
                 # Find next available task with priority sorting
                 priority_map = {TaskPriority.URGENT: 0, TaskPriority.HIGH: 1, TaskPriority.MEDIUM: 2, TaskPriority.LOW: 3}
                 
                 # Get all queued tasks
-                queued_tasks = session.query(Task).filter(Task.status == TaskStatus.QUEUED).with_for_update().all()
+                queued_tasks = session.query(Task).filter(Task.status == TaskStatus.QUEUED.value).with_for_update().all()
                 
                 if not queued_tasks:
                     logger.info("No queued tasks available")
@@ -243,13 +335,21 @@ class TaskManager(ManagerProtocol):
                 status_map = {t.id: t.status for t in session.query(Task.id, Task.status).all()}
                 
                 for t in queued_tasks:
-                    if not t.dependencies:
+                    deps_list = t.dependencies if t.dependencies is not None else []
+                    if len(deps_list) == 0: # type: ignore
                         eligible.append(t)
                     else:
                         # Check if all dependencies are DONE
                         is_blocked = False
-                        for dep_id in t.dependencies:
-                            if status_map.get(dep_id) != TaskStatus.DONE:
+                        for dep_id in deps_list: # type: ignore
+                            dep_status = status_map.get(dep_id)
+                            if dep_status:
+                                dep_status_val = dep_status.value if hasattr(dep_status, 'value') else str(dep_status)
+                                if dep_status_val != TaskStatus.DONE.value:
+                                    is_blocked = True
+                                    break
+                            else:
+                                # If dependency not found, assume it's not done
                                 is_blocked = True
                                 break
                         if not is_blocked:
@@ -263,6 +363,12 @@ class TaskManager(ManagerProtocol):
                 eligible.sort(key=lambda x: priority_map.get(x.priority, 4))
                 task = eligible[0]
             
+            # Capture values before session commit/detach
+            task_id_val = str(task.id)
+            task_title_val = str(task.title)
+            task_priority_val = str(task.priority.value)
+            status_val = "IN_PROGRESS"
+
             # Update task status
             task.status = TaskStatus.IN_PROGRESS # type: ignore
             task.assignee = actor_name # type: ignore
@@ -279,30 +385,33 @@ class TaskManager(ManagerProtocol):
             )
             self.update_heartbeat(actor_name)
             
-            task_id_val = str(task.id)
-            task_title_val = str(task.title)
-            task_priority_val = str(task.priority.value)
-            
             # Sync back to Markdown (for human visibility)
             self._sync_task_to_markdown(task)
             
             # Broadcast update
-            if self.ipc:
-                import asyncio
-                asyncio.create_task(self._broadcast_task_event(task, "CLAIMED"))
+            asyncio.create_task(self._broadcast_task_event(
+                task_id=task_id_val,
+                title=task_title_val,
+                status=status_val,
+                assignee=actor_name,
+                event_type="CLAIMED"
+            ))
             
             logger.success(f"Claimed task {task_id_val}: {task_title_val}")
             return {"id": task_id_val, "title": task_title_val, "priority": task_priority_val}
 
     def _sync_task_to_markdown(self, task: Task):
         """Sync a single task's state back to ACTIVE_TASKS.md."""
+        if not self.handoff:
+            return
         try:
             lines, tasks, _ = self.handoff.parse_board()
             target = next((t for t in tasks if t["id"] == task.id), None)
             
             if target:
                 parts = target["parts"]
-                parts[5] = "In Progress" if task.status == TaskStatus.IN_PROGRESS else task.status.value.capitalize()
+                status_val = task.status.value if hasattr(task.status, 'value') else str(task.status)
+                parts[5] = "In Progress" if status_val == TaskStatus.IN_PROGRESS.value else status_val.capitalize()
                 parts[6] = task.assignee or "-"
                 parts[8] = task.updated_at.strftime("%Y-%m-%d")
                 
@@ -321,6 +430,9 @@ class TaskManager(ManagerProtocol):
         Returns:
             Dict with task info, status, batch info, etc.
         """
+        if not self.handoff:
+            return {"error": "Handoff manager not initialized"}
+            
         lines, tasks, _ = self.handoff.parse_board()
         task = next((t for t in tasks if t["id"] == task_id), None)
         
@@ -354,6 +466,12 @@ class TaskManager(ManagerProtocol):
                 logger.error(f"Task {task_id} not found in DB")
                 return False
             
+            # Capture values before commit
+            task_id_val = str(task.id)
+            task_title_val = str(task.title)
+            status_val = "DONE"
+            assignee_val = str(task.assignee) if task.assignee is not None else "-"
+
             task.status = TaskStatus.DONE # type: ignore
             task.completed_at = datetime.utcnow() # type: ignore
             task.updated_at = datetime.utcnow() # type: ignore
@@ -361,12 +479,67 @@ class TaskManager(ManagerProtocol):
             self._sync_task_to_markdown(task)
             
             # Broadcast update
-            if self.ipc:
-                import asyncio
-                asyncio.create_task(self._broadcast_task_event(task, "COMPLETED"))
+            asyncio.create_task(self._broadcast_task_event(
+                task_id=task_id_val,
+                title=task_title_val,
+                status=status_val,
+                assignee=assignee_val,
+                event_type="COMPLETED"
+            ))
                 
             logger.success(f"Task {task_id} marked as Done")
             return True
+
+    async def decompose_and_add_tasks(self, goal: str, priority: str = "medium", task_type: str = "feature"):
+        """
+        Decompose a high-level goal into sub-tasks and add them to the system.
+        """
+        from core.agents.decomposition import TaskDecomposer
+        decomposer = TaskDecomposer()
+        
+        logger.info(f"Decomposing goal: {goal}")
+        result = await decomposer.decompose(goal)
+        
+        subtasks = result["subtasks"]
+        dependencies = result["dependencies"]
+        
+        # Map to store title -> generated ID
+        title_to_id = {}
+        
+        # 1. Create all tasks first
+        for st in subtasks:
+            task_id = self.add_task(
+                priority=st.get("priority", priority),
+                title=st["title"],
+                description=st["description"],
+                task_type=st.get("type", task_type)
+            )
+            title_to_id[st["title"]] = task_id
+            
+        # 2. Update dependencies
+        with self.db.get_session() as session:
+            for dep in dependencies:
+                task_title = dep["task_title"]
+                depends_on_title = dep["depends_on_title"]
+                
+                if task_title in title_to_id and depends_on_title in title_to_id:
+                    task_id = title_to_id[task_title]
+                    dep_id = title_to_id[depends_on_title]
+                    
+                    task = session.query(Task).filter(Task.id == task_id).first()
+                    if task:
+                        current_deps = list(task.dependencies) if task.dependencies else []
+                        if dep_id not in current_deps:
+                            current_deps.append(dep_id)
+                            task.dependencies = current_deps
+                            
+                            # Sync to Markdown
+                            self._sync_task_to_markdown(task)
+            
+            session.commit()
+            
+        logger.success(f"Successfully decomposed goal into {len(subtasks)} tasks")
+        return list(title_to_id.values())
 
     def add_task(self, priority: str, title: str, description: str, depends_on: str = "-", task_type: str = "feature") -> str:
         """
@@ -395,26 +568,37 @@ class TaskManager(ManagerProtocol):
             session.add(task)
             session.commit()
             
+            # Capture values before detach
+            task_id_val = str(task.id)
+            task_title_val = str(task.title)
+            status_val = "QUEUED"
+
             # Sync to Markdown
             self._add_task_to_markdown(task, task_type)
             
             # Broadcast update
-            if self.ipc:
-                import asyncio
-                asyncio.create_task(self._broadcast_task_event(task, "CREATED"))
+            asyncio.create_task(self._broadcast_task_event(
+                task_id=task_id_val,
+                title=task_title_val,
+                status=status_val,
+                assignee="-",
+                event_type="CREATED"
+            ))
                 
             logger.success(f"Added new task {new_id}: {title}")
             return new_id
 
     def _add_task_to_markdown(self, task: Task, task_type: str):
         """Helper to append a new task to ACTIVE_TASKS.md."""
+        if not self.handoff:
+            return
         try:
             lines, tasks, _ = self.handoff.parse_board()
             today = datetime.now().strftime("%Y-%m-%d")
             
             # Create table row
-            deps_list = task.dependencies if task.dependencies else []
-            deps = ",".join(deps_list) if deps_list else "-"
+            deps_list = task.dependencies if task.dependencies is not None else []
+            deps = ",".join([str(d) for d in deps_list]) if len(deps_list) > 0 else "-" # type: ignore
             new_row = f" | {task.id} | {task.priority.value.capitalize()} | {task.title} | {deps} | queued | - | {today} | {today} | \n"
             
             # Find the end of the table
@@ -439,7 +623,10 @@ class TaskManager(ManagerProtocol):
     
     def get_health_summary(self) -> Dict[str, Any]:
         """Get comprehensive health summary of all tasks."""
-        lines, tasks, _ = self.parse_board()
+        if not self.handoff:
+            return {"summary": {"health_score": "N/A", "total_tasks": 0}}
+            
+        lines, tasks, _ = self.handoff.parse_board()
         
         health = {
             "stale_tasks": [],
@@ -530,9 +717,18 @@ class TaskManager(ManagerProtocol):
     
     def generate_health_report(self) -> str:
         """Generate comprehensive health report."""
-        from core.managers.health import HealthAggregator
-        aggregator = HealthAggregator()
-        scan_results = aggregator.scan()
+        try:
+            try:
+                from core.managers.health import HealthAggregator
+                aggregator = HealthAggregator()
+                scan_results = aggregator.scan()
+            except ImportError:
+                logger.warning("HealthAggregator not found, skipping scan")
+                scan_results = {}
+        except Exception as e:
+            logger.warning(f"Error during health scan: {e}")
+            scan_results = {}
+            
         task_health = self.get_health_summary()
 
         report = [
@@ -553,6 +749,46 @@ class TaskManager(ManagerProtocol):
     
     # ===== Protocol Implementation =====
 
+    async def start_worker(self):
+        """Start the background task worker."""
+        await self.worker.start()
+
+    async def stop_worker(self):
+        """Stop the background task worker."""
+        await self.worker.stop()
+
+    def get_all_tasks(self) -> Dict[str, Any]:
+        """Return all tasks from the board for web dashboard."""
+        if not self.handoff:
+            return {"tasks": [], "total": 0}
+        
+        _, tasks, status_map = self.handoff.parse_board()
+        
+        # Convert to web-friendly format
+        web_tasks = []
+        for t in tasks:
+            web_tasks.append({
+                "id": t["id"],
+                "title": t["title"],
+                "priority": t["priority"],
+                "status": t["status"],
+                "assignee": t.get("assignee", "-"),
+                "depends_on": t.get("depends_on", "-"),
+                "created": t.get("created", "-"),
+                "updated": t.get("updated", "-")
+            })
+        
+        return {
+            "tasks": web_tasks,
+            "total": len(web_tasks),
+            "status_counts": {
+                "done": sum(1 for t in tasks if t["status"].lower() == "done"),
+                "in_progress": sum(1 for t in tasks if t["status"].lower() == "in progress"),
+                "queued": sum(1 for t in tasks if t["status"].lower() == "queued"),
+                "blocked": sum(1 for t in tasks if t["status"].lower() == "blocked")
+            }
+        }
+    
     def get_status(self) -> Dict[str, Any]:
         """Return TaskManager status and metrics."""
         health = self.get_health_summary()
@@ -563,7 +799,8 @@ class TaskManager(ManagerProtocol):
             "total_tasks": summary.get("total_tasks", 0),
             "health_score": summary.get("health_score", "Unknown"),
             "db_connected": self.db.engine is not None,
-            "linear_enabled": self.config.linear_api_key is not None
+            "linear_enabled": self.config.linear_api_key is not None,
+            "worker_running": self.worker.is_running
         }
 
     def validate(self) -> bool:

@@ -2,25 +2,83 @@ import asyncio
 import grpc
 import time
 from loguru import logger
-from typing import AsyncIterable, Optional, Set
+from typing import AsyncIterable, Optional, Set, Any
+import json
+
+from core.database.manager import get_db_manager
+from core.database.repositories import ConfigRepository
 
 # These will be generated from bridge.proto
-try:
-    from core.ipc.protos import bridge_pb2
-    from core.ipc.protos import bridge_pb2_grpc
-except ImportError:
-    logger.warning("gRPC protos not found. Run scripts/generate_protos.py")
-    bridge_pb2 = None
-    bridge_pb2_grpc = object
+from core.ipc.protos import bridge_pb2
+from core.ipc.protos import bridge_pb2_grpc
 
-class BridgeService(bridge_pb2_grpc.BridgeServicer if bridge_pb2_grpc != object else object):
+class BridgeService(bridge_pb2_grpc.BridgeServicer):
     """
     Python implementation of the AAS <-> Maelstrom IPC Bridge.
     Handles high-level commands and game state snapshot streaming.
     """
-    def __init__(self):
+    def __init__(self, db_manager=None):
         self._latest_snapshot = None
         self._task_subscribers: Set[asyncio.Queue] = set()
+        self._db_manager = db_manager or get_db_manager()
+
+    async def GetConfig(self, request: 'bridge_pb2.ConfigRequest', context: grpc.aio.ServicerContext) -> 'bridge_pb2.ConfigResponse':
+        """Retrieve configuration from the database."""
+        logger.info(f"Config request received for key: {request.key or 'ALL'}")
+        
+        try:
+            with self._db_manager.get_session() as session:
+                configs = {}
+                if request.key:
+                    value = ConfigRepository.get(session, request.key)
+                    if value is not None:
+                        configs[request.key] = json.dumps(value)
+                else:
+                    # Return all non-secret configs
+                    all_entries = ConfigRepository.get_all(session)
+                    for entry in all_entries:
+                        if not entry.is_secret:
+                            value = ConfigRepository.get(session, entry.key)
+                            configs[entry.key] = json.dumps(value)
+                
+                return bridge_pb2.ConfigResponse(
+                    success=True,
+                    message="Configuration retrieved successfully",
+                    configs=configs
+                )
+        except Exception as e:
+            logger.error(f"Failed to get config: {e}")
+            return bridge_pb2.ConfigResponse(success=False, message=str(e))
+
+    async def SetConfig(self, request: 'bridge_pb2.SetConfigRequest', context: grpc.aio.ServicerContext) -> 'bridge_pb2.ConfigResponse':
+        """Update configuration in the database."""
+        logger.info(f"Set config request for key: {request.key}")
+        
+        try:
+            # Parse value based on type
+            value: Any = request.value
+            if request.value_type == "int":
+                value = int(request.value)
+            elif request.value_type == "bool":
+                value = request.value.lower() in ("true", "1", "yes")
+            elif request.value_type == "json":
+                value = json.loads(request.value)
+
+            with self._db_manager.get_session() as session:
+                ConfigRepository.set(
+                    session,
+                    key=request.key,
+                    value=value,
+                    value_type=request.value_type,
+                    is_secret=request.is_secret
+                )
+                return bridge_pb2.ConfigResponse(
+                    success=True,
+                    message=f"Configuration {request.key} updated successfully"
+                )
+        except Exception as e:
+            logger.error(f"Failed to set config: {e}")
+            return bridge_pb2.ConfigResponse(success=False, message=str(e))
 
     async def broadcast_task_update(self, task_id: str, title: str, status: str, assignee: str, event_type: str):
         """Broadcast a task update to all subscribers."""

@@ -1,0 +1,285 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                   String           @unique @db.VarChar(255)
+  role                    UserRole         @default(FREE)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  activeSessions          ActiveSession[]
+  magicLinkTokens         MagicLinkToken[]
+  oauthTokens             OAuthToken[]
+  profile                 Profile?
+  apiKeys                 ApiKey[]
+  envVars                 EnvVars[]
+  functions               Function[]
+  functionReactions       FunctionReaction[]
+  functionSubscriptions   FunctionSubscription[]
+  collections             Collection[]
+  collectionSubscriptions CollectionSubscription[]
+  functionExecutionLogs   FunctionExecutionLog[]
+  chats                   Chat[]
+}
+
+model Profile {
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique @db.Uuid
+  userName  String   @unique @db.VarChar(255)
+  timeZone  String   @default("America/New_York") @db.VarChar(128)
+  firstName String   @db.VarChar(255)
+  lastName  String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model MagicLinkToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  otpCode   String?  @db.VarChar(6)
+  userId    String   @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ActiveSession {
+  id        Int      @id @default(autoincrement())
+  jwt       String   @unique
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum UserRole {
+  FREE
+  PREMIUM
+  ENTERPRISE
+  CONTRIBUTOR
+}
+
+model OAuthToken {
+  id                  String    @id @default(uuid())
+  userId              String    @db.Uuid
+  primaryEmailAddress String    @db.VarChar(255)
+  service             String    // e.g., "google-oauth", "ingra-oauth", to identify the OAuth service
+  accessToken         String
+  refreshToken        String?
+  idToken             String?
+  scope               String
+  code                String?   @db.VarChar(255) // e.g. "authorization_code" - used to get the access token
+  state               String?   @db.VarChar(255) // e.g. "state"
+  tokenType           String    @default("Bearer") @db.VarChar(64)
+  isDefault           Boolean   @default(false)
+  expiryDate          DateTime
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, primaryEmailAddress, service])
+  @@map("oauth_tokens")
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  userId     String    @db.Uuid
+  key        String    @unique @db.VarChar(255)
+  lastUsedAt DateTime? @db.Timestamp
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@map("api_keys")
+}
+
+enum HttpVerb {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+}
+
+// Be careful after this line ----------------------------------------------
+// The following models are not meant to be redis cached by getAuthSession() method
+
+model Function {
+  id                 String             @id @default(uuid()) @db.Uuid
+  slug               String             @db.VarChar(64)
+  code               String             @db.Text
+  isPrivate          Boolean            @default(true)
+  isPublished        Boolean            @default(false)
+  ownerUserId        String             @db.Uuid
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  httpVerb           HttpVerb           @default(GET)
+  description        String             @default("") @db.VarChar(1024)
+  arguments          FunctionArgument[]
+  tags               FunctionTag[]
+
+  // Relations
+  owner User @relation(fields: [ownerUserId], references: [id])
+  reactions  FunctionReaction[]
+  subscribers FunctionSubscription[]
+  collectors Collection[] @relation("FunctionCollections")
+
+  @@unique([ownerUserId, slug])
+  @@map("functions")
+}
+
+model FunctionSubscription {
+  id         String   @id @default(uuid()) @db.Uuid
+  functionId String   @db.Uuid
+  userId     String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  // Relations
+  function Function @relation(fields: [functionId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([functionId, userId])
+  @@map("function_subscriptions")
+}
+
+model FunctionReaction {
+  id         String   @id @default(uuid()) @db.Uuid
+  functionId String   @db.Uuid
+  userId     String   @db.Uuid
+  type       ReactionType
+  createdAt  DateTime @default(now())
+
+  // Relations
+  function Function @relation(fields: [functionId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([functionId, userId, type])
+  @@map("function_reactions")
+}
+
+enum ReactionType {
+  LIKE
+  DISLIKE
+}
+
+model FunctionArgument {
+  id           String  @id @default(uuid())
+  functionId   String  @db.Uuid
+  name         String
+  type         String // Data type: 'string', 'number', 'boolean', etc.
+  defaultValue String? // JSON string to support various default values
+  description  String? @default("") @db.VarChar(1024)
+  isRequired   Boolean @default(false)
+
+  // Relations
+  function Function @relation(fields: [functionId], references: [id])
+
+  @@map("function_arguments")
+}
+
+model FunctionTag {
+  id         String   @id @default(uuid())
+  name       String   @db.VarChar(64)
+  functionId String   @db.Uuid
+  function   Function @relation(fields: [functionId], references: [id])
+
+  @@map("function_tags")
+}
+
+model EnvVars {
+  id          Int      @id @default(autoincrement())
+  ownerUserId String   @db.Uuid
+  key         String   @db.VarChar(64)
+  value       String   @default("") @db.VarChar(512)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // Relations
+  owner User @relation(fields: [ownerUserId], references: [id])
+
+  @@unique([ownerUserId, key])
+  @@map("env_vars")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @default(now())
+  args      Json
+  type      String   @db.VarChar(32)
+  level     Int
+  tag       String?  @db.VarChar(255)
+}
+
+
+model Collection {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  slug        String   @db.VarChar(64)
+  description String?  @db.Text @default("")
+  userId      String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner User @relation(fields: [userId], references: [id])
+  functions Function[] @relation("FunctionCollections")
+  subscribers CollectionSubscription[]
+
+  @@unique([name, userId])
+  @@unique([slug, userId])
+  @@map("collections")
+}
+
+model CollectionSubscription {
+  id            String   @id @default(uuid()) @db.Uuid
+  collectionId  String   @db.Uuid
+  userId        String   @db.Uuid
+  createdAt     DateTime @default(now())
+
+  // Relations
+  collection Collection @relation(fields: [collectionId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([collectionId, userId])
+  @@map("collection_subscriptions")
+}
+
+model FunctionExecutionLog {
+  id            String    @id @default(uuid()) @db.Uuid
+  functionId    String    @db.Uuid
+  userId        String?   @db.Uuid
+  executedAt    DateTime  @default(now())
+  requestData   Json?     @db.JsonB
+  responseData  Json?     @db.JsonB
+  executionTime Int?      // Execution time in milliseconds
+  error         String?   @db.Text
+
+  // Relations
+  user     User?    @relation(fields: [userId], references: [id])
+
+  @@index([functionId])
+  @@index([userId])
+  @@map("function_execution_logs")
+}
+
+model Chat {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String?  @db.VarChar(128) @default("")
+  messages    Json     @db.JsonB
+  userId      String   @db.Uuid
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}

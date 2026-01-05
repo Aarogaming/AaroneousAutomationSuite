@@ -31,6 +31,12 @@ class WorkspaceCoordinator:
     """
     
     def __init__(self, workspace_root: str = "."):
+        """
+        Initialize the WorkspaceCoordinator.
+
+        Args:
+            workspace_root (str): The root directory of the workspace. Defaults to ".".
+        """
         self.workspace_root = Path(workspace_root).resolve()
         self.ignore_dirs = {
             ".git", ".venv", "__pycache__", "node_modules", 
@@ -43,7 +49,7 @@ class WorkspaceCoordinator:
         # Runaway bot thresholds
         self.max_files_per_minute = 50
         self.max_duplicates_threshold = 10
-        self.max_file_size_mb = 100
+        self.max_file_size_mb = 50  # Aligned with AAS File Size Strategy
         
         logger.info(f"WorkspaceCoordinator initialized for {self.workspace_root}")
     
@@ -404,8 +410,47 @@ class WorkspaceCoordinator:
                         shutil.copy2(str(doc), str(target))
                         results.append(f"Copied {doc} to {target}")
 
+        # 4. Consolidate root documentation to docs/
+        root_docs = list(self.workspace_root.glob("*.md"))
+        # Filter out README.md and LICENSE
+        root_docs = [d for d in root_docs if d.name not in ["README.md", "LICENSE"]]
+        if root_docs:
+            target_dir = self.workspace_root / "docs"
+            if not dry_run:
+                target_dir.mkdir(parents=True, exist_ok=True)
+            for doc in root_docs:
+                target = target_dir / doc.name
+                if dry_run:
+                    results.append(f"Would move {doc} to {target}")
+                else:
+                    import shutil
+                    shutil.move(str(doc), str(target))
+                    results.append(f"Moved {doc} to {target}")
+
         return results
     
+    def check_git_compatibility(self) -> Dict[str, Any]:
+        """
+        Check if workspace files are git-repo size-friendly.
+        Target: All files < 50MB.
+        """
+        logger.info("Checking git compatibility (file sizes)...")
+        large_files = self.find_large_files(min_size_mb=self.max_file_size_mb)
+        
+        issues = []
+        for path, size in large_files:
+            issues.append({
+                "path": str(path.relative_to(self.workspace_root)),
+                "size_mb": round(size, 2),
+                "recommendation": "Compress with gzip, use Git LFS, or move to external storage."
+            })
+            
+        return {
+            "is_compatible": len(issues) == 0,
+            "limit_mb": self.max_file_size_mb,
+            "issues": issues
+        }
+
     def generate_workspace_report(self) -> Dict[str, Any]:
         """
         Generate comprehensive workspace health report.
@@ -420,6 +465,7 @@ class WorkspaceCoordinator:
         large_files = self.find_large_files(min_size_mb=10)
         temp_files = self.find_temp_files()
         runaway_check = self.detect_runaway_bot()
+        git_compat = self.check_git_compatibility()
         
         # Calculate total duplicate waste
         duplicate_waste_mb = 0
@@ -457,15 +503,16 @@ class WorkspaceCoordinator:
                 "wasted_space_mb": round(temp_waste_mb, 2)
             },
             "runaway_bot_check": runaway_check,
+            "git_compatibility": git_compat,
             "health_score": self._calculate_health_score(
-                duplicate_waste_mb, temp_waste_mb, runaway_check
+                duplicate_waste_mb, temp_waste_mb, runaway_check, git_compat
             )
         }
         
         return report
     
     def _calculate_health_score(self, duplicate_mb: float, temp_mb: float, 
-                                runaway: Dict) -> str:
+                                runaway: Dict, git_compat: Dict) -> str:
         """Calculate overall workspace health score."""
         issues = 0
         
@@ -479,6 +526,9 @@ class WorkspaceCoordinator:
         
         if runaway["is_runaway"]:
             issues += 3
+
+        if not git_compat["is_compatible"]:
+            issues += len(git_compat["issues"])
         
         if issues == 0:
             return "Excellent"
@@ -514,3 +564,34 @@ class WorkspaceCoordinator:
     def validate(self) -> bool:
         """Validate WorkspaceCoordinator state."""
         return self.workspace_root.exists()
+
+    def capture_diagnostic_pack(self, task_id: Optional[str] = None) -> str:
+        """
+        Capture a diagnostic pack for self-healing analysis.
+        Includes workspace report, recent logs, and environment info.
+        """
+        logger.info(f"Capturing diagnostic pack for task {task_id or 'N/A'}...")
+        
+        report = self.generate_workspace_report()
+        
+        # Add environment info
+        import sys
+        import platform
+        report["env"] = {
+            "python_version": sys.version,
+            "platform": platform.platform(),
+            "processor": platform.processor(),
+            "cwd": os.getcwd()
+        }
+        
+        # Save to artifacts
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"diagnostic_{task_id or 'global'}_{timestamp}.json"
+        output_path = Path("artifacts/diagnostics") / filename
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(output_path, 'w') as f:
+            json.dump(report, f, indent=2)
+            
+        logger.success(f"Diagnostic pack saved to {output_path}")
+        return str(output_path)

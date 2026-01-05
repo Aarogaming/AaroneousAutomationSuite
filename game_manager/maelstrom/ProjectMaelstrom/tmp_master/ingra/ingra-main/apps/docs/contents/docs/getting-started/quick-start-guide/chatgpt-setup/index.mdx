@@ -1,0 +1,47 @@
+---
+title: Integrating {CONST.APP_NAME} with Custom ChatGPT
+description: Step-by-step guide to integrate {CONST.APP_NAME} with Custom ChatGPT, including API Key setup, openapi.json, and privacy settings.
+---
+
+## How to Integrate {CONST.APP_NAME} with Custom ChatGPT
+
+<Stepper>
+
+  <StepperItem title="Step 1: Start a New Custom ChatGPT Action">
+    ### Create a Custom ChatGPT
+    
+    Begin by creating a new action in your Custom ChatGPT setup. Click on **Create new action** to get started.
+    ![Screenshot of Create Custom ChatGPT](/static/docs/chatgpt-create-customgpt.png)
+  </StepperItem>
+
+  <StepperItem title="Step 2: Configure Actions in Ingra">
+    ### Set Up Actions in Ingra
+    
+    Now, configure the actions needed for integration:
+    - **Schema**: Obtain your [openapi.json file]({CONST.HUBS_OPENAPI_JSON_URL}) or use the [OpenAPI Generator]({CONST.HUBS_OPENAPI_JSON_URL}) from {CONST.APP_NAME}.
+    - **Privacy Policy**: Provide a link to your Privacy Policy, or use Ingra's default policy at `{CONST.APP_LEGAL_PRIVACY_POLICY_URL}`.
+    
+    ![Screenshot of ChatGPT Actions Setup](/static/docs/chatgpt-actions-setup.png)
+
+    <Note title="Heads Up!" type="info">
+      Authentication setup will be covered in the next step.
+    </Note>
+  </StepperItem>
+
+  <StepperItem title="Step 3: Set Up API Key Authentication">
+    ### Configure Authentication with an API Key
+
+    Secure your integration by setting up API Key authentication:
+    - **Authentication Type**: Select `API Key`.
+    - **API Key**: Use one of the keys from your [API Key settings]({CONST.HUBS_SETTINGS_APIKEY_URL}) in {CONST.APP_NAME}.
+    - **Auth Type**: Choose `Custom` and set the header name to `X-API-KEY`.
+    
+    ![Screenshot of ChatGPT API Key Setup](/static/docs/chatgpt-apikey-setup.png)
+  </StepperItem>
+
+</Stepper>
+
+## Additional Resources
+
+- [How to Create a GPT - OpenAI Documentation](https://help.openai.com/en/articles/8554397-creating-a-gpt)
+- [Custom Actions Guide - OpenAI Documentation](https://platform.openai.com/docs/actions/introduction)

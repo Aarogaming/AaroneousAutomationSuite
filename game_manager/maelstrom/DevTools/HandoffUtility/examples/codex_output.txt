@@ -1,0 +1,5 @@
+Summary:
+- Implemented feature X
+- Files touched: src/app.cs, src/utils.cs
+Next prompt:
+Please refactor utils.

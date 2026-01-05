@@ -14,6 +14,7 @@ from core.database.manager import DatabaseManager
 from core.database.models import (
     AgentSession, HelpRequest, TaskLock, Task
 )
+from core.managers.protocol import HandoffObject
 
 
 # Agent capability profiles
@@ -37,10 +38,10 @@ AGENT_CAPABILITIES = {
         "best_for": ["large_refactors", "comprehensive_docs", "test_suites"]
     },
     "Sixth": {
-        "strengths": ["analysis", "documentation", "testing", "code_generation"],
-        "languages": ["python", "javascript", "markdown"],
+        "strengths": ["analysis", "documentation", "testing", "code_generation", "system_management"],
+        "languages": ["python", "javascript", "markdown", "c#"],
         "context_window": "xxlarge",
-        "best_for": ["large_refactors", "comprehensive_docs", "test_suites"]
+        "best_for": ["large_refactors", "comprehensive_docs", "test_suites", "private_features"]
     },
     "Cline": {
         "strengths": ["autonomous_execution", "file_operations", "shell_commands"],
@@ -62,9 +63,10 @@ class AgentCollaborationManager:
     - Capability-based task matching
     """
     
-    def __init__(self, db: DatabaseManager):
+    def __init__(self, db: DatabaseManager, config: Optional[Any] = None):
         """Initialize with database manager."""
         self.db = db
+        self.config = config
         self.capabilities = AGENT_CAPABILITIES
     
     # ===== Check-In/Check-Out =====
@@ -535,6 +537,14 @@ class AgentCollaborationManager:
         capabilities: Dict[str, Any]
     ) -> float:
         """Calculate how well agent capabilities match a task."""
+        # Feature gating: only allow certain agents for private features if not in private mode
+        is_private_task = "private" in task_description.lower() or "private" in task_tags
+        if is_private_task and self.config and not getattr(self.config, "is_private_version", False):
+            # If it's a private task but we're not in private mode, 
+            # only allow agents with 'private_features' strength to even see it (or penalize heavily)
+            if "private_features" not in capabilities.get("best_for", []):
+                return 0.0
+
         score = 0.0
         
         # Check tags against best_for
@@ -562,3 +572,24 @@ class AgentCollaborationManager:
             score += context_bonus
         
         return min(1.0, score)
+
+    def relay_handoff(self, handoff: HandoffObject):
+        """
+        Relay handoff context to the target agent or store it for the next claimant.
+        Implementation for AAS-212.
+        """
+        logger.info(f"Relaying handoff from {handoff.source_agent} for task {handoff.task_id}")
+        
+        from core.database.repositories import HandoffRepository
+        with self.db.get_session() as session:
+            HandoffRepository.create(
+                session,
+                task_id=handoff.task_id,
+                source_agent=handoff.source_agent,
+                target_agent=handoff.target_agent,
+                context_summary=handoff.context_summary,
+                technical_details=handoff.technical_details,
+                relevant_files=handoff.relevant_files,
+                pending_actions=handoff.pending_actions
+            )
+        logger.success(f"Handoff context for {handoff.task_id} persisted via CollaborationManager.")

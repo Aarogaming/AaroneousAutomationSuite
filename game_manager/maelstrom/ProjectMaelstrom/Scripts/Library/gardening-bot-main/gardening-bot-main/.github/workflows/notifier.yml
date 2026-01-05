@@ -1,0 +1,29 @@
+name: Notify Couch Potatoes
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"  # Run every 5 minutes
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run notifier
+        env:
+          DB_CREDENTIALS: ${{ secrets.DB_CREDENTIALS }}
+          FROM_EMAIL: ${{ secrets.FROM_EMAIL }}
+          FROM_PASSWORD: ${{ secrets.FROM_PASSWORD }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+        run: python utils/notifier.py

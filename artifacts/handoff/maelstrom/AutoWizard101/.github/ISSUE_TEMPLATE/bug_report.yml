@@ -1,0 +1,51 @@
+name: Bug report
+description: Report a reproducible bug
+labels: []
+title: "[Bug] "
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Briefly describe the bug
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps to trigger the issue
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / console output
+      description: Attach relevant logs or output (e.g., dotnet test + toolkit selftest)
+      render: shell
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Add if UI-related
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, .NET SDK version, app version/tag, commit SHA
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks run
+      options:
+        - label: "dotnet build ProjectMaelstrom/ProjectMaelstrom.sln -c Debug"
+        - label: "dotnet test ProjectMaelstrom/ProjectMaelstrom.sln -c Debug"
+        - label: "dotnet run --project MaelstromToolkit/MaelstromToolkit.csproj -- selftest"

@@ -50,13 +50,25 @@ class DatabaseManager:
             poolclass=StaticPool  # StaticPool for SQLite
         )
         
-        # Enable foreign key constraints (SQLite doesn't enable by default)
-        if enable_foreign_keys:
-            @event.listens_for(Engine, "connect")
-            def set_sqlite_pragma(dbapi_conn, connection_record):
-                cursor = dbapi_conn.cursor()
+        # Enable foreign key constraints and load extensions
+        @event.listens_for(Engine, "connect")
+        def set_sqlite_pragma(dbapi_conn, connection_record):
+            cursor = dbapi_conn.cursor()
+            if enable_foreign_keys:
                 cursor.execute("PRAGMA foreign_keys=ON")
-                cursor.close()
+            
+            # Load sqlite-vec extension if available
+            try:
+                import sqlite_vec
+                dbapi_conn.enable_load_extension(True)
+                sqlite_vec.load(dbapi_conn)
+                logger.debug("Loaded sqlite-vec extension")
+            except ImportError:
+                logger.warning("sqlite-vec not found, vector search will be disabled")
+            except Exception as e:
+                logger.error(f"Failed to load sqlite-vec extension: {e}")
+            
+            cursor.close()
         
         # Create session factory
         self.SessionLocal = sessionmaker(
@@ -118,8 +130,9 @@ class DatabaseManager:
         Args:
             sql: SQL statement to execute
         """
+        from sqlalchemy import text
         with self.engine.connect() as connection:
-            connection.execute(sql)
+            connection.execute(text(sql))
             connection.commit()
         logger.debug(f"Executed raw SQL: {sql[:50]}...")
     
