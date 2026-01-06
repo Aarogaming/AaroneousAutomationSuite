@@ -29,10 +29,10 @@ import os
 from datetime import datetime, timedelta
 from typing import Dict, Set, List, Any, Optional
 from loguru import logger
-from core.config.manager import load_config
-from core.handoff.manager import HandoffManager
+from core.config import load_config
+from core.handoff_manager import HandoffManager
 from core.batch.processor import BatchProcessor
-from core.batch.task_generator import TaskGenerator
+from core.batch_gen import TaskGenerator
 from scripts.auto_batch import AutoBatcher
 
 

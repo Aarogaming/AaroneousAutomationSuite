@@ -4,6 +4,7 @@ Test suite for Multi-Modal Research Agent (AAS-108)
 
 import asyncio
 import sys
+import pytest
 from pathlib import Path
 
 # Add project root to path
@@ -11,9 +12,10 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from plugins.ai_assistant.research_agent import MultiModalResearchAgent, ResearchReport
-from core.config.manager import load_config
+from core.config import load_config
 
 
+@pytest.mark.asyncio
 async def test_initialization():
     """Test: Agent initialization"""
     print("TEST: Agent initialization")
@@ -23,12 +25,12 @@ async def test_initialization():
         assert agent.model == "gpt-4o", "Should use GPT-4o model"
         assert agent.client is not None, "Should have OpenAI client"
         print("[OK] PASS: Agent initialization\n")
-        return True
     except Exception as e:
         print(f"[FAIL] Agent initialization: {e}\n")
-        return False
+        raise
 
 
+@pytest.mark.asyncio
 async def test_web_search_simulation():
     """Test: Web search (simulated)"""
     print("TEST: Web search simulation")
@@ -46,12 +48,12 @@ async def test_web_search_simulation():
             print(f"   {i}. {source.title}")
         
         print("[OK] PASS: Web search simulation\n")
-        return True
     except Exception as e:
         print(f"[FAIL] Web search: {e}\n")
-        return False
+        raise
 
 
+@pytest.mark.asyncio
 async def test_code_execution_simulation():
     """Test: Code execution (simulated)"""
     print("TEST: Code execution simulation")
@@ -68,12 +70,12 @@ async def test_code_execution_simulation():
         print(f"   Output: {result['output'][:100]}...")
         
         print("[OK] PASS: Code execution simulation\n")
-        return True
     except Exception as e:
         print(f"[FAIL] Code execution: {e}\n")
-        return False
+        raise
 
 
+@pytest.mark.asyncio
 async def test_research_text_only():
     """Test: Text-only research"""
     print("TEST: Text-only research")
@@ -97,12 +99,12 @@ async def test_research_text_only():
         print(f"   Confidence: {report.confidence:.0%}")
         
         print("[OK] PASS: Text-only research\n")
-        return True
     except Exception as e:
         print(f"[FAIL] Text-only research: {e}\n")
-        return False
+        raise
 
 
+@pytest.mark.asyncio
 async def test_research_with_code():
     """Test: Research with code analysis"""
     print("TEST: Research with code analysis")
@@ -120,12 +122,12 @@ async def test_research_with_code():
         
         print(f"   Findings: {len(report.findings)}")
         print("[OK] PASS: Research with code analysis\n")
-        return True
     except Exception as e:
         print(f"[FAIL] Research with code: {e}\n")
-        return False
+        raise
 
 
+@pytest.mark.asyncio
 async def test_report_formatting():
     """Test: Report formatting"""
     print("TEST: Report formatting")
@@ -153,12 +155,12 @@ async def test_report_formatting():
         print("   Markdown format: OK")
         print("   JSON format: OK")
         print("[OK] PASS: Report formatting\n")
-        return True
     except Exception as e:
         print(f"[FAIL] Report formatting: {e}\n")
-        return False
+        raise
 
 
+@pytest.mark.asyncio
 async def test_image_analysis_mock():
     """Test: Image analysis (mock - skipped if no test image)"""
     print("TEST: Image analysis (mock)")
@@ -167,7 +169,7 @@ async def test_image_analysis_mock():
     test_image = PROJECT_ROOT / "artifacts" / "test_image.png"
     if not test_image.exists():
         print("   [SKIP] No test image found, skipping\n")
-        return True
+        return
     
     try:
         agent = MultiModalResearchAgent()
@@ -181,10 +183,9 @@ async def test_image_analysis_mock():
         
         print(f"   Analysis: {analysis[:100]}...")
         print("[OK] PASS: Image analysis\n")
-        return True
     except Exception as e:
         print(f"[FAIL] Image analysis: {e}\n")
-        return False
+        raise
 
 
 async def run_all_tests():

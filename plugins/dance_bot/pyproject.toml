@@ -30,10 +30,10 @@ dependencies = [
 Homepage = "https://github.com/kennyhngo/Wizard101_DanceBot"
 
 [project.scripts]
-dancebot = "wizard101_dancebot.cli:main"
+dancebot = "cli:main"
 
 [tool.setuptools.packages.find]
-include = ["wizard101_dancebot*"]
+include = ["*"]
 
 [tool.setuptools.package-data]
-"wizard101_dancebot" = ["assets/**/*"]
+"*" = ["assets/**/*"]

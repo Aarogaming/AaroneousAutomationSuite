@@ -3,8 +3,8 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.config.manager import load_config
-from core.handoff.manager import HandoffManager
+from core.config import load_config
+from core.handoff_manager import HandoffManager
 import asyncio
 
 async def main():

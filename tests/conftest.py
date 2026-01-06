@@ -1,8 +1,9 @@
+import os
 import pytest
 import asyncio
 from typing import Any, Dict, Optional
 from core.managers import ManagerHub
-from core.managers.adapters.base import GameAdapter, AdapterCapabilities, GameState, AdapterState
+from core.adapter_base import GameAdapter, AdapterCapabilities, GameState, AdapterState
 
 class MockAdapter(GameAdapter):
     """
@@ -58,6 +59,19 @@ def mock_hub():
     """Fixture for a ManagerHub with mock components."""
     hub = ManagerHub.create()
     return hub
+
+
+@pytest.fixture(scope="session", autouse=True)
+def test_db_path(tmp_path_factory):
+    """Use an isolated test database for all tests."""
+    db_path = tmp_path_factory.mktemp("db") / "test.db"
+    os.environ["AAS_DB_PATH"] = str(db_path)
+    return db_path
+
+@pytest.fixture
+def hub(mock_hub):
+    """Alias for mock_hub to support existing tests."""
+    return mock_hub
 
 @pytest.fixture
 def mock_adapter():

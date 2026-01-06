@@ -68,14 +68,14 @@ class DocsGenerator:
         logger.info("Starting documentation generation...")
         
         # Import managers dynamically
-        import core.managers.tasks as tasks
-        import core.managers.collaboration as collaboration
-        import core.managers.knowledge as knowledge
-        import core.managers.workspace as workspace
-        import core.managers.artifacts as artifacts
-        import core.managers.batch as batch
-        import core.managers.self_healing as self_healing
-        import core.managers.protocol as protocol
+        import core.task_manager as tasks
+        import core.collaboration_manager as collaboration
+        import core.knowledge_manager as knowledge
+        import core.workspace_manager as workspace
+        import core.artifact_manager as artifacts
+        import core.batch_manager as batch
+        import core.self_healing_manager as self_healing
+        import core.protocol_manager as protocol
         
         manager_map = {
             "tasks": (tasks.TaskManager, "TaskManager"),

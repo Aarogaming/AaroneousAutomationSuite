@@ -19,9 +19,11 @@ For a detailed project index, see [docs/INDEX.md](docs/INDEX.md).
 - **AAS Dev Studio:** Internal code editor and terminal for self-building capabilities.
 
 ## Getting Started
-1. Install dependencies: `pip install -r requirements.txt`
-2. Configure your local environment in `.env` (OpenAI API Key, etc.)
-3. Start the Hub: `python core/main.py`
+1. Install Python 3.12 and create a venv: `py -3.12 -m venv .venv`
+2. Activate the venv: `.\.venv\Scripts\activate` (Windows) or `source .venv/bin/activate` (macOS/Linux)
+3. Install dependencies: `python -m pip install -r requirements.txt`
+4. Configure your local environment in `.env` (OpenAI API Key, etc.)
+5. Start the Hub: `python hub.py`
 
 ## Game Learning Initiative 🎮🧠
 

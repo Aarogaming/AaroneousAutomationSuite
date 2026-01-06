@@ -9,7 +9,7 @@ from typing import Dict, Any, List
 from loguru import logger
 
 from openai import OpenAI
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 
 class BatchAutoClear:

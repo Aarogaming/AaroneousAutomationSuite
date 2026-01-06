@@ -5,8 +5,8 @@ import os
 # Add project root to path
 sys.path.append(os.getcwd())
 
-from core.managers.tasks import TaskManager
-from core.database.models import TaskPriority
+from core.task_manager import TaskManager
+from core.db_models import TaskPriority
 
 async def main():
     print("Initializing TaskManager...")

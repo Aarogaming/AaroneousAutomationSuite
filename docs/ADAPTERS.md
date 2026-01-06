@@ -312,7 +312,7 @@ Wizard101Adapter integrates with Maelstrom gRPC bridge:
 
 ```python
 # core/ipc/server.py provides gRPC stub
-from core.ipc.server import get_maelstrom_stub
+from core.ipc_server import get_maelstrom_stub
 
 stub = await get_maelstrom_stub()
 adapter = Wizard101Adapter(stub=stub)

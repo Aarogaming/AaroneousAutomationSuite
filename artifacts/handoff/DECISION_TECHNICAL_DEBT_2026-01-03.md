@@ -18,8 +18,8 @@ After completing AAS-114 (gRPC Task Broadcasting) and file size optimization, a 
 
 | Issue | Location | Impact | Root Cause |
 |-------|----------|--------|------------|
-| Missing `core.handoff.manager` import | `core/managers/tasks.py:56`<br>`core/main.py:8` | Import errors prevent module loading | Incomplete refactoring - `HandoffManager` logic moved to `TaskManager` but imports not updated |
-| Missing `core.managers.health` import | `core/managers/tasks.py:533` | Health aggregation broken | Module doesn't exist or wrong path |
+| Missing `core.handoff_manager` import | `core/managers/tasks.py:56`<br>`core/main.py:8` | Import errors prevent module loading | Incomplete refactoring - `HandoffManager` logic moved to `TaskManager` but imports not updated |
+| Missing `core.health_manager` import | `core/managers/tasks.py:533` | Health aggregation broken | Module doesn't exist or wrong path |
 | SQLAlchemy ORM comparison errors | `core/managers/tasks.py:227, 246, 305, 416-417` | Type checker fails, potential runtime bugs | Using column objects in boolean context instead of query methods |
 
 ### 🟡 **High Priority (Quality)**
@@ -112,7 +112,7 @@ After completing AAS-114 (gRPC Task Broadcasting) and file size optimization, a 
 3. **Add Import Guards**
    ```python
    try:
-       from core.handoff.manager import HandoffManager
+       from core.handoff_manager import HandoffManager
    except ImportError:
        # Fallback or warning
        HandoffManager = None

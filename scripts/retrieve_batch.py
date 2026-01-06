@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import json
 from openai import OpenAI
-from core.config.manager import AASConfig
+from core.config import AASConfig
 from datetime import datetime
 
 config = AASConfig()

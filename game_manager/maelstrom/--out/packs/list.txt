@@ -1,2 +1,0 @@
-Packs: 1
-aas.pack.sample.notepad | AAS Sample Notepad Pack | 1.0.0 | scenarios=1

@@ -6,7 +6,7 @@ from loguru import logger
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.config.manager import load_config
+from core.config import load_config
 from core.handoff.vision import VisionClient
 
 async def main():

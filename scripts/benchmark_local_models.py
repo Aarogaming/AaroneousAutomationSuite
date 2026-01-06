@@ -17,7 +17,7 @@ from tabulate import tabulate
 # Add core to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.config.manager import load_config
+from core.config import load_config
 
 
 class ModelBenchmark:

@@ -1,6 +1,6 @@
 import asyncio
 from core.managers import ManagerHub
-from core.managers.protocol import HandoffObject
+from core.protocol_manager import HandoffObject
 from loguru import logger
 
 async def test_handoff_protocol():
@@ -9,7 +9,7 @@ async def test_handoff_protocol():
     hub = ManagerHub.create()
     
     # 0. Ensure task exists (for foreign key)
-    from core.database.repositories import TaskRepository
+    from core.db_repositories import TaskRepository
     with hub.db.get_session() as session:
         if not TaskRepository.get_by_id(session, "AAS-212"):
             TaskRepository.create(session, "AAS-212", "Implement Agent Handoff Protocol")

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   LayoutDashboard, 
   ListTodo, 
@@ -55,10 +55,49 @@ interface Event {
   color: string;
 }
 
+interface HealthMetrics {
+  cpu_usage: string;
+  cpu_progress: number;
+  memory_usage: string;
+  memory_progress: number;
+  network_latency: string;
+  network_progress: number;
+  database_load: string;
+  database_progress: number;
+}
+
+interface HealthSummary {
+  status: string;
+  health_score: string;
+  uptime: string;
+  metrics: HealthMetrics;
+}
+
+interface FullConfig {
+  openai_model: string;
+  debug_mode: boolean;
+  policy_mode: string;
+  autonomy_level: string;
+  require_consent: boolean;
+  allow_screenshots: boolean;
+  ollama_url: string;
+  lm_studio_url: string;
+  batch_auto_monitor: boolean;
+  encryption_enabled: boolean;
+  responses_api_enabled: boolean;
+  enable_web_search: boolean;
+  enable_file_search: boolean;
+  enable_code_interpreter: boolean;
+  ngrok_enabled: boolean;
+  ngrok_region: string;
+  ngrok_port: number;
+  ngrok_configured: boolean;
+}
+
 interface Batch {
   id: string;
   status: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   request_counts?: {
     total: number;
     completed: number;
@@ -66,96 +105,152 @@ interface Batch {
   };
 }
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000').replace(/\/$/, '');
+const WS_BASE = API_BASE.replace(/^http/, 'ws');
+
+const normalizeStatus = (status: string): string => {
+  const key = status.trim().toLowerCase();
+  if (key === 'in progress' || key === 'in_progress') return 'In Progress';
+  if (key === 'done' || key === 'completed') return 'Done';
+  if (key === 'queued' || key === 'queue') return 'Queued';
+  if (key === 'blocked') return 'Blocked';
+  if (key === 'error' || key === 'failed') return 'Error';
+  return status;
+};
+
 function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
-  const [autoUpdate, setAutoUpdate] = useState(false);
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [batchStats, setBatchStats] = useState({ total: 0, configured: false });
+  const [batchStats, setBatchStats] = useState({ total: 0, configured: false, cost_savings: '0%' });
   const [autoMonitorEnabled, setAutoMonitorEnabled] = useState(false);
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([]);
   const [ollamaStatus, setOllamaStatus] = useState<'online' | 'offline'>('offline');
   const [lmStudioStatus, setLmStudioStatus] = useState<'online' | 'offline'>('offline');
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const tasksRes = await fetch('http://localhost:8000/tasks');
-        const tasksData = await tasksRes.json();
-        // Map backend task status to frontend Task interface if needed
-        // For now, use mock if backend is empty
-        if (tasksData.tasks && tasksData.tasks.length > 0) {
-          setTasks(tasksData.tasks);
-        } else {
-          setTasks([
-            { id: 'AAS-114', title: 'Implement gRPC Task Broadcasting', priority: 'High', status: 'Done', assignee: 'Sixth', updated: '2026-01-03' },
-            { id: 'AAS-213', title: 'Implement Live Event Stream (WebSockets)', priority: 'High', status: 'In Progress', assignee: 'GitHub Copilot', updated: '2026-01-03' },
-            { id: 'AAS-214', title: 'Scaffold Mission Control Dashboard', priority: 'High', status: 'Done', assignee: 'Sixth', updated: '2026-01-03' },
-          ]);
-        }
-
-        const agentsRes = await fetch('http://localhost:8000/agents');
-        const agentsData = await agentsRes.json();
-        // AgentsData is an array, set it directly
-        setAgents(agentsData || []);
-        
-        // Fetch batch status
-        try {
-          const batchRes = await fetch('http://localhost:8000/batch/status');
-          if (batchRes.ok) {
-            const batchData = await batchRes.json();
-            setBatches(batchData.active_batches || []);
-            setBatchStats({ total: (batchData.active_batches || []).length, configured: batchData.configured || false });
-            // Set auto-monitor status from batch status response
-            if (batchData.auto_monitor_enabled !== undefined) {
-              setAutoMonitorEnabled(batchData.auto_monitor_enabled);
-            }
-          }
-        } catch {
-          setBatchStats({ total: 0, configured: false });
-        }
-
-        // Fetch Ollama status
-        try {
-          const ollamaRes = await fetch('http://localhost:11434/api/tags');
-          if (ollamaRes.ok) {
-            const data = await ollamaRes.json();
-            setOllamaModels(data.models || []);
-            setOllamaStatus('online');
-          } else {
-            setOllamaStatus('offline');
-          }
-        } catch {
-          setOllamaStatus('offline');
-        }
-
-        // Fetch LM Studio status
-        try {
-          const lmStudioRes = await fetch('http://192.168.1.2:1234/v1/models');
-          if (lmStudioRes.ok) {
-            setLmStudioStatus('online');
-          } else {
-            setLmStudioStatus('offline');
-          }
-        } catch {
-          setLmStudioStatus('offline');
-        }
-      } catch (err) {
-        console.error("Failed to fetch dashboard data:", err);
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
+  const [lmStudioUrl, setLmStudioUrl] = useState('http://localhost:1234');
+  const [ngrokRegion, setNgrokRegion] = useState('us');
+  const [ngrokPort, setNgrokPort] = useState(8000);
+  const [health, setHealth] = useState<HealthSummary | null>(null);
+  const [config, setConfig] = useState<FullConfig | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
 
+  const normalizedTasks = tasks.map(task => ({
+    ...task,
+    status: normalizeStatus(task.status),
+  }));
+  const activeTasks = normalizedTasks.filter(task => task.status !== 'Done');
+  const completedTasks = normalizedTasks.filter(task => task.status === 'Done');
+  const healthTrend =
+    health?.status === 'healthy'
+      ? 'Stable'
+      : health?.status === 'warning'
+        ? 'Warning'
+        : health?.status === 'critical'
+          ? 'Alert'
+          : '---';
+
+  const fetchData = useCallback(async () => {
+    try {
+      const healthRes = await fetch(`${API_BASE}/health`);
+      if (healthRes.ok) {
+        const healthData = await healthRes.json();
+        setHealth(healthData);
+      }
+
+      const configRes = await fetch(`${API_BASE}/config/all`);
+      if (configRes.ok) {
+        const configData = await configRes.json();
+        setConfig(configData);
+        setLmStudioUrl(configData.lm_studio_url);
+        setAutoMonitorEnabled(configData.batch_auto_monitor);
+        setNgrokRegion(configData.ngrok_region || 'us');
+        setNgrokPort(typeof configData.ngrok_port === 'number' ? configData.ngrok_port : 8000);
+      }
+
+      const tasksRes = await fetch(`${API_BASE}/tasks`);
+      if (tasksRes.ok) {
+        const tasksData = await tasksRes.json();
+        setTasks(tasksData.tasks || []);
+      }
+
+      const agentsRes = await fetch(`${API_BASE}/agents`);
+      if (agentsRes.ok) {
+        const agentsData = await agentsRes.json();
+        setAgents(agentsData || []);
+      }
+      
+      try {
+        const batchRes = await fetch(`${API_BASE}/batch/status`);
+        if (batchRes.ok) {
+          const batchData = await batchRes.json();
+          setBatches(batchData.active_batches || []);
+          setBatchStats({ 
+            total: (batchData.active_batches || []).length, 
+            configured: batchData.configured || false,
+            cost_savings: batchData.cost_savings || '0%'
+          });
+          if (batchData.auto_monitor_enabled !== undefined) {
+            setAutoMonitorEnabled(batchData.auto_monitor_enabled);
+          }
+        }
+      } catch {
+        setBatchStats({ total: 0, configured: false, cost_savings: '0%' });
+      }
+
+      try {
+        const ollamaRes = await fetch('http://localhost:11434/api/tags');
+        if (ollamaRes.ok) {
+          const data = await ollamaRes.json();
+          setOllamaModels(data.models || []);
+          setOllamaStatus('online');
+        } else {
+          setOllamaStatus('offline');
+        }
+      } catch {
+        setOllamaStatus('offline');
+      }
+    } catch (err) {
+      console.error("Failed to fetch dashboard data:", err);
+    }
+  }, []);
+
+  // Separate effect for LM Studio status to avoid dependency loops
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8000/ws/events');
+    const checkLmStudio = async () => {
+      try {
+        const lmStudioRes = await fetch(`${lmStudioUrl}/v1/models`);
+        if (lmStudioRes.ok) {
+          setLmStudioStatus('online');
+        } else {
+          setLmStudioStatus('offline');
+        }
+      } catch {
+        setLmStudioStatus('offline');
+      }
+    };
+    checkLmStudio();
+  }, [lmStudioUrl]);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    const tick = () => {
+      if (isMounted) fetchData();
+    };
+
+    tick();
+    const interval = setInterval(tick, 5000);
+    
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [fetchData]);
+
+  useEffect(() => {
+    const socket = new WebSocket(`${WS_BASE}/ws/events`);
     
     socket.onopen = () => {
       console.log("Connected to AAS WebSocket");
@@ -170,21 +265,26 @@ function App() {
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.event_type) {
-          // Task event
+        if (data.event_type === 'CONFIG_UPDATED') {
+          if (data.key === 'lm_studio_url') setLmStudioUrl(data.value);
+          if (data.key === 'batch_auto_monitor') setAutoMonitorEnabled(data.value);
+          if (data.key === 'ngrok_region') setNgrokRegion(data.value);
+          if (data.key === 'ngrok_port') setNgrokPort(Number(data.value));
+          setConfig(prev => prev ? { ...prev, [data.key]: data.value } : null);
+          setEvents(prev => [{
+            timestamp: new Date().toLocaleTimeString(),
+            type: 'SYSTEM',
+            message: `Config updated: ${data.key} = ${data.value}`,
+            color: 'text-amber-400'
+          }, ...prev].slice(0, 50));
+        } else if (data.event_type) {
           setEvents(prev => [{
             timestamp: new Date().toLocaleTimeString(),
             type: 'TASK',
             message: `${data.task_id} ${data.event_type.toLowerCase()} by ${data.assignee}`,
             color: data.event_type === 'COMPLETED' ? 'text-emerald-400' : 'text-indigo-400'
           }, ...prev].slice(0, 50));
-
-          // Refresh tasks
-          fetch('http://localhost:8000/tasks')
-            .then(res => res.json())
-            .then(data => {
-              if (data.tasks) setTasks(data.tasks);
-            });
+          fetchData();
         }
       } catch (err) {
         console.error("WS Message Error:", err);
@@ -196,27 +296,22 @@ function App() {
     };
 
     return () => socket.close();
-  }, []);
+  }, [fetchData]);
 
-  // Toggle auto-monitor handler
-  const toggleAutoMonitor = async () => {
+  const updateConfig = async (key: string, value: unknown) => {
     try {
-      const res = await fetch('http://localhost:8000/batch/auto-monitor', {
+      const res = await fetch(`${API_BASE}/config/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: !autoMonitorEnabled })
+        body: JSON.stringify({ key, value })
       });
-      const data = await res.json();
-      if (res.ok) {
-        setAutoMonitorEnabled(data.enabled);
-        alert(`✅ Auto-Batch Monitor ${data.enabled ? 'enabled' : 'disabled'} - active immediately!`);
-      } else {
-        alert('❌ Failed to toggle auto-monitor');
-      }
-    } catch (e) {
-      alert('❌ Failed to toggle auto-monitor');
+      if (!res.ok) alert(`❌ Failed to update ${key}`);
+    } catch {
+      alert(`❌ Failed to update ${key}`);
     }
   };
+
+  const toggleAutoMonitor = () => updateConfig('batch_auto_monitor', !autoMonitorEnabled);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans">
@@ -271,16 +366,14 @@ function App() {
 
         {activeTab === 'overview' && (
           <>
-            {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <StatCard label="Active Tasks" value={tasks.filter(t => t.status !== 'Done').length.toString()} icon={<ListTodo className="text-indigo-400" />} trend="+2" />
-              <StatCard label="Fleet Health" value="98%" icon={<Activity className="text-emerald-400" />} trend="Stable" />
-              <StatCard label="Agents Online" value={agents.length.toString()} icon={<User className="text-amber-400" />} trend="Max" />
-              <StatCard label="Uptime" value="14d 2h" icon={<Clock className="text-sky-400" />} trend="100%" />
+              <StatCard label="Active Tasks" value={activeTasks.length.toString()} icon={<ListTodo className="text-indigo-400" />} trend="Live" />
+              <StatCard label="Fleet Health" value={health?.health_score || '---'} icon={<Activity className="text-emerald-400" />} trend={healthTrend} />
+              <StatCard label="Agents Online" value={agents.length.toString()} icon={<User className="text-amber-400" />} trend="Active" />
+              <StatCard label="Uptime" value={health?.uptime || '---'} icon={<Clock className="text-sky-400" />} trend="Stable" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Task Board Preview */}
               <section className="lg:col-span-2 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
                 <div className="p-6 border-b border-slate-800 flex justify-between items-center">
                   <h3 className="text-lg font-semibold text-white">Active Task Board</h3>
@@ -297,7 +390,14 @@ function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800">
-                      {tasks.slice(0, 5).map(task => (
+                      {normalizedTasks.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-6 text-sm text-slate-500 italic">
+                            No tasks available.
+                          </td>
+                        </tr>
+                      )}
+                      {normalizedTasks.slice(0, 5).map(task => (
                         <tr key={task.id} className="hover:bg-slate-800/20 transition-colors">
                           <td className="px-6 py-4 text-sm font-mono text-slate-400">{task.id}</td>
                           <td className="px-6 py-4">
@@ -315,7 +415,6 @@ function App() {
                 </div>
               </section>
 
-              {/* Live Feed */}
               <section className="bg-slate-900 rounded-2xl border border-slate-800 flex flex-col">
                 <div className="p-6 border-b border-slate-800">
                   <h3 className="text-lg font-semibold text-white">Live Event Stream</h3>
@@ -339,10 +438,9 @@ function App() {
 
         {activeTab === 'tasks' && (
           <div className="space-y-6">
-            {/* Active Tasks */}
             <section className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
               <div className="p-6 border-b border-slate-800">
-                <h3 className="text-lg font-semibold text-white">Active Tasks ({tasks.filter(t => t.status.toLowerCase() !== 'done').length})</h3>
+                <h3 className="text-lg font-semibold text-white">Active Tasks ({activeTasks.length})</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -356,7 +454,14 @@ function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
-                    {tasks.filter(t => t.status.toLowerCase() !== 'done').map(task => (
+                    {activeTasks.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-6 text-sm text-slate-500 italic">
+                          No active tasks.
+                        </td>
+                      </tr>
+                    )}
+                    {activeTasks.map(task => (
                       <tr key={task.id} className="hover:bg-slate-800/20 transition-colors">
                         <td className="px-6 py-4 text-sm font-mono text-slate-400">{task.id}</td>
                         <td className="px-6 py-4">
@@ -375,7 +480,6 @@ function App() {
               </div>
             </section>
 
-            {/* Completed Tasks - Collapsible */}
             <section className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
               <button 
                 onClick={() => setShowCompletedTasks(!showCompletedTasks)}
@@ -383,11 +487,11 @@ function App() {
               >
                 <div className="flex items-center gap-3">
                   {showCompletedTasks ? <ChevronDown size={20} className="text-slate-400" /> : <ChevronRight size={20} className="text-slate-400" />}
-                  <h3 className="text-lg font-semibold text-white">Completed Tasks ({tasks.filter(t => t.status.toLowerCase() === 'done').length})</h3>
+                  <h3 className="text-lg font-semibold text-white">Completed Tasks ({completedTasks.length})</h3>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-emerald-400">
                   <CheckCircle2 size={16} />
-                  <span>{tasks.filter(t => t.status.toLowerCase() === 'done').length} Done</span>
+                  <span>{completedTasks.length} Done</span>
                 </div>
               </button>
               
@@ -404,7 +508,14 @@ function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800">
-                      {tasks.filter(t => t.status.toLowerCase() === 'done').map(task => (
+                      {completedTasks.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-6 text-sm text-slate-500 italic">
+                            No completed tasks yet.
+                          </td>
+                        </tr>
+                      )}
+                      {completedTasks.map(task => (
                         <tr key={task.id} className="hover:bg-slate-800/20 transition-colors opacity-60">
                           <td className="px-6 py-4 text-sm font-mono text-slate-400">{task.id}</td>
                           <td className="px-6 py-4">
@@ -445,7 +556,7 @@ function App() {
                 <div className="text-center py-12">
                   <Terminal className="mx-auto text-slate-600 mb-4" size={48} />
                   <p className="text-slate-500 italic">Waiting for events...</p>
-                  <p className="text-xs text-slate-600 mt-2">WebSocket connected to ws://localhost:8000/ws/events</p>
+                  <p className="text-xs text-slate-600 mt-2">WebSocket connected to {`${WS_BASE}/ws/events`}</p>
                 </div>
               ) : (
                 <div className="space-y-2 font-mono text-sm">
@@ -469,7 +580,6 @@ function App() {
 
         {activeTab === 'batch' && (
           <div className="space-y-6">
-            {/* Batch Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
                 <div className="flex items-center gap-3 mb-2">
@@ -498,61 +608,44 @@ function App() {
                   <Activity className="text-indigo-400" size={24} />
                   <h3 className="text-sm font-medium text-slate-400">Cost Savings</h3>
                 </div>
-                <p className="text-3xl font-bold text-emerald-400">50%</p>
+                <p className="text-3xl font-bold text-emerald-400">{batchStats.cost_savings}</p>
                 <p className="text-xs text-slate-500 mt-1">≤24h completion</p>
               </div>
             </div>
 
-            {/* Submit Batch Section */}
             <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-semibold text-white">Submit New Batch</h3>
-                  <p className="text-sm text-slate-400 mt-1">✨ Completes within 24 hours • 50% cost savings • Submit more for maximum efficiency</p>
+                  <p className="text-sm text-slate-400 mt-1">✨ Completes within 24 hours • 50% cost savings</p>
                 </div>
                 <button 
                   onClick={async () => {
                     try {
-                      const res = await fetch('http://localhost:8000/batch/submit', {
+                    const res = await fetch(`${API_BASE}/batch/submit`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ max_tasks: 50 })
                       });
                       const data = await res.json();
                       alert(data.batch_id ? `✅ Batch submitted: ${data.batch_id}` : data.message || 'No tasks eligible');
-                    } catch (e) {
+                    } catch {
                       alert('❌ Failed to submit batch');
                     }
                   }}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
                 >
                   <Zap size={18} />
-                  Submit Batch (Up to 50)
+                  Submit Batch
                 </button>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4 p-4 bg-slate-800/30 rounded-xl">
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Endpoint</p>
-                  <p className="text-sm text-slate-300 font-mono">/v1/chat/completions</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Completion Window</p>
-                  <p className="text-sm text-emerald-400 font-semibold">≤24 hours guaranteed</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Recommended Practice</p>
-                  <p className="text-sm text-indigo-400 font-semibold">Batch aggressively</p>
-                </div>
               </div>
             </section>
 
-            {/* Auto-Monitor Toggle Section */}
             <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-white">Auto-Batch Monitor</h3>
-                  <p className="text-sm text-slate-400 mt-1">Automatically submit batches when 3+ eligible tasks detected (scans every 60s)</p>
+                  <p className="text-sm text-slate-400 mt-1">Automatically submit batches when 3+ eligible tasks detected</p>
                 </div>
                 <button
                   onClick={toggleAutoMonitor}
@@ -565,20 +658,8 @@ function App() {
                   }`} />
                 </button>
               </div>
-              <div className="mt-4 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50">
-                <p className="text-xs text-slate-400">
-                  <span className={`font-bold ${autoMonitorEnabled ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    Status: {autoMonitorEnabled ? 'ENABLED' : 'DISABLED'}
-                  </span>
-                  {' • '}
-                  {autoMonitorEnabled 
-                    ? 'Background monitor will automatically batch unbatched tasks' 
-                    : 'Manual batch submission only'}
-                </p>
-              </div>
             </section>
 
-            {/* Active Batches List */}
             <section className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
               <div className="p-6 border-b border-slate-800">
                 <h3 className="text-lg font-semibold text-white">Active Batches ({batches.length})</h3>
@@ -588,7 +669,6 @@ function App() {
                   <div className="text-center py-12">
                     <Zap className="mx-auto text-slate-600 mb-4" size={48} />
                     <p className="text-slate-500 italic">No active batches</p>
-                    <p className="text-xs text-slate-600 mt-2">Submit tasks for batch processing above</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -610,34 +690,6 @@ function App() {
                             {batch.status.toUpperCase()}
                           </span>
                         </div>
-                        
-                        {batch.request_counts && (
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <p className="text-slate-500 text-xs mb-1">Total</p>
-                              <p className="text-white font-mono">{batch.request_counts.total}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-500 text-xs mb-1">Completed</p>
-                              <p className="text-emerald-400 font-mono">{batch.request_counts.completed}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-500 text-xs mb-1">Failed</p>
-                              <p className="text-rose-400 font-mono">{batch.request_counts.failed}</p>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {batch.request_counts && batch.request_counts.total > 0 && (
-                          <div className="mt-3">
-                            <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-indigo-500 transition-all duration-500"
-                                style={{ width: `${(batch.request_counts.completed / batch.request_counts.total) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -677,14 +729,6 @@ function App() {
                         <p className="text-slate-200">{agent.active_tasks}</p>
                       </div>
                     </div>
-                    <div>
-                      <p className="text-slate-500 text-xs mb-2">Capabilities</p>
-                      <div className="flex flex-wrap gap-2">
-                        {agent.capabilities?.strengths?.map((s: string) => (
-                          <span key={s} className="px-2 py-0.5 bg-slate-700 text-slate-300 text-[10px] rounded border border-slate-600">{s}</span>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 ))}
               </div>
@@ -693,133 +737,261 @@ function App() {
             <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
               <h3 className="text-lg font-semibold text-white mb-6">System Health Metrics</h3>
               <div className="space-y-4">
-                <HealthMetric label="CPU Usage" value="12%" progress={12} color="bg-indigo-500" />
-                <HealthMetric label="Memory Usage" value="45%" progress={45} color="bg-sky-500" />
-                <HealthMetric label="Network Latency" value="24ms" progress={15} color="bg-emerald-500" />
-                <HealthMetric label="Database Load" value="8%" progress={8} color="bg-amber-500" />
+                <HealthMetric label="CPU Usage" value={health?.metrics.cpu_usage || '0%'} progress={health?.metrics.cpu_progress || 0} color="bg-indigo-500" />
+                <HealthMetric label="Memory Usage" value={health?.metrics.memory_usage || '0%'} progress={health?.metrics.memory_progress || 0} color="bg-sky-500" />
+                <HealthMetric label="Network Latency" value={health?.metrics.network_latency || '0ms'} progress={health?.metrics.network_progress || 0} color={health?.metrics.network_latency === 'timeout' ? 'bg-rose-500' : 'bg-emerald-500'} />
+                <HealthMetric label="Database Load" value={health?.metrics.database_load || '0%'} progress={health?.metrics.database_progress || 0} color={health?.metrics.database_load === 'healthy' ? 'bg-amber-500' : 'bg-rose-500'} />
               </div>
             </section>
           </div>
         )}
 
         {activeTab === 'security' && (
-          <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
-            <h3 className="text-lg font-semibold text-white mb-6">Security Overview</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                <div className="flex items-center gap-3 mb-2">
-                  <Shield className="text-emerald-400" size={20} />
-                  <h4 className="font-bold text-white">Firewall</h4>
+          <div className="space-y-8">
+            <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+              <h3 className="text-lg font-semibold text-white mb-6">Security Overview</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Shield className="text-emerald-400" size={20} />
+                    <h4 className="font-bold text-white">Policy Mode</h4>
+                  </div>
+                  <select 
+                    value={config?.policy_mode || 'live_advisory'}
+                    onChange={(e) => updateConfig('policy_mode', e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-emerald-400"
+                  >
+                    <option value="live_advisory">Live Advisory</option>
+                    <option value="strict">Strict</option>
+                    <option value="permissive">Permissive</option>
+                  </select>
                 </div>
-                <p className="text-sm text-slate-400">Active and monitoring incoming traffic.</p>
-              </div>
-              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                <div className="flex items-center gap-3 mb-2">
-                  <Shield className="text-indigo-400" size={20} />
-                  <h4 className="font-bold text-white">Encryption</h4>
+                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Shield className="text-indigo-400" size={20} />
+                    <h4 className="font-bold text-white">Autonomy</h4>
+                  </div>
+                  <select 
+                    value={config?.autonomy_level || 'advisory'}
+                    onChange={(e) => updateConfig('autonomy_level', e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-indigo-400"
+                  >
+                    <option value="advisory">Advisory</option>
+                    <option value="semi_autonomous">Semi-Autonomous</option>
+                    <option value="fully_autonomous">Fully Autonomous</option>
+                  </select>
                 </div>
-                <p className="text-sm text-slate-400">AES-256 encryption enabled for all data.</p>
-              </div>
-              <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                <div className="flex items-center gap-3 mb-2">
-                  <Shield className="text-amber-400" size={20} />
-                  <h4 className="font-bold text-white">Access Control</h4>
+                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Shield className={config?.encryption_enabled ? "text-emerald-400" : "text-amber-400"} size={20} />
+                    <h4 className="font-bold text-white">Encryption</h4>
+                  </div>
+                  <p className="text-sm text-slate-400">
+                    {config?.encryption_enabled 
+                      ? "AES-256 encryption is active and protecting your secrets." 
+                      : "Encryption key not found. Secrets are stored in plaintext!"}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-400">RBAC policies are strictly enforced.</p>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
         )}
 
         {activeTab === 'settings' && (
           <div className="space-y-8">
-          <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
-            <h3 className="text-lg font-semibold text-white mb-6">System Settings</h3>
-            <div className="space-y-6 max-w-2xl">
-              <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                <div>
-                  <h4 className="font-bold text-white">Debug Mode</h4>
-                  <p className="text-sm text-slate-400">Enable verbose logging for troubleshooting.</p>
+            <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+              <h3 className="text-lg font-semibold text-white mb-6">System Settings</h3>
+              <div className="space-y-6 max-w-2xl">
+                <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div>
+                    <h4 className="font-bold text-white">Debug Mode</h4>
+                    <p className="text-sm text-slate-400">Enable verbose logging for troubleshooting.</p>
+                  </div>
+                  <button 
+                    onClick={() => updateConfig('debug_mode', !config?.debug_mode)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${config?.debug_mode ? 'bg-indigo-600' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config?.debug_mode ? 'right-1' : 'left-1'}`} />
+                  </button>
                 </div>
-                <div className="w-12 h-6 bg-indigo-600 rounded-full relative">
-                  <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
+                <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div>
+                    <h4 className="font-bold text-white">Require Consent</h4>
+                    <p className="text-sm text-slate-400">Require user approval for critical operations.</p>
+                  </div>
+                  <button 
+                    onClick={() => updateConfig('require_consent', !config?.require_consent)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${config?.require_consent ? 'bg-emerald-600' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config?.require_consent ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div>
+                    <h4 className="font-bold text-white">Allow Screenshots</h4>
+                    <p className="text-sm text-slate-400">Allow AI agents to capture screen for visual tasks.</p>
+                  </div>
+                  <button 
+                    onClick={() => updateConfig('allow_screenshots', !config?.allow_screenshots)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${config?.allow_screenshots ? 'bg-indigo-600' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config?.allow_screenshots ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <h4 className="font-bold text-white mb-2">OpenAI Model</h4>
+                  <select 
+                    value={config?.openai_model || 'gpt-4o'}
+                    onChange={(e) => updateConfig('openai_model', e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-indigo-400"
+                  >
+                    <option value="gpt-4o">gpt-4o</option>
+                    <option value="gpt-4o-mini">gpt-4o-mini</option>
+                    <option value="gpt-4-turbo">gpt-4-turbo</option>
+                    <option value="o1-preview">o1-preview</option>
+                    <option value="o1-mini">o1-mini</option>
+                  </select>
+                </div>
+                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <h4 className="font-bold text-white mb-2">API Endpoint</h4>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={API_BASE} 
+                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-indigo-400"
+                  />
                 </div>
               </div>
-              <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                <div>
-                  <h4 className="font-bold text-white">Auto-Update</h4>
-                  <p className="text-sm text-slate-400">Automatically install security patches.</p>
+            </section>
+
+            <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-white">Local LM Server (Ollama)</h3>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                  ollamaStatus === 'online' 
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                    : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                }`}>
+                  {ollamaStatus.toUpperCase()}
                 </div>
-                <button 
-                  onClick={() => setAutoUpdate(!autoUpdate)}
-                  className={`w-12 h-6 rounded-full relative transition-colors ${autoUpdate ? 'bg-emerald-600' : 'bg-slate-700'}`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${autoUpdate ? 'right-1' : 'left-1'}`} />
-                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {ollamaModels.length === 0 && <p className="text-slate-500 italic col-span-full">No local models found.</p>}
+                {ollamaModels.map(model => (
+                  <div key={model.name} className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Zap className="text-indigo-400" size={18} />
+                      <h4 className="font-bold text-white truncate">{model.name}</h4>
+                    </div>
+                    <div className="text-xs text-slate-400 space-y-1">
+                      <p>Size: {(model.size / 1024 / 1024 / 1024).toFixed(2)} GB</p>
+                      <p>Params: {model.details.parameter_size}</p>
+                      <p>Quant: {model.details.quantization_level}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-white">LM Studio Server</h3>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                  lmStudioStatus === 'online' 
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                    : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                }`}>
+                  {lmStudioStatus.toUpperCase()}
+                </div>
               </div>
               <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                <h4 className="font-bold text-white mb-2">API Endpoint</h4>
-                <input 
-                  type="text" 
-                  readOnly 
-                  value="http://localhost:8000" 
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-indigo-400"
-                />
+                <div className="flex items-center gap-3 mb-2">
+                  <Terminal className="text-sky-400" size={18} />
+                  <h4 className="font-bold text-white">Endpoint</h4>
+                </div>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={lmStudioUrl}
+                    onChange={(e) => setLmStudioUrl(e.target.value)}
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-indigo-400"
+                  />
+                  <button 
+                    onClick={() => updateConfig('lm_studio_url', lmStudioUrl)}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Update
+                  </button>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-white">Local LM Server (Ollama)</h3>
-              <div className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                ollamaStatus === 'online' 
-                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                  : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-              }`}>
-                {ollamaStatus.toUpperCase()}
+            <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-white">ngrok Tunnel</h3>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                  config?.ngrok_enabled
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                    : 'bg-slate-500/10 text-slate-400 border-slate-700/60'
+                }`}>
+                  {config?.ngrok_enabled ? 'ENABLED' : 'DISABLED'}
+                </div>
               </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {ollamaModels.length === 0 && (
-                <p className="text-slate-500 italic col-span-full">No local models found.</p>
-              )}
-              {ollamaModels.map(model => (
-                <div key={model.name} className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Zap className="text-indigo-400" size={18} />
-                    <h4 className="font-bold text-white truncate">{model.name}</h4>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div>
+                    <h4 className="font-bold text-white">Enable ngrok</h4>
+                    <p className="text-sm text-slate-400">
+                      {config?.ngrok_configured ? 'Auth token configured.' : 'Auth token missing in .env.'}
+                    </p>
                   </div>
-                  <div className="text-xs text-slate-400 space-y-1">
-                    <p>Size: {(model.size / 1024 / 1024 / 1024).toFixed(2)} GB</p>
-                    <p>Params: {model.details.parameter_size}</p>
-                    <p>Quant: {model.details.quantization_level}</p>
+                  <button 
+                    onClick={() => updateConfig('ngrok_enabled', !config?.ngrok_enabled)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${config?.ngrok_enabled ? 'bg-emerald-600' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config?.ngrok_enabled ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <h4 className="font-bold text-white mb-2">Region</h4>
+                  <select 
+                    value={ngrokRegion}
+                    onChange={(e) => {
+                      setNgrokRegion(e.target.value);
+                      updateConfig('ngrok_region', e.target.value);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-indigo-400"
+                  >
+                    <option value="us">us</option>
+                    <option value="eu">eu</option>
+                    <option value="ap">ap</option>
+                    <option value="au">au</option>
+                    <option value="sa">sa</option>
+                    <option value="jp">jp</option>
+                    <option value="in">in</option>
+                  </select>
+                </div>
+                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <h4 className="font-bold text-white mb-2">Local Port</h4>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min={1024}
+                      max={65535}
+                      value={ngrokPort}
+                      onChange={(e) => setNgrokPort(Number(e.target.value))}
+                      className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm font-mono text-indigo-400"
+                    />
+                    <button 
+                      onClick={() => updateConfig('ngrok_port', ngrokPort)}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Update
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-white">LM Studio Server</h3>
-              <div className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                lmStudioStatus === 'online' 
-                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                  : 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-              }`}>
-                {lmStudioStatus.toUpperCase()}
               </div>
-            </div>
-            <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-              <div className="flex items-center gap-3 mb-2">
-                <Terminal className="text-sky-400" size={18} />
-                <h4 className="font-bold text-white">Endpoint</h4>
-              </div>
-              <p className="text-sm text-slate-400 font-mono">http://192.168.1.2:1234</p>
-            </div>
-          </section>
+            </section>
           </div>
         )}
       </main>
@@ -879,24 +1051,27 @@ function HealthMetric({ label, value, progress, color }: { label: string, value:
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const normalized = normalizeStatus(status);
   const styles = {
     'Done': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
     'In Progress': 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20',
     'Queued': 'bg-slate-500/10 text-slate-500 border-slate-800',
+    'Blocked': 'bg-amber-500/10 text-amber-500 border-amber-500/20',
     'Error': 'bg-rose-500/10 text-rose-500 border-rose-500/20',
-  }[status] || 'bg-slate-500/10 text-slate-500 border-slate-800';
+  }[normalized] || 'bg-slate-500/10 text-slate-500 border-slate-800';
 
   const Icon = {
     'Done': CheckCircle2,
     'In Progress': Activity,
     'Queued': Clock,
+    'Blocked': AlertCircle,
     'Error': AlertCircle,
-  }[status] || Clock;
+  }[normalized] || Clock;
 
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${styles}`}>
       <Icon size={12} />
-      {status}
+      {normalized}
     </span>
   );
 }

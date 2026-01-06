@@ -1,5 +1,5 @@
 """Test script for enhanced health monitoring system."""
-from core.handoff.manager import HandoffManager
+from core.handoff_manager import HandoffManager
 
 # Initialize manager
 manager = HandoffManager()

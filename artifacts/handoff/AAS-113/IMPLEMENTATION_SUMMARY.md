@@ -157,7 +157,7 @@ Health Score: Good, Total Tasks: 8
 
 ```python
 from core.handoff.task_manager import TaskManager
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 # Initialize
 config = AASConfig()

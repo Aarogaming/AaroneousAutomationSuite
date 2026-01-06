@@ -1,8 +1,0 @@
-{
-  "pluginId": "SampleReplayAnalyzer",
-  "name": "Sample Replay Analyzer",
-  "version": "1.0.0",
-  "targetAppVersion": "any",
-  "requiredProfile": "Public",
-  "declaredCapabilities": [ "ReplayAnalyzers" ]
-}

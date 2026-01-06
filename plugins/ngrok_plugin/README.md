@@ -16,7 +16,9 @@ Add to your `.env`:
 NGROK_ENABLED=true
 NGROK_PORT=8000           # Port to expose
 NGROK_REGION=us           # us, eu, ap, au, sa, jp, in
-NGROK_AUTHTOKEN=your_token_here  # Optional for free tier
+NGROK_AUTH_TOKEN=your_token_here  # Optional for free tier
+# Legacy support (optional)
+NGROK_AUTHTOKEN=your_token_here
 ```
 
 ### 3. Use in Code
@@ -47,7 +49,7 @@ await plugin.stop_tunnel()
 
 #### With AAS Config Manager
 ```python
-from core.config.manager import load_config
+from core.config import load_config
 from plugins.ngrok_plugin import NgrokPlugin, NgrokConfig
 
 # Load from environment
@@ -56,7 +58,7 @@ config = load_config()
 # Create ngrok config from AAS config
 ngrok_config = NgrokConfig(
     enabled=config.ngrok_enabled,
-    authtoken=config.ngrok_authtoken,
+    authtoken=config.ngrok_auth_token.get_secret_value() if config.ngrok_auth_token else config.ngrok_authtoken,
     region=config.ngrok_region,
     port=config.ngrok_port
 )
@@ -78,7 +80,7 @@ async def initialize_dev_tools():
     if config.ngrok_enabled:
         ngrok_config = NgrokConfig(
             enabled=True,
-            authtoken=config.ngrok_authtoken,
+            authtoken=config.ngrok_auth_token.get_secret_value() if config.ngrok_auth_token else config.ngrok_authtoken,
             region=config.ngrok_region,
             port=config.ipc_port  # Expose IPC server
         )
@@ -134,7 +136,7 @@ pytest tests/test_ngrok_plugin.py -v
 
 ⚠️ **Public exposure**: ngrok tunnels expose your local service to the internet  
 🔒 **Use authentication**: Add auth to your services when using ngrok  
-🔑 **Token management**: Store `NGROK_AUTHTOKEN` in `.env`, never commit  
+🔑 **Token management**: Store `NGROK_AUTH_TOKEN` in `.env`, never commit  
 ⏰ **Temporary use**: Free ngrok tunnels expire after 2 hours  
 
 ## Troubleshooting
@@ -161,7 +163,7 @@ ipc_config = load_config()
 ngrok = NgrokPlugin(NgrokConfig(
     enabled=True,
     port=ipc_config.ipc_port,
-    authtoken=ipc_config.ngrok_authtoken
+    authtoken=ipc_config.ngrok_auth_token.get_secret_value() if ipc_config.ngrok_auth_token else ipc_config.ngrok_authtoken
 ))
 
 tunnel_url = await ngrok.start_tunnel()
@@ -174,7 +176,7 @@ tunnel_url = await ngrok.start_tunnel()
 ## Integration with Handoff System
 
 ```python
-from core.handoff.manager import HandoffManager
+from core.handoff_manager import HandoffManager
 
 # Report tunnel status
 if ngrok.is_running():

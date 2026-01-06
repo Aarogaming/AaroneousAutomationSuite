@@ -53,7 +53,7 @@ gk provider connect github
 The `core/handoff/gitkraken.py` module provides seamless integration:
 
 ```python
-from core.handoff.gitkraken import get_gitkraken_workflow
+from core.handoff_gitkraken import get_gitkraken_workflow
 
 # Initialize workflow
 gk_workflow = get_gitkraken_workflow()
@@ -101,7 +101,7 @@ gk patch apply AAS-016-agent-wip  # In a review worktree
 Replace raw Linear API calls with gk:
 
 ```python
-from core.handoff.gitkraken import GitKrakenCLI
+from core.handoff_gitkraken import GitKrakenCLI
 
 gk = GitKrakenCLI()
 
@@ -121,7 +121,7 @@ Automated PR creation when tasks marked Done:
 
 ```python
 # In HandoffManager.mark_task_done()
-from core.handoff.gitkraken import get_gitkraken_workflow
+from core.handoff_gitkraken import get_gitkraken_workflow
 
 gk_workflow = get_gitkraken_workflow()
 if gk_workflow:
@@ -257,7 +257,7 @@ integrations:
 Add to `core/handoff/manager.py`:
 
 ```python
-from core.handoff.gitkraken import get_gitkraken_workflow
+from core.handoff_gitkraken import get_gitkraken_workflow
 
 class HandoffManager:
     def __init__(self, config, artifact_dir):
@@ -305,7 +305,7 @@ gk issue list --state open --provider linear --json > /tmp/issues.json
 
 # Python script to sync
 import json
-from core.handoff.manager import HandoffManager
+from core.handoff_manager import HandoffManager
 
 with open('/tmp/issues.json') as f:
     issues = json.load(f)
@@ -329,7 +329,7 @@ while task_not_complete:
 
 ### 3. PR Status Monitoring
 ```python
-from core.handoff.gitkraken import GitKrakenCLI
+from core.handoff_gitkraken import GitKrakenCLI
 
 gk = GitKrakenCLI()
 
@@ -392,7 +392,7 @@ AAS (MIT License) + GitKraken = Powerful combo for OSS projects.
 
 1. **Install gk CLI**: `npm install -g @gitkraken/cli`
 2. **Authenticate**: `gk auth login`
-3. **Test integration**: `python -c "from core.handoff.gitkraken import get_gitkraken_workflow; print(get_gitkraken_workflow())"`
+3. **Test integration**: `python -c "from core.handoff_gitkraken import get_gitkraken_workflow; print(get_gitkraken_workflow())"`
 4. **Update HandoffManager**: Add gk workflow calls
 5. **Configure agents**: Use cloud patches for background work
 

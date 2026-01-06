@@ -11,10 +11,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from loguru import logger
-from core.config.manager import AASConfig
-from core.database.manager import DatabaseManager
-from core.database.models import Task, TaskStatus, TaskPriority
-from core.handoff.manager import HandoffManager
+from core.config import AASConfig
+from core.db_manager import DatabaseManager
+from core.db_models import Task, TaskStatus, TaskPriority
+from core.handoff_manager import HandoffManager
 
 
 def map_priority(p: str) -> TaskPriority:

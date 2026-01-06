@@ -3,8 +3,8 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.database.manager import DatabaseManager
-from core.database.models import Task
+from core.db_manager import DatabaseManager
+from core.db_models import Task
 
 db = DatabaseManager('artifacts/aas.db')
 

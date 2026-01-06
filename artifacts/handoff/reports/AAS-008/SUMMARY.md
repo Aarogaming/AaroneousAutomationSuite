@@ -65,7 +65,7 @@ The failed test is due to OpenAI API quota limits, not code issues. The fallback
 
 ### Basic Usage
 ```python
-from core.config.manager import load_config
+from core.config import load_config
 from plugins.ai_assistant.assistant import AIAssistant
 
 config = load_config()

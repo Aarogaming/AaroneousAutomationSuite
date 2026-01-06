@@ -1,6 +1,6 @@
 from typing import Optional, Any, Dict
 from loguru import logger
-from core.config.manager import AASConfig
+from core.config import AASConfig
 from core.handoff.home_assistant import HomeAssistantClient
 
 class HomeAssistantPlugin:

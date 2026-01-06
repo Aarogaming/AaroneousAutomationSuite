@@ -1,7 +1,7 @@
 """Quick script to check batch status"""
 import asyncio
-from core.managers.batch import BatchManager
-from core.config.manager import load_config
+from core.batch_manager import BatchManager
+from core.config import load_config
 
 async def main():
     bm = BatchManager(load_config())

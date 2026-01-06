@@ -1,7 +1,0 @@
-VALID
-File: C:\Users\aarog\Documents\GitHub\AutoWizard101\aas.policy.txt
-Hash: ff12acee0cb589f2bacb675d5663c869cd3e625a6c1fcc69706966b9a98add51
-ActiveProfile: live_advisory
-OperatingMode: LIVE
-LiveStatus: READY
-Diagnostics: 0

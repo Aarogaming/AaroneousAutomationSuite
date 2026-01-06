@@ -5,6 +5,9 @@ Provides a taskbar icon for monitoring and controlling the AAS Hub.
 import subprocess
 import sys
 import os
+import json
+import re
+from datetime import datetime
 from pathlib import Path
 from PIL import Image, ImageDraw
 import pystray
@@ -12,6 +15,10 @@ from pystray import MenuItem as item
 import threading
 import time
 import webbrowser
+import pyperclip
+import requests
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 # Paths
 # When running as PyInstaller exe, __file__ points to temp dir
@@ -25,14 +32,40 @@ else:
 SCRIPTS_DIR = ROOT_DIR / "scripts"
 PID_FILE = ROOT_DIR / "artifacts" / "hub.pid"
 ENV_FILE = ROOT_DIR / ".env"
-PYTHON_EXE = ROOT_DIR / ".venv" / "Scripts" / "python.exe"
+PYTHON_EXE = ROOT_DIR / ".venv" / "Scripts" / "pythonw.exe"
+if not PYTHON_EXE.exists():
+    PYTHON_EXE = ROOT_DIR / ".venv" / "Scripts" / "python.exe"
+if not PYTHON_EXE.exists():
+    # Fallback for non-Windows or different venv structure
+    PYTHON_EXE = ROOT_DIR / ".venv" / "bin" / "python"
 DB_FILE = ROOT_DIR / "artifacts" / "aas_hub.db"
 LOG_FILE = ROOT_DIR / "artifacts" / "hub.log"
-DASHBOARD_URL = "http://localhost:5174"
+HUB_CONSOLE_LOG = ROOT_DIR / "artifacts" / "hub_console.log"
+ICON_FILE = ROOT_DIR / "artifacts" / "aas_hub.ico"
+
+# Load Dashboard URL from environment or use default
+DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:5174")
+
+# Handoff Paths
+HANDOFF_TO_DIR = ROOT_DIR / "artifacts" / "handoff" / "to_codex"
+HANDOFF_FROM_DIR = ROOT_DIR / "artifacts" / "handoff" / "from_codex"
+REPORTS_DIR = ROOT_DIR / "artifacts" / "handoff" / "reports"
+
+# Ensure handoff directories exist
+HANDOFF_TO_DIR.mkdir(parents=True, exist_ok=True)
+HANDOFF_FROM_DIR.mkdir(parents=True, exist_ok=True)
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def create_icon():
     """Create letter A icon for the system tray matching desktop icon."""
+    # Try to load high-quality icon first
+    if ICON_FILE.exists():
+        try:
+            return Image.open(ICON_FILE)
+        except Exception:
+            pass
+
     size = 64  # Tray icon size
     img = Image.new('RGBA', (size, size), color=(0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -124,7 +157,8 @@ def clear_zombie_processes():
         result = subprocess.run(
             ["netstat", "-ano"],
             capture_output=True,
-            text=True
+            text=True,
+            creationflags=subprocess.CREATE_NO_WINDOW
         )
         
         for line in result.stdout.split('\n'):
@@ -142,7 +176,8 @@ def clear_zombie_processes():
                     )
                     if "python" in proc_check.stdout.lower():
                         subprocess.run(["taskkill", "/F", "/PID", str(pid)], 
-                                     capture_output=True)
+                                     capture_output=True,
+                                     creationflags=subprocess.CREATE_NO_WINDOW)
                         killed.append(f"port 50051 (PID {pid})")
                         time.sleep(0.5)
             
@@ -159,7 +194,8 @@ def clear_zombie_processes():
                     )
                     if "python" in proc_check.stdout.lower():
                         subprocess.run(["taskkill", "/F", "/PID", str(pid)], 
-                                     capture_output=True)
+                                     capture_output=True,
+                                     creationflags=subprocess.CREATE_NO_WINDOW)
                         killed.append(f"port 8000 (PID {pid})")
                         time.sleep(0.5)
     except Exception:
@@ -256,16 +292,27 @@ def start_hub(icon):
             icon.notify("Cleaned up zombies", "\n".join(killed[:3]))
             time.sleep(1)
         
-        # Start Hub directly - use PIPE to keep process detached but alive
+        # Start Hub directly; capture early startup errors without opening a console.
+        log_handle = None
+        try:
+            log_handle = open(HUB_CONSOLE_LOG, "ab", buffering=0)
+        except Exception:
+            log_handle = None
+
+        stdout_target = log_handle if log_handle else subprocess.DEVNULL
+        stderr_target = log_handle if log_handle else subprocess.DEVNULL
+
         process = subprocess.Popen(
-            [str(PYTHON_EXE), "-u", "core/main.py"],  # -u for unbuffered output
+            [str(PYTHON_EXE), "-u", "hub.py"],  # -u for unbuffered output
             cwd=str(ROOT_DIR),
             env={**os.environ, 'PYTHONPATH': str(ROOT_DIR)},
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=stdout_target,
+            stderr=stderr_target,
             stdin=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
         )
+        if log_handle:
+            log_handle.close()
         
         # Save PID
         PID_FILE.write_text(str(process.pid))
@@ -296,7 +343,8 @@ def stop_hub(icon):
         # Check if process exists
         result = subprocess.run(
             ["powershell", "-NoProfile", "-Command", f"Stop-Process -Id {pid} -Force -ErrorAction SilentlyContinue"],
-            capture_output=True
+            capture_output=True,
+            creationflags=subprocess.CREATE_NO_WINDOW
         )
         
         time.sleep(1)
@@ -351,11 +399,155 @@ def open_logs(icon):
     log_file = ROOT_DIR / "artifacts" / "hub.log"
     try:
         if log_file.exists():
-            subprocess.run(["notepad", str(log_file)])
+            os.startfile(log_file)
         else:
             icon.notify("No logs found", "Log file does not exist yet")
     except Exception as e:
         icon.notify("Failed to open logs", str(e))
+
+
+def open_project_folder(icon):
+    """Open the project root folder in explorer."""
+    try:
+        os.startfile(ROOT_DIR)
+    except Exception as e:
+        icon.notify("Error", f"Failed to open folder: {e}")
+
+
+def edit_env(icon):
+    """Open .env file for editing."""
+    try:
+        if ENV_FILE.exists():
+            os.startfile(ENV_FILE)
+        else:
+            icon.notify("Error", ".env file not found")
+    except Exception as e:
+        icon.notify("Error", f"Failed to open .env: {e}")
+
+
+# --- Handoff Integration ---
+
+class HandoffHandler(FileSystemEventHandler):
+    def __init__(self, icon, message):
+        self.icon = icon
+        self.message = message
+
+    def on_created(self, event):
+        if not event.is_directory:
+            self.icon.notify("Handoff Detected", self.message)
+
+def get_latest_file(directory):
+    files = list(directory.glob("*"))
+    if not files:
+        return None
+    return max(files, key=lambda f: f.stat().st_mtime)
+
+def copy_latest_prompt(icon):
+    latest = get_latest_file(HANDOFF_TO_DIR)
+    if not latest:
+        icon.notify("Handoff", "No prompt found in to_codex.")
+        return
+    
+    try:
+        text = latest.read_text(encoding="utf-8")
+        pyperclip.copy(text)
+        icon.notify("Handoff", "Copied latest prompt to clipboard.")
+    except Exception as e:
+        icon.notify("Handoff Error", f"Failed to copy: {e}")
+
+def run_import(icon):
+    def do_import():
+        try:
+            # Using dotnet toolkit as in original HandoffTray
+            process = subprocess.Popen(
+                ["dotnet", "run", "--project", "MaelstromToolkit/MaelstromToolkit.csproj", "--", "handoff", "import", "--out", "artifacts/handoff/reports"],
+                cwd=str(ROOT_DIR),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            stdout, stderr = process.communicate()
+            
+            if process.returncode == 0:
+                icon.notify("Handoff", "Import completed. Check CODEX_REPORT.md in reports.")
+            else:
+                icon.notify("Handoff Error", f"Import failed (exit {process.returncode})")
+        except Exception as e:
+            icon.notify("Handoff Error", f"Import exception: {e}")
+    
+    threading.Thread(target=do_import, daemon=True).start()
+
+def open_reports(icon):
+    try:
+        os.startfile(REPORTS_DIR)
+    except Exception as e:
+        icon.notify("Error", f"Failed to open reports: {e}")
+
+def send_latest_prompt_api(icon):
+    latest = get_latest_file(HANDOFF_TO_DIR)
+    if not latest:
+        icon.notify("Handoff", "No prompt found in to_codex.")
+        return
+    
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        icon.notify("Handoff Error", "OPENAI_API_KEY env var is missing.")
+        return
+
+    try:
+        content = latest.read_text(encoding="utf-8")
+        # Extract fenced block
+        matches = re.findall(r"```(.*?)```", content, re.DOTALL)
+        if not matches:
+            icon.notify("Handoff Error", "No fenced code block found.")
+            return
+        
+        fenced = f"```{matches[0]}```"
+        
+        # Redact secrets
+        secret_patterns = re.compile(r"(ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+|AIza[0-9A-Za-z\-_]{20,}|BEGIN RSA PRIVATE KEY|BEGIN PRIVATE KEY)", re.IGNORECASE)
+        redacted = secret_patterns.sub("[REDACTED]", fenced)
+        if secret_patterns.search(fenced):
+            redacted += "\n\n[Note: content redacted before send]"
+
+        # Use notification instead of messagebox for non-blocking flow
+        icon.notify("Handoff", "Sending latest block to OpenAI API...")
+
+        def do_send():
+            try:
+                model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+                resp = requests.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": redacted}],
+                        "max_tokens": 512
+                    },
+                    timeout=30
+                )
+                
+                if resp.status_code == 200:
+                    body = resp.json()
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    out_path = REPORTS_DIR / f"OPENAI_RESPONSE_{timestamp}.md"
+                    
+                    stamped = f"# OpenAI Response\nTimestamp (UTC): {datetime.utcnow().isoformat()}\nModel: {model}\n\n{json.dumps(body, indent=2)}\n"
+                    out_path.write_text(stamped, encoding="utf-8")
+                    
+                    icon.notify("Handoff", f"Saved response to {out_path.name}")
+                else:
+                    icon.notify("Handoff Error", f"API error {resp.status_code}")
+            except Exception as e:
+                icon.notify("Handoff Error", f"API send exception: {e}")
+
+        threading.Thread(target=do_send, daemon=True).start()
+
+    except Exception as e:
+        icon.notify("Handoff Error", str(e))
+
+# --- End Handoff Integration ---
 
 
 def setup(icon):
@@ -372,45 +564,64 @@ def exit_app(icon):
 def create_menu(icon):
     """Create the context menu."""
     running = is_hub_running()
-    
+
     return pystray.Menu(
         item(
-            '🚀 AAS Hub',
+            "🚀 AAS Hub",
             lambda: None,
             enabled=False
         ),
         pystray.Menu.SEPARATOR,
         item(
-            '▶️  Start Hub',
+            "▶️  Start Hub",
             lambda: start_hub(icon),
             enabled=not running
         ),
         item(
-            '⏸️  Stop Hub',
+            "⏸️  Stop Hub",
             lambda: stop_hub(icon),
             enabled=running
         ),
         item(
-            '🔄 Restart Hub',
+            "🔄 Restart Hub",
             lambda: restart_hub(icon),
             enabled=running
         ),
         pystray.Menu.SEPARATOR,
         item(
-            '📊 Mission Control',
+            "📊 Mission Control",
             lambda: open_dashboard(icon)
         ),
         item(
-            '📋 View Logs',
+            "📋 View Logs",
             lambda: open_logs(icon)
         ),
         item(
-            'ℹ️  Status',
+            "ℹ️  Status",
             lambda: show_status(icon)
         ),
         pystray.Menu.SEPARATOR,
         item(
-            '❌ Exit',
+            "📝 Handoff",
+            pystray.Menu(
+                item("📋 Copy Latest Prompt", lambda: copy_latest_prompt(icon)),
+                item("🚀 Send Latest to API", lambda: send_latest_prompt_api(icon)),
+                item("📥 Run Handoff Import", lambda: run_import(icon)),
+                item("📂 Open Reports", lambda: open_reports(icon))
+            )
+        ),
+        pystray.Menu.SEPARATOR,
+        item(
+            "📂 Open Project Folder",
+            lambda: open_project_folder(icon)
+        ),
+        item(
+            "⚙️  Edit .env",
+            lambda: edit_env(icon)
+        ),
+        pystray.Menu.SEPARATOR,
+        item(
+            "❌ Exit",
             lambda: exit_app(icon)
         )
     )
@@ -426,6 +637,15 @@ def main():
     
     # Set initial menu
     icon.menu = create_menu(icon)
+    
+    # Start Handoff Watchers
+    to_handler = HandoffHandler(icon, "New HANDOFF_TO_CODEX detected.")
+    from_handler = HandoffHandler(icon, "New RESULT.md detected.")
+    
+    observer = Observer()
+    observer.schedule(to_handler, str(HANDOFF_TO_DIR), recursive=False)
+    observer.schedule(from_handler, str(HANDOFF_FROM_DIR), recursive=False)
+    observer.start()
     
     # Update menu dynamically every 5 seconds
     def update_menu():
@@ -445,7 +665,11 @@ def main():
     else:
         icon.notify("AAS Hub Tray", "Hub is not running - click to start")
     
-    icon.run(setup=setup)
+    try:
+        icon.run(setup=setup)
+    finally:
+        observer.stop()
+        observer.join()
 
 
 if __name__ == "__main__":

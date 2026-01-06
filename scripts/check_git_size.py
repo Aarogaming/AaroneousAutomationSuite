@@ -7,7 +7,7 @@ respect the 50MB git-friendly size limit.
 
 import sys
 from pathlib import Path
-from core.managers.workspace import WorkspaceCoordinator
+from core.workspace_manager import WorkspaceCoordinator
 from loguru import logger
 
 def main():

@@ -94,7 +94,7 @@ Total: 3/4 tests passed (75% - expected due to API quota)
 
 ### 1. Use local LLM with automatic fallback
 ```python
-from core.config.manager import load_config
+from core.config import load_config
 from plugins.ai_assistant.assistant import AIAssistant
 
 config = load_config()

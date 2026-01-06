@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import configuration
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 # Import task manager
 from core.handoff.task_manager import TaskManager
@@ -79,10 +79,10 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.config.manager import AASConfig
+from core.config import AASConfig
 from core.handoff.task_manager import TaskManager
 from core.batch.manager import BatchManager
-from core.database.manager import DatabaseManager
+from core.db_manager import DatabaseManager
 
 # Initialize everything
 config = AASConfig()
@@ -311,9 +311,9 @@ class AASConfig(CoreConfig, OptionalConfig, AdvancedConfig):
 # tests/test_my_feature.py
 import pytest
 import tempfile
-from core.config.manager import AASConfig
+from core.config import AASConfig
 from core.handoff.task_manager import TaskManager
-from core.database.manager import DatabaseManager
+from core.db_manager import DatabaseManager
 
 @pytest.fixture
 def setup_managers():

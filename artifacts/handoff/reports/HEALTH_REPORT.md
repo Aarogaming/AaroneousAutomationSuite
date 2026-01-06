@@ -1,34 +1,27 @@
 # AAS HEALTH REPORT
-Timestamp: 2026-01-02T21:51:33.555208
+Timestamp: 2026-01-06T03:51:49.0985958-05:00
 
-## 📊 Task Board Health
-**Health Score**: Good
-**Total Tasks**: 8
+## Task Board Health
+**Health Score**: Needs Attention  
+**Total Tasks**: 37 (per registry.json)
 
-### ⏰ Stale Tasks
-✅ No stale tasks detected
+### Stale Tasks
+- Not re-evaluated in this run.
 
-### 🚨 Unassigned High-Priority Tasks
-- **AAS-104** [HIGH]: Integrate OpenAI Agents SDK
+### Unassigned High-Priority Tasks
+- Review `handoff/ACTIVE_TASKS.md` and `handoff/registry.json` for alignment; not re-evaluated in this run.
 
-### 📁 Artifact Directories
-✅ All active task artifacts present
+### Artifact Directories
+- Not re-checked in this run.
 
-## 🔴 Errors
-None detected.
+## Errors
+- None surfaced by the audit run.
 
-## 🟡 Warnings
-None detected.
+## Warnings
+- None surfaced by the audit run.
 
-## 📝 Code To-Do Items
-- [ ] task_generator.py:190 - in todos[:3]:  # Top 3 TODOs
-- [ ] task_generator.py:192 - {todo.get('title', 'Unnamed')}",
-- [ ] README.md:128 - (single list)
-- [ ] UI_POLISH_TODO.md:1 - (pending audit results)
-- [ ] README.md:128 - (single list)
-- [ ] UI_POLISH_TODO.md:1 - (pending audit results)
+## AI Readiness Gaps (from audit)
+- None found.
 
-## 🛠️ Code Fixmes
-- task_generator.py:153 - comments
-- task_generator.py:185 - 
-- LEAVE_IT_BETTER_POLICY.md:22 - markers:     20 matches (mostly debug logging, not actual debt)
+## Recommended Actions
+- Review task board alignment between `handoff/ACTIVE_TASKS.md` and `handoff/registry.json`.

@@ -163,7 +163,7 @@ class HandoffManager(DatabaseHandoffMixin):
 **Lines:** 39  
 Exports all models, repositories, and manager for clean imports:
 ```python
-from core.database import (
+from core.db_manager import (
     get_db_manager, TaskRepository, Task, TaskStatus
 )
 ```
@@ -217,7 +217,7 @@ class AASConfig(BaseSettings):
 Mixin pattern allows seamless integration:
 ```python
 # core/handoff/manager.py
-from core.database.integration import DatabaseHandoffMixin
+from core.db_integration import DatabaseHandoffMixin
 
 class HandoffManager(DatabaseHandoffMixin):
     def __init__(self, config: AASConfig):
@@ -320,7 +320,7 @@ python -m pytest scripts/test_database.py -v --tb=short
 
 ### Example 1: Track Task Execution
 ```python
-from core.database import get_db_manager, TaskRepository, TaskExecutionRepository
+from core.db_manager import get_db_manager, TaskRepository, TaskExecutionRepository
 
 db = get_db_manager()
 
@@ -344,7 +344,7 @@ with db.get_session() as session:
 
 ### Example 2: Log Events
 ```python
-from core.database import get_db_manager, EventRepository, EventType
+from core.db_manager import get_db_manager, EventRepository, EventType
 
 db = get_db_manager()
 
@@ -361,7 +361,7 @@ with db.get_session() as session:
 
 ### Example 3: Query Task History
 ```python
-from core.database import get_db_manager, TaskRepository
+from core.db_manager import get_db_manager, TaskRepository
 
 db = get_db_manager()
 

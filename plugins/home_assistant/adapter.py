@@ -2,7 +2,7 @@ import requests
 from typing import Optional, Any, Dict
 from pydantic import SecretStr
 from loguru import logger
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 class HomeAssistantClient:
     """

@@ -9,7 +9,7 @@ from loguru import logger
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.config.manager import load_config
+from core.config import load_config
 from plugins.ai_assistant.ollama_client import OllamaClient, LLMProvider
 from plugins.ai_assistant.assistant import AIAssistant
 
@@ -38,8 +38,6 @@ def test_ollama_availability():
         else:
             print("  No models installed")
             print("  Install a model with: ollama pull llama2")
-    
-    return available
 
 
 def test_ollama_generation():
@@ -72,11 +70,10 @@ def test_ollama_generation():
         
         print(f"Response: {answer.strip()}")
         print("Generation successful")
-        return True
         
     except Exception as e:
         print(f"Generation failed: {e}")
-        return False
+        raise
 
 
 def test_llm_provider_fallback():
@@ -106,11 +103,10 @@ def test_llm_provider_fallback():
         print(f"Response: {response.strip()}")
         
         print("Provider fallback working")
-        return True
         
     except Exception as e:
         print(f"Provider test failed: {e}")
-        return False
+        raise
 
 
 def test_ai_assistant_integration():
@@ -136,11 +132,10 @@ def test_ai_assistant_integration():
         print(f"Response: {response[:200]}...")  # First 200 chars
         
         print("AI Assistant integration successful")
-        return True
         
     except Exception as e:
         print(f"AI Assistant test failed: {e}")
-        return False
+        raise
 
 
 def test_strategy_generation():
@@ -160,11 +155,10 @@ def test_strategy_generation():
         print(f"\nGenerated Strategy:\n{strategy[:300]}...")  # First 300 chars
         
         print("Strategy generation successful")
-        return True
         
     except Exception as e:
         print(f"Strategy generation failed: {e}")
-        return False
+        raise
 
 
 def main():

@@ -14,19 +14,25 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from core.handoff.manager import HandoffManager
+from core.handoff_manager import HandoffManager
 
 
 class TestFCFSClaiming:
     """Test suite for FCFS claiming system."""
     
-    def __init__(self):
+    def setup_method(self, method):
         self.tests_passed = 0
         self.tests_failed = 0
         self.temp_dir = None
+        self.setup()
+
+    def teardown_method(self, method):
+        self.teardown()
         
     def setup(self):
         """Create temporary task board for testing."""
+        if self.temp_dir and os.path.exists(self.temp_dir):
+            shutil.rmtree(self.temp_dir)
         self.temp_dir = tempfile.mkdtemp(prefix="aas_test_")
         self.task_board_path = os.path.join(self.temp_dir, "ACTIVE_TASKS.md")
         self.artifact_dir = os.path.join(self.temp_dir, "artifacts")

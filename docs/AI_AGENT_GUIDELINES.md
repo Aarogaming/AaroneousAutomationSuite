@@ -365,7 +365,7 @@ Improved import patterns in existing plugins while implementing.
 
 ### How to Escalate
 ```python
-from core.handoff.manager import handoff
+from core.handoff_manager import handoff
 
 handoff.report_event(
     task_id="AAS-XXX",

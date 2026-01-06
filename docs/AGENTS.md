@@ -58,7 +58,7 @@ pytest
 ## Emergency
 
 ```python
-from core.handoff.manager import handoff
+from core.handoff_manager import handoff
 handoff.report_event("TASK-ID", "error", "Description")
 ```
 

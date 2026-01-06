@@ -14,6 +14,10 @@ loguru>=0.7.2
 pyyaml>=6.0.1
 pillow>=10.0.0
 pystray>=0.19.5
+sqlite-vec>=0.1.6
+sqlalchemy>=2.0.0
+cryptography>=41.0.0
+watchdog>=3.0.0
 
 # Consolidated from legacy repos
 opencv-python>=4.8.0
@@ -26,3 +30,4 @@ pyperclip>=1.9.0
 requests>=2.32.3
 pypresence>=4.3.0
 pywin32>=306
+psutil>=5.9.8

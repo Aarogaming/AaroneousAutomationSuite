@@ -163,7 +163,7 @@ handoff.generate_health_report()
 
 ### Manual Execution
 ```python
-from core.handoff.manager import HandoffManager
+from core.handoff_manager import HandoffManager
 manager = HandoffManager()
 health = manager.get_task_board_health()
 report_path = manager.generate_health_report()

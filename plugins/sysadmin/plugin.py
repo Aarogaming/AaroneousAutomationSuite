@@ -2,7 +2,7 @@ import psutil
 import os
 from typing import Dict, Any
 from loguru import logger
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 class SysAdminPlugin:
     """

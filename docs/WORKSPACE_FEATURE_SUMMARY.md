@@ -154,7 +154,7 @@ python scripts/task_manager_cli.py workspace-report
 ### Python API Usage
 ```python
 from core.handoff.task_manager import TaskManager
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 tm = TaskManager(AASConfig())
 

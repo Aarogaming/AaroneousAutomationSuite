@@ -13,8 +13,18 @@ Usage:
     python scripts/aas_cli.py agent help-request AAS-123 <session-id>
 """
 
+import os
 import sys
 from pathlib import Path
+
+# Ensure UTF-8 output to avoid Windows charmap errors.
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except (AttributeError, OSError):
+    pass
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import click
@@ -409,7 +419,7 @@ def workspace_audit(ctx):
     
     try:
         click.echo("\n🔍 Running AI-Readiness Audit...")
-        from core.batch.task_generator import TaskGenerator
+        from core.batch_gen import TaskGenerator
         # Mocking dependencies for audit
         tg = TaskGenerator(None, None, hub.config)
         

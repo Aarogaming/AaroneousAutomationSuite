@@ -33,7 +33,7 @@ Create a central `ManagerHub` that handles all manager initialization:
 ```python
 # core/managers/__init__.py
 from typing import Optional
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 class ManagerHub:
     """
@@ -80,7 +80,7 @@ class ManagerHub:
     @property
     def handoff(self) -> 'HandoffManager':
         if self._handoff_manager is None:
-            from core.handoff.manager import HandoffManager
+            from core.handoff_manager import HandoffManager
             self._handoff_manager = HandoffManager(config=self.config)
         return self._handoff_manager
     
@@ -96,7 +96,7 @@ class ManagerHub:
     @property
     def db(self) -> 'DatabaseManager':
         if self._database_manager is None:
-            from core.database.manager import DatabaseManager
+            from core.db_manager import DatabaseManager
             self._database_manager = DatabaseManager(
                 db_path="artifacts/aas.db"
             )
@@ -494,7 +494,7 @@ def generate_manager_docs(manager_cls):
 # tests/fixtures/managers.py
 import pytest
 from core.managers import ManagerHub
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 @pytest.fixture
 def mock_config():

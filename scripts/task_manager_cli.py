@@ -34,8 +34,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from loguru import logger
-from core.managers.tasks import TaskManager
-from core.config.manager import AASConfig
+from core.task_manager import TaskManager
+from core.config import AASConfig
 
 
 def print_task(task: dict, include_batch_status: bool = False):
@@ -337,7 +337,7 @@ async def run_devtoys(task_name: str, text: str = "", pattern: str = ""):
 
 async def run_ngrok(action: str, port: int = 8000):
     """Manage ngrok tunnel."""
-    from core.services.ngrok import NgrokPlugin, NgrokConfig
+    from core.services import NgrokPlugin, NgrokConfig
     from pydantic import SecretStr
     import os
     
@@ -375,7 +375,7 @@ async def subscribe_tasks(client_id: str | None = None):
     
     async with grpc.aio.insecure_channel('localhost:50051') as channel:
         stub = bridge_pb2_grpc.BridgeStub(channel)
-        request = bridge_pb2.TaskSubscriptionRequest(client_id=client_id)
+        request = bridge_pb2.SubscribeRequest(client_id=client_id)
         
         try:
             async for update in stub.SubscribeToTasks(request):

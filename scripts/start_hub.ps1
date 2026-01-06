@@ -26,7 +26,7 @@ function Test-Prerequisites {
         Write-Host "[!] Virtual environment missing" -ForegroundColor Red
         Write-Host "    Run: python -m venv .venv" -ForegroundColor Yellow
     } elseif ($Verbose) {
-        Write-Host "[✓] Virtual environment found" -ForegroundColor Green
+        Write-Host "[OK] Virtual environment found" -ForegroundColor Green
     }
     
     # Check if .env file exists
@@ -35,7 +35,7 @@ function Test-Prerequisites {
         Write-Host "[!] Configuration file missing" -ForegroundColor Red
         Write-Host "    Copy .env.example to .env and configure" -ForegroundColor Yellow
     } elseif ($Verbose) {
-        Write-Host "[✓] Configuration file found" -ForegroundColor Green
+        Write-Host "[OK] Configuration file found" -ForegroundColor Green
     }
     
     # Check artifacts directory and permissions
@@ -44,7 +44,7 @@ function Test-Prerequisites {
         Write-Host "[*] Creating artifacts directory..." -ForegroundColor Cyan
         New-Item -ItemType Directory -Path $artifactsDir -Force | Out-Null
     } elseif ($Verbose) {
-        Write-Host "[✓] Artifacts directory exists" -ForegroundColor Green
+        Write-Host "[OK] Artifacts directory exists" -ForegroundColor Green
     }
     
     # Test write permissions
@@ -52,7 +52,7 @@ function Test-Prerequisites {
     try {
         "test" | Out-File $testFile -ErrorAction Stop
         Remove-Item $testFile -ErrorAction SilentlyContinue
-        if ($Verbose) { Write-Host "[✓] Artifacts directory writable" -ForegroundColor Green }
+        if ($Verbose) { Write-Host "[OK] Artifacts directory writable" -ForegroundColor Green }
     } catch {
         $issues += "Cannot write to artifacts directory"
         Write-Host "[!] Artifacts directory not writable" -ForegroundColor Red
@@ -66,9 +66,9 @@ function Test-Prerequisites {
             $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
             $archiveLog = Join-Path $projectRoot "artifacts\hub_$timestamp.log"
             Move-Item $logFile $archiveLog -Force
-            Write-Host "[✓] Log rotated to hub_$timestamp.log" -ForegroundColor Green
+            Write-Host "[OK] Log rotated to hub_$timestamp.log" -ForegroundColor Green
         } elseif ($Verbose) {
-            Write-Host "[✓] Log file size OK ($([math]::Round($logSize, 2))MB)" -ForegroundColor Green
+            Write-Host "[OK] Log file size OK ($([math]::Round($logSize, 2))MB)" -ForegroundColor Green
         }
     }
     
@@ -81,7 +81,8 @@ function Test-Prerequisites {
                 Write-Host "[!] Database may be corrupted" -ForegroundColor Red
             } elseif ($Verbose) {
                 $dbSize = (Get-Item $dbFile).Length / 1KB
-                Write-Host "[✓] Database exists ($([math]::Round($dbSize, 2))KB)" -ForegroundColor Green
+                $roundedSize = [math]::Round($dbSize, 2)
+                Write-Host "[OK] Database exists ($roundedSize KB)" -ForegroundColor Green
             }
         } catch {
             $issues += "Cannot read database file"
@@ -97,7 +98,8 @@ function Test-Prerequisites {
     if ($freeSpace -lt 1) {
         Write-Host "[!] Low disk space: $([math]::Round($freeSpace, 2))GB free" -ForegroundColor Yellow
     } elseif ($Verbose) {
-        Write-Host "[✓] Disk space OK ($([math]::Round($freeSpace, 2))GB free)" -ForegroundColor Green
+        $roundedFree = [math]::Round($freeSpace, 2)
+        Write-Host "[OK] Disk space OK ($roundedFree GB free)" -ForegroundColor Green
     }
     
     return ($issues.Count -eq 0)
@@ -108,7 +110,7 @@ function Get-HubStatus {
         $processId = Get-Content $pidFile
         $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
         if ($process) {
-            Write-Host "[+] AAS Hub is running (PID: $processId)" -ForegroundColor Green
+            Write-Host "[OK] AAS Hub is running (PID: $processId)" -ForegroundColor Green
             Write-Host "  Started: $($process.StartTime)" -ForegroundColor Gray
             Write-Host "  CPU: $([math]::Round($process.CPU, 2))s" -ForegroundColor Gray
             Write-Host "  Memory: $([math]::Round($process.WorkingSet64 / 1MB, 2)) MB" -ForegroundColor Gray
@@ -128,7 +130,7 @@ function Stop-Hub {
             Stop-Process -Id $processId -Force
             Start-Sleep -Seconds 2
             Remove-Item $pidFile -ErrorAction SilentlyContinue
-            Write-Host "[+] Hub stopped" -ForegroundColor Green
+            Write-Host "[OK] Hub stopped" -ForegroundColor Green
         } else {
             Write-Host "Hub process not found, cleaning up PID file" -ForegroundColor Yellow
             Remove-Item $pidFile -ErrorAction SilentlyContinue
@@ -144,7 +146,7 @@ function Stop-Hub {
     if ($trayProcesses) {
         Write-Host "Stopping system tray application..." -ForegroundColor Yellow
         $trayProcesses | Stop-Process -Force
-        Write-Host "[+] System tray stopped" -ForegroundColor Green
+        Write-Host "[OK] System tray stopped" -ForegroundColor Green
     }
 }
 
@@ -214,7 +216,7 @@ function Start-Hub {
         Write-Host "`n[!] Prerequisites check failed. Fix issues above before starting." -ForegroundColor Red
         exit 1
     }
-    Write-Host "[✓] Environment ready`n" -ForegroundColor Green
+    Write-Host "[OK] Environment ready`n" -ForegroundColor Green
     
     # Clear any zombie processes before starting
     Clear-ZombieProcesses
@@ -223,7 +225,7 @@ function Start-Hub {
     $startCmd = @"
 `$env:PYTHONPATH = '$projectRoot'
 Set-Location '$projectRoot'
-& '$pythonExe' core/main.py 2>&1 | Tee-Object -FilePath '$logFile'
+& '$pythonExe' hub.py
 "@
 
     # Start detached process
@@ -237,7 +239,7 @@ Set-Location '$projectRoot'
     Start-Sleep -Seconds 3
     
     if (Get-Process -Id $process.Id -ErrorAction SilentlyContinue) {
-        Write-Host "[+] AAS Hub started (PID: $($process.Id))" -ForegroundColor Green
+        Write-Host "[OK] AAS Hub started (PID: $($process.Id))" -ForegroundColor Green
         Write-Host "  Web: http://localhost:8000" -ForegroundColor Gray
         Write-Host "  IPC: localhost:50051" -ForegroundColor Gray
         Write-Host "  Logs: $logFile" -ForegroundColor Gray
@@ -252,7 +254,7 @@ Set-Location '$projectRoot'
 "@
         Start-Process powershell -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $trayCmd `
             -WindowStyle Hidden
-        Write-Host "[+] System tray icon launched" -ForegroundColor Green
+        Write-Host "[OK] System tray icon launched" -ForegroundColor Green
     } else {
         Write-Host "[-] Hub failed to start" -ForegroundColor Red
         Write-Host "  Check logs: $logFile" -ForegroundColor Yellow

@@ -1,0 +1,389 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "version": "1.0.0",
+  "last_updated": "2026-01-06T00:00:00Z",
+  "metadata": {
+    "description": "Task registry for AAS Autonomous Handoff Protocol",
+    "source": "handoff/ACTIVE_TASKS.md",
+    "agents": ["Sixth", "CodeGPT", "GitHub Copilot", "Copilot"]
+  },
+  "tasks": {
+    "AAS-002": {
+      "id": "AAS-002",
+      "priority": "High",
+      "title": "Test FCFS Claiming",
+      "status": "Done",
+      "assignee": "CodeGPT",
+      "dependencies": ["AAS-001"],
+      "created": "2026-01-02",
+      "updated": "2026-01-02"
+    },
+    "AAS-014": {
+      "id": "AAS-014",
+      "priority": "Low",
+      "title": "DanceBot Integration",
+      "status": "queued",
+      "assignee": null,
+      "dependencies": ["AAS-012", "AAS-013"],
+      "created": "2026-01-02",
+      "updated": "2026-01-02"
+    },
+    "AAS-104": {
+      "id": "AAS-104",
+      "priority": "High",
+      "title": "Integrate OpenAI Agents SDK",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-003"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-105": {
+      "id": "AAS-105",
+      "priority": "Medium",
+      "title": "Build ChatKit Agent Dashboard",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-104"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-109": {
+      "id": "AAS-109",
+      "priority": "Medium",
+      "title": "Integrate Penpot Design System",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-003"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-110": {
+      "id": "AAS-110",
+      "priority": "Medium",
+      "title": "Integrate DevToys SDK Extensions",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-003"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-112": {
+      "id": "AAS-112",
+      "priority": "Medium",
+      "title": "Integrate ngrok Tunneling for Development",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-003"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-113": {
+      "id": "AAS-113",
+      "priority": "Medium",
+      "title": "Build Unified Task Manager with Workspace Monitor",
+      "status": "Done",
+      "assignee": "GitHub Copilot",
+      "dependencies": [],
+      "created": "2026-01-02",
+      "updated": "2026-01-02"
+    },
+    "AAS-114": {
+      "id": "AAS-114",
+      "priority": "High",
+      "title": "Implement gRPC Task Broadcasting",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-113"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-119": {
+      "id": "AAS-119",
+      "priority": "High",
+      "title": "Implement Live Event Stream (WebSockets)",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-03"
+    },
+    "AAS-201": {
+      "id": "AAS-201",
+      "priority": "Medium",
+      "title": "Centralized Config Service",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-113"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-207": {
+      "id": "AAS-207",
+      "priority": "High",
+      "title": "Implement Multi-Modal Knowledge Graph",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-113"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-208": {
+      "id": "AAS-208",
+      "priority": "High",
+      "title": "Implement Agentic Self-Healing Protocol",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-207"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-211": {
+      "id": "AAS-211",
+      "priority": "Medium",
+      "title": "Automated Task Decomposition",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-113"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-212": {
+      "id": "AAS-212",
+      "priority": "Medium",
+      "title": "Implement Agent Handoff Protocol",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-113"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-213": {
+      "id": "AAS-213",
+      "priority": "High",
+      "title": "Implement Live Event Stream (WebSockets)",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-113"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-214": {
+      "id": "AAS-214",
+      "priority": "High",
+      "title": "Scaffold Mission Control Dashboard",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-213"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-220": {
+      "id": "AAS-220",
+      "priority": "Medium",
+      "title": "Create Plugin Test Suite",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-113"],
+      "created": "2026-01-02",
+      "updated": "2026-01-03"
+    },
+    "AAS-223": {
+      "id": "AAS-223",
+      "priority": "Medium",
+      "title": "Automated Documentation Generator",
+      "status": "Done",
+      "assignee": "Sixth",
+      "dependencies": ["AAS-113"],
+      "created": "2026-01-03",
+      "updated": "2026-01-03"
+    },
+    "AAS-224": {
+      "id": "AAS-224",
+      "priority": "Low",
+      "title": "Implement Community Forge (Marketplace)",
+      "status": "queued",
+      "assignee": null,
+      "dependencies": ["AAS-214"],
+      "created": "2026-01-02",
+      "updated": "2026-01-02"
+    },
+    "AAS-225": {
+      "id": "AAS-225",
+      "priority": "High",
+      "title": "Implement Background Task Queue",
+      "status": "Done",
+      "assignee": "GitHub Copilot",
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-03"
+    },
+    "AAS-226": {
+      "id": "AAS-226",
+      "priority": "Low",
+      "title": "WebSocket Test Task",
+      "status": "queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-03"
+    },
+    "AAS-227": {
+      "id": "AAS-227",
+      "priority": "High",
+      "title": "Build Automated Implementation Engine",
+      "status": "Done",
+      "assignee": "GitHub-Copilot-Test",
+      "dependencies": ["AAS-211"],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-228": {
+      "id": "AAS-228",
+      "priority": "High",
+      "title": "Build Integration Engine",
+      "status": "queued",
+      "assignee": null,
+      "dependencies": ["AAS-227"],
+      "created": "2026-01-03",
+      "updated": "2026-01-03"
+    },
+    "AAS-229": {
+      "id": "AAS-229",
+      "priority": "High",
+      "title": "Implement API Integration",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-230": {
+      "id": "AAS-230",
+      "priority": "Medium",
+      "title": "Design UI Components",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-231": {
+      "id": "AAS-231",
+      "priority": "Medium",
+      "title": "Implement State Management",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-232": {
+      "id": "AAS-232",
+      "priority": "Medium",
+      "title": "Add Error Handling and Loading States",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-233": {
+      "id": "AAS-233",
+      "priority": "High",
+      "title": "Deploy the Application",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-234": {
+      "id": "AAS-234",
+      "priority": "High",
+      "title": "Select and Configure Weather API",
+      "status": "queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-03"
+    },
+    "AAS-235": {
+      "id": "AAS-235",
+      "priority": "High",
+      "title": "Set Up Frontend Framework",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-236": {
+      "id": "AAS-236",
+      "priority": "High",
+      "title": "Implement API Data Fetching",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-237": {
+      "id": "AAS-237",
+      "priority": "Medium",
+      "title": "Design User Interface",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-238": {
+      "id": "AAS-238",
+      "priority": "Medium",
+      "title": "Implement Error Handling",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-239": {
+      "id": "AAS-239",
+      "priority": "Medium",
+      "title": "Set Up Deployment Pipeline",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-240": {
+      "id": "AAS-240",
+      "priority": "Medium",
+      "title": "Test Application Functionality",
+      "status": "Queued",
+      "assignee": null,
+      "dependencies": [],
+      "created": "2026-01-03",
+      "updated": "2026-01-04"
+    },
+    "AAS-241": {
+      "id": "AAS-241",
+      "priority": "High",
+      "title": "Test Task",
+      "status": "In Progress",
+      "assignee": "Copilot",
+      "dependencies": [],
+      "created": "2026-01-04",
+      "updated": "2026-01-04"
+    }
+  },
+  "statistics": {
+    "total_tasks": 37,
+    "completed": 18,
+    "in_progress": 1,
+    "queued": 18,
+    "agents_active": 4
+  }
+}

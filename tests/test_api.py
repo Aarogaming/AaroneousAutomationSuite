@@ -4,21 +4,34 @@ Tests API key validity and basic model access.
 """
 import sys
 import os
+import pytest
 from loguru import logger
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.config.manager import load_config
+from core.config import load_config
+
+def _require_live_api() -> "AASConfig":
+    allow = os.getenv("AAS_ALLOW_LIVE_API_TESTS", "").lower() in ("1", "true", "yes")
+    if not allow:
+        pytest.skip("Live API tests disabled; set AAS_ALLOW_LIVE_API_TESTS=1 to run.")
+    try:
+        config = load_config()
+    except SystemExit:
+        pytest.skip("OPENAI_API_KEY missing; skipping live API test.")
+    key = config.openai_api_key.get_secret_value()
+    if not key or key.strip() == "sk-dummy-key-for-init":
+        pytest.skip("OpenAI API key missing or dummy; skipping live API test.")
+    return config
 
 def test_api_connection():
     """Test basic OpenAI API connectivity."""
+    config = _require_live_api()
     try:
         from openai import OpenAI
         
         logger.info("Loading configuration...")
-        config = load_config()
-        
         logger.info("Initializing OpenAI client...")
         client = OpenAI(api_key=config.openai_api_key.get_secret_value())
         
@@ -42,25 +55,22 @@ def test_api_connection():
         logger.info(f"  Model: {config.openai_model}")
         logger.info(f"  Response: {result}")
         
-        return True
-        
     except ImportError:
         logger.error("✗ OpenAI library not installed. Run: pip install openai")
-        return False
+        raise
     except Exception as e:
         logger.error(f"✗ API test failed: {e}")
-        return False
+        raise
 
 def test_responses_api():
     """Test the new Responses API if enabled."""
+    config = _require_live_api()
     try:
         from openai import OpenAI
         
-        config = load_config()
-        
         if not config.responses_api_enabled:
             logger.info("Responses API disabled in config, skipping...")
-            return True
+            return
             
         logger.info("Testing Responses API...")
         client = OpenAI(api_key=config.openai_api_key.get_secret_value())
@@ -75,11 +85,8 @@ def test_responses_api():
         logger.info(f"  Response ID: {response.id}")
         logger.info(f"  Message: {response.output[0].content[0].text if response.output else 'No output'}")
         
-        return True
-        
     except Exception as e:
         logger.warning(f"⚠ Responses API test failed (may not be available yet): {e}")
-        return True  # Don't fail the whole test
 
 if __name__ == "__main__":
     logger.info("=" * 60)

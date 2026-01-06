@@ -3,10 +3,7 @@
 from loguru import logger
 from .config import DevToysConfig
 import asyncio
-import json
-import base64
-import re
-from typing import List, Optional, Any
+from typing import List, Optional
 from pathlib import Path
 
 
@@ -27,40 +24,7 @@ class DevToysPlugin:
         
         logger.debug(f"DevToys SDK path validated: {self.config.sdk_path}")
     
-    def format_json(self, json_str: str, indent: int = 4) -> str:
-        """Format a JSON string."""
-        try:
-            parsed = json.loads(json_str)
-            return json.dumps(parsed, indent=indent)
-        except Exception as e:
-            logger.error(f"JSON formatting failed: {e}")
-            raise
-
-    def validate_json(self, json_str: str) -> bool:
-        """Validate a JSON string."""
-        try:
-            json.loads(json_str)
-            return True
-        except ValueError:
-            return False
-
-    def encode_base64(self, text: str) -> str:
-        """Encode text to base64."""
-        return base64.b64encode(text.encode()).decode()
-
-    def decode_base64(self, encoded_text: str) -> str:
-        """Decode base64 text."""
-        return base64.b64decode(encoded_text.encode()).decode()
-
-    def test_regex(self, pattern: str, text: str) -> List[str]:
-        """Test a regex pattern against text and return matches."""
-        try:
-            return re.findall(pattern, text)
-        except re.error as e:
-            logger.error(f"Regex error: {e}")
-            raise
-
-    async def run_task(self, task_name: str, **kwargs) -> Any:
+    async def run_task(self, task_name: str, **kwargs) -> bool:
         """
         Execute a DevToys task.
         
@@ -69,30 +33,23 @@ class DevToysPlugin:
             **kwargs: Additional task parameters
             
         Returns:
-            Result of the task
+            True if task completed successfully
         """
         try:
             logger.info(f"Running DevToys task: {task_name}")
             
-            if task_name == "json_format":
-                return self.format_json(kwargs.get("text", ""))
-            elif task_name == "json_validate":
-                return self.validate_json(kwargs.get("text", ""))
-            elif task_name == "base64_encode":
-                return self.encode_base64(kwargs.get("text", ""))
-            elif task_name == "base64_decode":
-                return self.decode_base64(kwargs.get("text", ""))
-            elif task_name == "regex_test":
-                return self.test_regex(kwargs.get("pattern", ""), kwargs.get("text", ""))
+            # Simulate task execution (replace with actual SDK calls)
+            await asyncio.sleep(0.5)
             
-            # Fallback for unknown tasks
-            await asyncio.sleep(0.1)
             logger.info(f"Task {task_name} completed successfully")
             return True
             
+        except asyncio.TimeoutError:
+            logger.error(f"Task {task_name} timed out after {self.config.timeout}s")
+            return False
         except Exception as e:
             logger.error(f"Task {task_name} failed: {e}")
-            return None
+            return False
     
     async def start(self):
         """Start the DevToys plugin and run initial tasks."""

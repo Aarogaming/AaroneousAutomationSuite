@@ -84,7 +84,7 @@ python scripts/task_manager_cli.py workspace-report
 
 ```python
 from core.handoff.task_manager import TaskManager
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 # Initialize
 config = AASConfig()

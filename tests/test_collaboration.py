@@ -9,6 +9,7 @@ Demonstrates multi-agent coordination features:
 """
 
 import sys
+import pytest
 from pathlib import Path
 
 # Add project root to path
@@ -19,31 +20,60 @@ from core.managers import ManagerHub
 from loguru import logger
 
 
-def test_agent_checkin():
+@pytest.fixture
+def sessions(hub):
+    """Fixture for agent sessions."""
+    collab = hub.collaboration
+    session_copilot = collab.check_in("GitHub Copilot", agent_version="1.0")
+    session_chatgpt = collab.check_in("ChatGPT", agent_version="4.0")
+    session_sixth = collab.check_in("Sixth", agent_version="3.5")
+    
+    # Create tasks for locking tests
+    with hub.db.get_session() as session:
+        from core.db_models import Task, TaskPriority, TaskStatus
+        for tid in ["AAS-105", "AAS-106"]:
+            if not session.query(Task).filter_by(id=tid).first():
+                task = Task(id=tid, title=f"Test Task {tid}", priority=TaskPriority.MEDIUM, status=TaskStatus.QUEUED)
+                session.add(task)
+    
+    yield {
+        "copilot": session_copilot,
+        "chatgpt": session_chatgpt,
+        "sixth": session_sixth
+    }
+    
+    # Cleanup
+    collab.check_out(session_copilot)
+    collab.check_out(session_chatgpt)
+    collab.check_out(session_sixth)
+    
+    # Cleanup
+    collab.check_out(session_copilot)
+    collab.check_out(session_chatgpt)
+    collab.check_out(session_sixth)
+
+def test_agent_checkin(hub):
     """Test agent check-in and roster display."""
     print("\n" + "="*60)
     print("TEST 1: Agent Check-In and Roster")
     print("="*60)
     
-    hub = ManagerHub.create()
     collab = hub.collaboration
     
     # Multiple agents check in
     session_copilot = collab.check_in("GitHub Copilot", agent_version="1.0")
-    session_chatgpt = collab.check_in("ChatGPT", agent_version="4.0")
-    session_sixth = collab.check_in("Sixth", agent_version="3.5")
     
     # View active agents
     agents = collab.get_active_agents()
     print(f"\nActive agents: {len(agents)}")
+    found = False
     for agent in agents:
         print(f"  • {agent['agent_name']} ({agent['session_id'][:12]}...)")
+        if agent['agent_name'] == "GitHub Copilot":
+            found = True
     
-    return hub, {
-        "copilot": session_copilot,
-        "chatgpt": session_chatgpt,
-        "sixth": session_sixth
-    }
+    assert found
+    collab.check_out(session_copilot)
 
 
 def test_task_locking(hub, sessions):

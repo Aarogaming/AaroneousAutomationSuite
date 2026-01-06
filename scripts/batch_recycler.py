@@ -9,9 +9,9 @@ from typing import List, Dict, Any
 from datetime import datetime
 from loguru import logger
 
-from core.managers.tasks import TaskManager
-from core.database.manager import DatabaseManager
-from core.config.manager import AASConfig
+from core.task_manager import TaskManager
+from core.db_manager import DatabaseManager
+from core.config import AASConfig
 
 
 class BatchRecycler:

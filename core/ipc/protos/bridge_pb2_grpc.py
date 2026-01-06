@@ -26,8 +26,7 @@ if _version_not_supported:
 
 
 class BridgeStub(object):
-    """The Bridge service definition.
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -35,68 +34,62 @@ class BridgeStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.ExecuteCommand = channel.unary_unary(
-                '/aas.ipc.Bridge/ExecuteCommand',
-                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.CommandRequest.SerializeToString,
-                response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.CommandResponse.FromString,
-                _registered_method=True)
-        self.StreamSnapshots = channel.unary_stream(
-                '/aas.ipc.Bridge/StreamSnapshots',
-                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotRequest.SerializeToString,
-                response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotResponse.FromString,
-                _registered_method=True)
-        self.SubscribeToTasks = channel.unary_stream(
-                '/aas.ipc.Bridge/SubscribeToTasks',
-                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskSubscriptionRequest.SerializeToString,
-                response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.FromString,
-                _registered_method=True)
         self.GetConfig = channel.unary_unary(
-                '/aas.ipc.Bridge/GetConfig',
+                '/bridge.Bridge/GetConfig',
                 request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigRequest.SerializeToString,
                 response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.FromString,
                 _registered_method=True)
         self.SetConfig = channel.unary_unary(
-                '/aas.ipc.Bridge/SetConfig',
-                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SetConfigRequest.SerializeToString,
+                '/bridge.Bridge/SetConfig',
+                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigSetRequest.SerializeToString,
                 response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.FromString,
+                _registered_method=True)
+        self.SubscribeToTasks = channel.unary_stream(
+                '/bridge.Bridge/SubscribeToTasks',
+                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SubscribeRequest.SerializeToString,
+                response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.FromString,
+                _registered_method=True)
+        self.ExecuteCommand = channel.unary_unary(
+                '/bridge.Bridge/ExecuteCommand',
+                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.CommandRequest.SerializeToString,
+                response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.CommandResponse.FromString,
+                _registered_method=True)
+        self.StreamSnapshots = channel.unary_stream(
+                '/bridge.Bridge/StreamSnapshots',
+                request_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotRequest.SerializeToString,
+                response_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.Snapshot.FromString,
                 _registered_method=True)
 
 
 class BridgeServicer(object):
-    """The Bridge service definition.
-    """
-
-    def ExecuteCommand(self, request, context):
-        """Sends a high-level command from AAS to Maelstrom
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def StreamSnapshots(self, request, context):
-        """Streams game state snapshots from Maelstrom to AAS
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def SubscribeToTasks(self, request, context):
-        """Subscribe to real-time task updates
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+    """Missing associated documentation comment in .proto file."""
 
     def GetConfig(self, request, context):
-        """Get configuration from the centralized service
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def SetConfig(self, request, context):
-        """Set configuration in the centralized service
-        """
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SubscribeToTasks(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExecuteCommand(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StreamSnapshots(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -104,6 +97,21 @@ class BridgeServicer(object):
 
 def add_BridgeServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'GetConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetConfig,
+                    request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigRequest.FromString,
+                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.SerializeToString,
+            ),
+            'SetConfig': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetConfig,
+                    request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigSetRequest.FromString,
+                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.SerializeToString,
+            ),
+            'SubscribeToTasks': grpc.unary_stream_rpc_method_handler(
+                    servicer.SubscribeToTasks,
+                    request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SubscribeRequest.FromString,
+                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.SerializeToString,
+            ),
             'ExecuteCommand': grpc.unary_unary_rpc_method_handler(
                     servicer.ExecuteCommand,
                     request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.CommandRequest.FromString,
@@ -112,115 +120,18 @@ def add_BridgeServicer_to_server(servicer, server):
             'StreamSnapshots': grpc.unary_stream_rpc_method_handler(
                     servicer.StreamSnapshots,
                     request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotRequest.FromString,
-                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotResponse.SerializeToString,
-            ),
-            'SubscribeToTasks': grpc.unary_stream_rpc_method_handler(
-                    servicer.SubscribeToTasks,
-                    request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskSubscriptionRequest.FromString,
-                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.SerializeToString,
-            ),
-            'GetConfig': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetConfig,
-                    request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigRequest.FromString,
-                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.SerializeToString,
-            ),
-            'SetConfig': grpc.unary_unary_rpc_method_handler(
-                    servicer.SetConfig,
-                    request_deserializer=core_dot_ipc_dot_protos_dot_bridge__pb2.SetConfigRequest.FromString,
-                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.SerializeToString,
+                    response_serializer=core_dot_ipc_dot_protos_dot_bridge__pb2.Snapshot.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'aas.ipc.Bridge', rpc_method_handlers)
+            'bridge.Bridge', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('aas.ipc.Bridge', rpc_method_handlers)
+    server.add_registered_method_handlers('bridge.Bridge', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
 class Bridge(object):
-    """The Bridge service definition.
-    """
-
-    @staticmethod
-    def ExecuteCommand(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/aas.ipc.Bridge/ExecuteCommand',
-            core_dot_ipc_dot_protos_dot_bridge__pb2.CommandRequest.SerializeToString,
-            core_dot_ipc_dot_protos_dot_bridge__pb2.CommandResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def StreamSnapshots(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(
-            request,
-            target,
-            '/aas.ipc.Bridge/StreamSnapshots',
-            core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotRequest.SerializeToString,
-            core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def SubscribeToTasks(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(
-            request,
-            target,
-            '/aas.ipc.Bridge/SubscribeToTasks',
-            core_dot_ipc_dot_protos_dot_bridge__pb2.TaskSubscriptionRequest.SerializeToString,
-            core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def GetConfig(request,
@@ -236,7 +147,7 @@ class Bridge(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/aas.ipc.Bridge/GetConfig',
+            '/bridge.Bridge/GetConfig',
             core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigRequest.SerializeToString,
             core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.FromString,
             options,
@@ -263,9 +174,90 @@ class Bridge(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/aas.ipc.Bridge/SetConfig',
-            core_dot_ipc_dot_protos_dot_bridge__pb2.SetConfigRequest.SerializeToString,
+            '/bridge.Bridge/SetConfig',
+            core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigSetRequest.SerializeToString,
             core_dot_ipc_dot_protos_dot_bridge__pb2.ConfigResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SubscribeToTasks(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/bridge.Bridge/SubscribeToTasks',
+            core_dot_ipc_dot_protos_dot_bridge__pb2.SubscribeRequest.SerializeToString,
+            core_dot_ipc_dot_protos_dot_bridge__pb2.TaskUpdate.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExecuteCommand(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/bridge.Bridge/ExecuteCommand',
+            core_dot_ipc_dot_protos_dot_bridge__pb2.CommandRequest.SerializeToString,
+            core_dot_ipc_dot_protos_dot_bridge__pb2.CommandResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamSnapshots(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/bridge.Bridge/StreamSnapshots',
+            core_dot_ipc_dot_protos_dot_bridge__pb2.SnapshotRequest.SerializeToString,
+            core_dot_ipc_dot_protos_dot_bridge__pb2.Snapshot.FromString,
             options,
             channel_credentials,
             insecure,

@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import shutil
 from pathlib import Path
+from core.handoff_manager import HandoffManager
 
 # Get project root
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -97,8 +98,8 @@ def test_task_create_and_cleanup():
     print("TEST: task create")
     
     # Backup ACTIVE_TASKS.md
-    backup_path = PROJECT_ROOT / "handoff" / "ACTIVE_TASKS.md.backup"
-    original_path = PROJECT_ROOT / "handoff" / "ACTIVE_TASKS.md"
+    original_path = HandoffManager().task_board_path
+    backup_path = Path(str(original_path) + ".backup")
     shutil.copy(original_path, backup_path)
     
     try:
@@ -127,11 +128,11 @@ def test_task_start_validation():
     """Test: task start with dependency validation"""
     print("TEST: task start validation (blocked task)")
     
-    # Try to start AAS-104 which is blocked by AAS-032
-    output, code = run_cli("task", "start", "AAS-104", "TestActor")
+    # Try to start AAS-014 which is blocked by missing dependencies
+    output, code = run_cli("task", "start", "AAS-014", "TestActor")
     
     # Should fail because AAS-032 is not Done
-    assert ("blocked" in output.lower() or "AAS-032" in output), "Should report blocking dependency"
+    assert ("blocked" in output.lower() or "AAS-012" in output or "AAS-013" in output), "Should report blocking dependency"
     
     print("[OK] PASS: task start validation\n")
 

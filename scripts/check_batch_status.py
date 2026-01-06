@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from openai import OpenAI
-from core.config.manager import AASConfig
+from core.config import AASConfig
 
 config = AASConfig()
 client = OpenAI(api_key=config.openai_api_key.get_secret_value())

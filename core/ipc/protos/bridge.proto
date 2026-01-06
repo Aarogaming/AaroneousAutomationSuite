@@ -1,43 +1,33 @@
 syntax = "proto3";
 
-package aas.ipc;
+package bridge;
 
-// The Bridge service definition.
 service Bridge {
-  // Sends a high-level command from AAS to Maelstrom
-  rpc ExecuteCommand (CommandRequest) returns (CommandResponse) {}
-  
-  // Streams game state snapshots from Maelstrom to AAS
-  rpc StreamSnapshots (SnapshotRequest) returns (stream SnapshotResponse) {}
-
-  // Subscribe to real-time task updates
-  rpc SubscribeToTasks (TaskSubscriptionRequest) returns (stream TaskUpdate) {}
-
-  // Get configuration from the centralized service
-  rpc GetConfig (ConfigRequest) returns (ConfigResponse) {}
-
-  // Set configuration in the centralized service
-  rpc SetConfig (SetConfigRequest) returns (ConfigResponse) {}
+  rpc GetConfig (ConfigRequest) returns (ConfigResponse);
+  rpc SetConfig (ConfigSetRequest) returns (ConfigResponse);
+  rpc SubscribeToTasks (SubscribeRequest) returns (stream TaskUpdate);
+  rpc ExecuteCommand (CommandRequest) returns (CommandResponse);
+  rpc StreamSnapshots (SnapshotRequest) returns (stream Snapshot);
 }
 
 message ConfigRequest {
-  string key = 1; // Optional: if empty, returns all non-secret configs
+  string key = 1;
 }
 
-message SetConfigRequest {
+message ConfigSetRequest {
   string key = 1;
   string value = 2;
-  string value_type = 3; // "string", "int", "bool", "json"
+  string value_type = 3;
   bool is_secret = 4;
 }
 
 message ConfigResponse {
   bool success = 1;
   string message = 2;
-  map<string, string> configs = 3; // key -> value (JSON stringified)
+  map<string, string> configs = 3;
 }
 
-message TaskSubscriptionRequest {
+message SubscribeRequest {
   string client_id = 1;
 }
 
@@ -46,13 +36,13 @@ message TaskUpdate {
   string title = 2;
   string status = 3;
   string assignee = 4;
-  string event_type = 5; // e.g., "CREATED", "CLAIMED", "COMPLETED", "UPDATED"
+  string event_type = 5;
   int64 timestamp = 6;
 }
 
 message CommandRequest {
   string command_type = 1;
-  string payload_json = 2;
+  string payload = 2;
 }
 
 message CommandResponse {
@@ -64,7 +54,7 @@ message SnapshotRequest {
   int32 interval_ms = 1;
 }
 
-message SnapshotResponse {
-  string snapshot_json = 1;
+message Snapshot {
+  string data = 1;
   int64 timestamp = 2;
 }

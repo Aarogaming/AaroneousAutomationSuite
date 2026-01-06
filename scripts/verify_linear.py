@@ -13,7 +13,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from core.config.manager import AASConfig
+from core.config import AASConfig
 from core.handoff.linear import LinearSync
 from loguru import logger
 import requests

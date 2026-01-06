@@ -110,8 +110,8 @@ These improvements **require dedicated work**:
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from core.config.manager import load_config
-from core.handoff.manager import HandoffManager
+from core.config import load_config
+from core.handoff_manager import HandoffManager
 config = load_config()
 handoff = HandoffManager(config=config)
 
@@ -132,7 +132,7 @@ hub = ManagerHub.create()
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from core.config.manager import load_config
+from core.config import load_config
 
 # ✅ NEW (If you're already modifying the import section)
 from core.managers import ManagerHub

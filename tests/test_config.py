@@ -2,7 +2,7 @@
 Test script for the enhanced Pydantic RCS configuration system.
 Tests validation, defaults, and error handling.
 """
-from core.config.manager import load_config, AASConfig
+from core.config import load_config, AASConfig
 from loguru import logger
 import os
 
@@ -17,10 +17,9 @@ def test_basic_load():
         print(f"  IPC: {config.ipc_host}:{config.ipc_port}")
         print(f"  Projects: {len(config.projects)}")
         print(f"  Linear: {'Enabled' if config.linear_api_key else 'Disabled'}")
-        return True
     except Exception as e:
         print(f"✗ Failed: {e}")
-        return False
+        raise
 
 def test_field_types():
     """Test that field types are correctly enforced."""
@@ -45,13 +44,12 @@ def test_field_types():
         assert isinstance(config.projects, list), "projects should be list"
         print("✓ List fields correctly parsed")
         
-        return True
     except AssertionError as e:
         print(f"✗ Assertion failed: {e}")
-        return False
+        raise
     except Exception as e:
         print(f"✗ Unexpected error: {e}")
-        return False
+        raise
 
 def test_defaults():
     """Test that default values are applied correctly."""
@@ -67,10 +65,9 @@ def test_defaults():
         assert config.ollama_url == "http://localhost:11434", "Default ollama_url should be localhost:11434"
         
         print("✓ All default values correctly applied")
-        return True
     except AssertionError as e:
         print(f"✗ Assertion failed: {e}")
-        return False
+        raise
 
 def test_literal_constraints():
     """Test that Literal type constraints are enforced."""
@@ -85,10 +82,9 @@ def test_literal_constraints():
         assert config.autonomy_level in valid_autonomy_levels, f"autonomy_level must be one of {valid_autonomy_levels}"
         
         print("✓ Literal constraints properly enforced")
-        return True
     except AssertionError as e:
         print(f"✗ Assertion failed: {e}")
-        return False
+        raise
 
 def test_optional_fields():
     """Test that optional fields work correctly."""
@@ -103,10 +99,9 @@ def test_optional_fields():
         print(f"  Home Assistant Token: {'Set' if config.home_assistant_token else 'Not set'}")
         
         print("✓ Optional fields handled correctly")
-        return True
     except Exception as e:
         print(f"✗ Unexpected error: {e}")
-        return False
+        raise
 
 if __name__ == "__main__":
     print("=" * 60)
@@ -137,3 +132,4 @@ if __name__ == "__main__":
         print("\n🎉 All tests passed! Pydantic RCS is working correctly.")
     else:
         print(f"\n⚠️  {total - passed} test(s) failed. Review errors above.")
+        sys.exit(1)

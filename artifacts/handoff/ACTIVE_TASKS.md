@@ -7,6 +7,7 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
 | ID | Priority | Title | Depends On | Status | Assignee | Created | Updated |
 |:---|:---|:---|:---|:---|:---|:---|:---|
 | AAS-002 | High | Test FCFS Claiming | AAS-001 | Done | CodeGPT | 2026-01-02 | 2026-01-02 |
+| AAS-003 | High | Pydantic RCS | - | Done | Sixth | 2026-01-02 | 2026-01-02 |
 | AAS-113 | Medium | Build Unified Task Manager with Workspace Monitor | - | Done | GitHub Copilot | 2026-01-02 | 2026-01-02 |
 | AAS-114 | High | Implement gRPC Task Broadcasting | AAS-113 | Done | Sixth | 2026-01-02 | 2026-01-03 |
 | AAS-213 | High | Implement Live Event Stream (WebSockets) | AAS-113 | Done | Sixth | 2026-01-02 | 2026-01-03 | 
@@ -45,6 +46,7 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
  | AAS-239 | Medium | Set Up Deployment Pipeline | - | Queued | - | 2026-01-03 | 2026-01-04 | 
  | AAS-240 | Medium | Test Application Functionality | - | Queued | - | 2026-01-03 | 2026-01-04 | 
  | AAS-241 | High | Test Task | - | In Progress | Copilot | 2026-01-04 | 2026-01-04 | 
+ | AAS-242 | Low | Test Task for CLI | - | queued | - | 2026-01-06 | 2026-01-06 | 
 
 ## Task Details
 
@@ -55,6 +57,13 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
     - [x] Task board updates correctly when claimed
     - [x] Dependencies are respected during claiming
 - **Status**: Done (CodeGPT)
+
+### AAS-003: Pydantic RCS
+- **Description**: Build the Pydantic-based Resilient Configuration System.
+- **Acceptance Criteria**:
+    - [x] Define typed settings model with env aliases
+    - [x] Add validation and defaults for core settings
+- **Status**: Done (Sixth)
 
 ### AAS-113: Build Unified Task Manager with Workspace Monitor
 - **Description**: Create a unified interface for managing tasks across all systems (Linear, local, etc.)
@@ -441,6 +450,12 @@ This is the local source of truth for task delegation. AI actors claim tasks by 
 
 ### AAS-241: Test Task
 - **Description**: Test Task
+- **Type**: feature
+- **Acceptance Criteria**:
+    - [ ] Initial implementation
+
+### AAS-242: Test Task for CLI
+- **Description**: This is a test task
 - **Type**: feature
 - **Acceptance Criteria**:
     - [ ] Initial implementation

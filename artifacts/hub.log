@@ -55,3 +55,579 @@ INFO:     Started server process [30424]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-01-06 02:09:17.763 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:09:17.781 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:09:17.785 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:09:17.788 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:09:17.800 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:09:17.801 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:09:17.801 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:09:17.802 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:09:17.803 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:09:17.803 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:09:17.803 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:09:17.818 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:09:17.823 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:09:18.302 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:09:18.302 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:09:18.305 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:09:18.305 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:12:18.661 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:12:18.669 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:12:18.670 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:12:18.671 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:12:18.683 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:12:18.683 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:12:18.684 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:12:18.684 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:12:18.685 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:12:18.685 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:12:18.685 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:12:18.688 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:12:18.689 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:12:19.105 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:12:19.105 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:12:19.106 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:12:19.106 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:12:35.896 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:12:35.904 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:12:35.905 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:12:35.907 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:12:35.920 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:12:35.921 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:12:35.921 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:12:35.922 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:12:35.923 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:12:35.923 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:12:35.923 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:12:35.926 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:12:35.927 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:12:36.396 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:12:36.396 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:12:36.398 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:12:36.398 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:12:55.627 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:12:55.636 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:12:55.637 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:12:55.639 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:12:55.651 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:12:55.652 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:12:55.653 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:12:55.653 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:12:55.654 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:12:55.654 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:12:55.654 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:12:55.657 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:12:55.658 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:12:56.120 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:12:56.120 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:12:56.121 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:12:56.121 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:14:58.505 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:14:58.513 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:14:58.514 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:14:58.515 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:14:58.527 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:14:58.528 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:14:58.528 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:14:58.529 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:14:58.530 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:14:58.530 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:14:58.530 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:14:58.534 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:14:58.535 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:14:58.996 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:14:58.996 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:14:58.997 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:14:58.998 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:15:14.429 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:15:14.437 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:15:14.438 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:15:14.440 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:15:14.455 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:15:14.456 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:15:14.457 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:15:14.457 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:15:14.458 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:15:14.458 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:15:14.458 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:15:14.462 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:15:14.463 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:15:14.952 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:15:14.953 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:15:14.956 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:15:14.956 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:15:48.409 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:15:48.417 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:15:48.418 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:15:48.420 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:15:48.433 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:15:48.434 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:15:48.434 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:15:48.435 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:15:48.436 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:15:48.436 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:15:48.436 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:15:48.439 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:15:48.440 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:15:48.919 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:15:48.919 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:15:48.920 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:15:48.920 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:16:14.349 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:16:14.358 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:16:14.359 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:16:14.361 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:16:14.375 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:16:14.376 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:16:14.376 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:16:14.377 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:16:14.378 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:16:14.378 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:16:14.378 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:16:14.382 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:16:14.382 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:16:14.892 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:16:14.892 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:16:14.893 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:16:14.894 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:16:29.338 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:16:29.347 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:16:29.348 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:16:29.350 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:16:29.361 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:16:29.362 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:16:29.362 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:16:29.363 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:16:29.363 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:16:29.364 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:16:29.364 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:16:29.367 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:16:29.368 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:16:29.802 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:16:29.802 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:16:29.803 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:16:29.803 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:16:29.823 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 02:17:15.223 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:17:15.231 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:17:15.232 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:17:15.233 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:17:15.245 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:17:15.245 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:17:15.245 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:17:15.246 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:17:15.247 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:17:15.247 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:17:15.247 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:17:15.250 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:17:15.250 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:17:15.647 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:17:15.648 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:17:15.649 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:17:15.649 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:17:15.666 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 02:17:34.143 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:17:34.150 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:17:34.151 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:17:34.153 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:17:34.164 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:17:34.165 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:17:34.165 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:17:34.166 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:17:34.166 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:17:34.167 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:17:34.167 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:17:34.170 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:17:34.170 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:17:34.589 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:17:34.590 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:17:34.591 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:17:34.591 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:17:43.694 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 02:17:43.703 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:17:43.704 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 02:17:43.706 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 02:17:43.719 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 02:17:43.719 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 02:17:43.720 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 02:17:43.720 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 02:17:43.721 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 02:17:43.721 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 02:17:43.721 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 02:17:43.724 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 02:17:43.725 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 02:17:44.176 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:17:44.176 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 02:17:44.177 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 02:17:44.177 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 02:17:44.339 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 02:17:44.339 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 02:17:44.339 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 02:17:44.342 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 02:17:44.342 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 03:00:48.243 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 03:00:48.255 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 03:00:48.256 | WARNING  | core.db_manager:set_sqlite_pragma:67 - sqlite-vec not found, vector search will be disabled
+2026-01-06 03:00:48.258 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 03:00:48.273 | DEBUG    | core.config:from_db:276 - Overrode openai_model from database
+2026-01-06 03:00:48.273 | DEBUG    | core.config:from_db:276 - Overrode debug_mode from database
+2026-01-06 03:00:48.274 | DEBUG    | core.config:from_db:276 - Overrode projects from database
+2026-01-06 03:00:48.274 | WARNING  | core.db_repositories:_get_fernet:282 - AAS_ENCRYPTION_KEY not found in environment. Generating a temporary one.
+2026-01-06 03:00:48.276 | ERROR    | core.db_repositories:get:346 - Failed to decrypt config home_assistant_token: 
+2026-01-06 03:00:48.276 | INFO     | core.config:load_config:303 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 03:00:48.276 | DEBUG    | core.config:load_config:306 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 03:00:48.280 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 03:00:48.280 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 03:00:49.015 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 03:00:49.016 | INFO     | core.handoff_manager:__init__:21 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 03:00:49.017 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 03:00:49.018 | INFO     | core.task_manager:__init__:106 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:10:04.325 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:10:04.335 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:10:04.337 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:10:04.339 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:10:04.352 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:10:04.353 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:10:04.353 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:10:04.354 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:10:04.354 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:10:04.357 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:10:04.357 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:10:04.357 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:10:04.359 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:10:04.359 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:10:04.796 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:10:04.798 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:10:04.799 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:10:04.800 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:10:04.800 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:10:04.970 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:10:04.971 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:10:04.971 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:10:04.976 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:10:04.976 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:10:42.918 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:10:42.926 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:10:42.927 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:10:42.929 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:10:42.942 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:10:42.943 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:10:42.943 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:10:42.944 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:10:42.944 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:10:42.947 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:10:42.948 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:10:42.948 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:10:42.949 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:10:42.950 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:10:43.350 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:10:43.351 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:10:43.353 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:10:43.353 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:10:43.353 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:10:43.506 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:10:43.506 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:10:43.506 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:10:43.508 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:10:43.509 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:10:57.640 | DEBUG    | core.health_manager:scan:24 - Performing system health scan...
+2026-01-06 09:18:19.021 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:18:19.031 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:18:19.066 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:18:19.068 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:18:19.081 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:18:19.081 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:18:19.082 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:18:19.082 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:18:19.082 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:18:19.086 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:18:19.086 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:18:19.086 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:18:19.087 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:18:19.088 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:18:19.518 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:18:19.519 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:18:19.521 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:18:19.522 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:18:19.522 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:18:19.671 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:18:19.672 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:18:19.672 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:18:19.674 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:18:19.674 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:18:39.719 | DEBUG    | core.health_manager:scan:24 - Performing system health scan...
+2026-01-06 09:19:44.364 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:19:44.374 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:19:44.410 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:19:44.412 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:19:44.424 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:19:44.424 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:19:44.425 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:19:44.425 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:19:44.425 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:19:44.428 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:19:44.429 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:19:44.429 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:19:44.430 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:19:44.431 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:19:44.845 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:19:44.845 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:19:44.847 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:19:44.847 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:19:44.847 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:19:44.997 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:19:44.997 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:19:44.997 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:19:44.999 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:19:45.000 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:19:57.931 | DEBUG    | core.health_manager:scan:24 - Performing system health scan...
+2026-01-06 09:21:14.094 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:21:14.103 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:21:14.138 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:21:14.140 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:21:14.152 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:21:14.153 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:21:14.153 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:21:14.154 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:21:14.154 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:21:14.157 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:21:14.158 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:21:14.158 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:21:14.159 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:21:14.160 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:21:14.577 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:21:14.577 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:21:14.579 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:21:14.580 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:21:14.580 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:21:14.734 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:21:14.735 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:21:14.735 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:21:14.738 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:21:14.738 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:22:18.402 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:22:18.410 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:22:18.446 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:22:18.448 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:22:18.461 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:22:18.462 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:22:18.462 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:22:18.462 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:22:18.463 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:22:18.466 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:22:18.466 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:22:18.467 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:22:18.468 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:22:18.469 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:22:18.869 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:22:18.870 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:22:18.871 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:22:18.872 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:22:18.872 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:22:19.029 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:22:19.030 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:22:19.030 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:22:19.032 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:22:19.032 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:23:03.143 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:23:03.152 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:23:03.190 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:23:03.192 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:23:03.205 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:23:03.206 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:23:03.206 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:23:03.206 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:23:03.206 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:23:03.209 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:23:03.210 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:23:03.210 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:23:03.212 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:23:03.212 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:23:03.648 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:23:03.649 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:23:03.651 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:23:03.652 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:23:03.652 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:23:03.805 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:23:03.806 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:23:03.806 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:23:03.808 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:23:03.809 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:23:05.361 | DEBUG    | core.health_manager:scan:24 - Performing system health scan...
+2026-01-06 09:24:43.162 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:24:43.170 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:24:43.205 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:24:43.207 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:24:43.220 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:24:43.221 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:24:43.221 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:24:43.222 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:24:43.222 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:24:43.225 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:24:43.225 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:24:43.225 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:24:43.227 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:24:43.227 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:24:43.624 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:24:43.624 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:24:43.626 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:24:43.626 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:24:43.626 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:24:43.779 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:24:43.779 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:24:43.780 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:24:43.782 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:24:43.782 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:24:45.359 | DEBUG    | core.health_manager:scan:24 - Performing system health scan...
+2026-01-06 09:24:48.349 | ERROR    | core.batch_manager:list_active_batches:104 - Failed to list batches: Error code: 401 - {'error': {'message': 'The project you are requesting has been archived and is no longer accessible', 'type': 'invalid_request_error', 'code': 'not_authorized_invalid_project', 'param': None}, 'status': 401}
+2026-01-06 09:52:27.423 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:52:27.440 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:52:27.473 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:52:27.480 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:52:27.494 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:52:27.495 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:52:27.496 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:52:27.496 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:52:27.496 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:52:27.509 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:52:27.509 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:52:27.510 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:52:27.511 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:52:27.514 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:52:27.905 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:52:27.906 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:52:27.907 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:52:27.907 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:52:27.907 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:52:28.054 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:52:28.055 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:52:28.056 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:52:28.056 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:52:28.056 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:52:29.731 | DEBUG    | core.health_manager:scan:24 - Performing system health scan...
+2026-01-06 09:52:38.681 | ERROR    | core.batch_manager:list_active_batches:104 - Failed to list batches: Error code: 401 - {'error': {'message': 'The project you are requesting has been archived and is no longer accessible', 'type': 'invalid_request_error', 'code': 'not_authorized_invalid_project', 'param': None}, 'status': 401}
+2026-01-06 09:52:40.725 | INFO     | core.patch_manager:__init__:20 - PatchManager initialized
+2026-01-06 09:55:02.704 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 09:55:02.712 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:55:02.757 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:55:02.757 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:55:02.770 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 09:55:02.770 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 09:55:02.770 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 09:55:02.770 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 09:55:02.770 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 09:55:02.773 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 09:55:02.773 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:55:02.773 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 09:55:02.778 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:55:02.778 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 09:55:03.203 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:55:03.207 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 09:55:03.209 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 09:55:03.209 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 09:55:03.209 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 09:55:03.369 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 09:55:03.369 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 09:55:03.370 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 09:55:03.370 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 09:55:03.370 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 09:55:23.332 | DEBUG    | core.health_manager:scan:24 - Performing system health scan...
+2026-01-06 09:55:32.468 | ERROR    | core.batch_manager:list_active_batches:104 - Failed to list batches: Error code: 401 - {'error': {'message': 'The project you are requesting has been archived and is no longer accessible', 'type': 'invalid_request_error', 'code': 'not_authorized_invalid_project', 'param': None}, 'status': 401}
+2026-01-06 09:55:34.499 | INFO     | core.patch_manager:__init__:20 - PatchManager initialized
+2026-01-06 10:08:33.336 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 10:08:33.346 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 10:08:33.383 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:08:33.387 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:08:33.398 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 10:08:33.398 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 10:08:33.398 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 10:08:33.398 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 10:08:33.398 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 10:08:33.407 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 10:08:33.407 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:08:33.407 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:08:33.409 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:08:33.409 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 10:08:33.847 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 10:08:33.847 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 10:08:33.847 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:08:33.850 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 10:08:33.850 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 10:08:34.026 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 10:08:34.026 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 10:08:34.026 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 10:08:34.031 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 10:08:34.031 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 10:14:03.711 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 10:14:03.720 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 10:14:03.751 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:14:03.759 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:14:03.761 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 10:14:03.761 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 10:14:03.761 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 10:14:03.771 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 10:14:03.771 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 10:14:03.774 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 10:14:03.774 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:14:03.774 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:14:03.775 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:14:03.775 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 10:14:04.173 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 10:14:04.173 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 10:14:04.176 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:14:04.176 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 10:14:04.176 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 10:14:04.325 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 10:14:04.325 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 10:14:04.329 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 10:14:04.331 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 10:14:04.331 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 10:48:07.760 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 10:48:07.775 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 10:48:07.846 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:48:07.849 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:48:07.859 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 10:48:07.860 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 10:48:07.860 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 10:48:07.860 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 10:48:07.860 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 10:48:07.864 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 10:48:07.864 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:48:07.864 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:48:07.865 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:48:07.866 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 10:48:08.392 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 10:48:08.392 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 10:48:08.394 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:48:08.394 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 10:48:08.394 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 10:48:08.547 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 10:48:08.547 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 10:48:08.547 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 10:48:08.554 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 10:48:08.554 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)
+2026-01-06 10:48:23.946 | INFO     | __main__:main:119 - Initializing Aaroneous Automation Suite (AAS) Hub...
+2026-01-06 10:48:23.953 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 10:48:23.986 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:48:23.988 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:48:24.000 | DEBUG    | core.config:from_db:294 - Overrode openai_model from database
+2026-01-06 10:48:24.000 | DEBUG    | core.config:from_db:294 - Overrode debug_mode from database
+2026-01-06 10:48:24.000 | DEBUG    | core.config:from_db:294 - Overrode projects from database
+2026-01-06 10:48:24.001 | INFO     | core.config:load_config:322 - ✓ Resilient Configuration System loaded successfully
+2026-01-06 10:48:24.001 | DEBUG    | core.config:load_config:325 - Config: Model=gpt-4-turbo-preview, Debug=True, IPC=localhost:50051, Linear=Enabled
+2026-01-06 10:48:24.003 | INFO     | core.db_manager:__init__:81 - Database initialized at artifacts\aas.db
+2026-01-06 10:48:24.003 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:48:24.003 | DEBUG    | core.db_manager:set_sqlite_pragma:65 - Loaded sqlite-vec extension
+2026-01-06 10:48:24.004 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:48:24.005 | INFO     | core.workspace_manager:__init__:54 - WorkspaceCoordinator initialized for C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite
+2026-01-06 10:48:24.379 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 10:48:24.379 | INFO     | core.handoff_manager:__init__:28 - ✓ Batch API processor initialized - 50% cost savings enabled
+2026-01-06 10:48:24.380 | INFO     | core.db_manager:create_tables:86 - Database tables created successfully
+2026-01-06 10:48:24.381 | INFO     | core.artifact_manager:__init__:42 - ArtifactManager initialized at C:\Users\aarog\Documents\GitHub\AaroneousAutomationSuite\artifacts\handoff
+2026-01-06 10:48:24.381 | INFO     | core.task_manager:__init__:121 - TaskManager initialized with unified interface + workspace coordination
+2026-01-06 10:48:24.531 | INFO     | core.batch_manager:__init__:26 - BatchManager initialized
+2026-01-06 10:48:24.531 | SUCCESS  | __main__:main:536 - AAS Hub is now running (IPC: 50051, Web: 8000)
+2026-01-06 10:48:24.531 | INFO     | __main__:main:539 - Batch auto-monitor: DISABLED (aggressive batching, ≤24h completion, runtime toggle)
+2026-01-06 10:48:24.533 | INFO     | core.ipc_server:serve_ipc:147 - Starting AAS IPC Bridge on port 50051...
+2026-01-06 10:48:24.533 | INFO     | __main__:run_batch_monitor:515 - Starting background batch monitor (60s scan interval, toggle-enabled)

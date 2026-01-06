@@ -8,10 +8,14 @@ import pytest
 from datetime import datetime
 from pathlib import Path
 
-from core.database import (
-    DatabaseManager, get_db_manager, init_database,
+from core.db_manager import (
+    DatabaseManager, get_db_manager, init_database
+)
+from core.db_models import (
     Task, TaskExecution, Event, Plugin, ConfigEntry,
-    TaskStatus, TaskPriority, EventType, PluginStatus,
+    TaskStatus, TaskPriority, EventType, PluginStatus
+)
+from core.db_repositories import (
     TaskRepository, TaskExecutionRepository, EventRepository,
     PluginRepository, ConfigRepository
 )
@@ -30,8 +34,14 @@ def db_manager(test_db_path):
     manager.create_tables()
     yield manager
     # Cleanup after test
+    manager.engine.dispose()
+    import gc
+    gc.collect()
     if Path(test_db_path).exists():
-        Path(test_db_path).unlink()
+        try:
+            Path(test_db_path).unlink()
+        except PermissionError:
+            pass
 
 
 class TestDatabaseManager:
@@ -195,20 +205,22 @@ class TestTaskExecutionRepository:
                 task_id="AAS-011",
                 agent="Sixth"
             )
-            
+            exec_id = execution.id
+
             TaskExecutionRepository.complete(
                 session,
-                execution.id,
+                exec_id,
                 status="success",
                 output="Task completed successfully",
                 artifacts=["report.md", "code.py"]
             )
-        
+
         with db_manager.get_session() as session:
             completed = session.query(TaskExecution).filter(
-                TaskExecution.id == execution.id
+                TaskExecution.id == exec_id
             ).first()
             
+            assert completed is not None
             assert completed.status == "success"
             assert completed.output == "Task completed successfully"
             assert completed.artifacts == ["report.md", "code.py"]
@@ -303,19 +315,18 @@ class TestConfigRepository:
             )
         
         with db_manager.get_session() as session:
-            entry = ConfigRepository.get(session, "openai_api_key")
-            assert entry.value == "sk-test-key"
-            assert entry.is_secret is True
+            value = ConfigRepository.get(session, "openai_api_key")
+            assert value == "sk-test-key"
     
     def test_update_existing_config(self, db_manager):
         """Test updating existing configuration."""
         with db_manager.get_session() as session:
-            ConfigRepository.set(session, "max_retries", "3", "int")
-            ConfigRepository.set(session, "max_retries", "5", "int")
+            ConfigRepository.set(session, "max_retries", 3, "int")
+            ConfigRepository.set(session, "max_retries", 5, "int")
         
         with db_manager.get_session() as session:
-            entry = ConfigRepository.get(session, "max_retries")
-            assert entry.value == "5"
+            value = ConfigRepository.get(session, "max_retries")
+            assert value == 5
 
 
 if __name__ == "__main__":

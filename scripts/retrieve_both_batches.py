@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import json
 from openai import OpenAI
-from core.config.manager import load_config
+from core.config import load_config
 from datetime import datetime
 from loguru import logger
 

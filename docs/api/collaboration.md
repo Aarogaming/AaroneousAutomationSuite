@@ -94,7 +94,7 @@ Update agent session activity timestamp.
 Args:
     session_id: Session to update
 
-### `relay_handoff(self, handoff: core.managers.protocol.HandoffObject)`
+### `relay_handoff(self, handoff: core.protocol_manager.HandoffObject)`
 
 Relay handoff context to the target agent or store it for the next claimant.
 Implementation for AAS-212.

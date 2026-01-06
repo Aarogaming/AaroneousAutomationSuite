@@ -16,20 +16,20 @@ As of Jan 2026, the **AAS Tray** (`aas_tray.py`) is the unified entry point for 
 
 ```
 User Double-Clicks "AAS Tray.bat"
-    ↓
-Activates Python venv
-    ↓
-Launches aas_tray.py (using pythonw for no console)
-    ↓
+    |
+Launches .venv\Scripts\pythonw.exe (detached)
+    |
+Runs aas_tray.py (no console window)
+    |
 Tray icon appears in system tray
-    ↓
+    |
 On "Start Hub" click:
     1. Validates prerequisites (.env, venv, artifacts dir)
     2. Kills zombie processes on ports 50051 & 8000
     3. Rotates logs if > 100MB
     4. Launches Hub directly (python core/main.py)
-    5. Shows Windows notification with status
 ```
+
 
 ### Startup Validation (Built-In)
 
@@ -115,7 +115,7 @@ pip install -r requirements.txt
 **Process Architecture:**
 ```
 AAS Tray.bat (launcher)
-  └─ pythonw.exe (no console)
+  └─ pythonw.exe (detached, no console)
       └─ aas_tray.py (system tray app)
           └─ powershell.exe -WindowStyle Hidden
               └─ python.exe core/main.py (AAS Hub)

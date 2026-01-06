@@ -5,7 +5,7 @@ from loguru import logger
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.handoff.gitkraken import GitKrakenCLI
+from core.handoff_gitkraken import GitKrakenCLI
 
 def main():
     """

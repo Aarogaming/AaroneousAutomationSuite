@@ -1,6 +1,6 @@
 import asyncio
-from core.managers.knowledge import KnowledgeManager
-from core.database.manager import get_db_manager
+from core.knowledge_manager import KnowledgeManager
+from core.db_manager import get_db_manager
 from loguru import logger
 
 async def test_knowledge_graph():

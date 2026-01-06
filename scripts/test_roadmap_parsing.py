@@ -12,8 +12,8 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.batch.task_generator import TaskGenerator
-from core.config.manager import load_config
+from core.batch_gen import TaskGenerator
+from core.config import load_config
 from loguru import logger
 
 

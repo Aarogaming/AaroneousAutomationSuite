@@ -5,7 +5,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.config.manager import load_config
+from core.config import load_config
 from plugins.ai_assistant.ollama_client import LLMProvider
 from loguru import logger
 
@@ -40,14 +40,12 @@ def test_chat():
         
         if not response['content'].strip():
             print("\n⚠️ WARNING: Empty response content!")
-            return False
-        
-        return True
+            raise ValueError("Empty response content")
         
     except Exception as e:
         print(f"\n❌ FAILED: {e}")
         logger.exception("Test failed")
-        return False
+        raise
 
 if __name__ == "__main__":
     success = test_chat()

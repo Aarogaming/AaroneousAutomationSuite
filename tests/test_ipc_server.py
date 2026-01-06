@@ -24,7 +24,7 @@ async def test_ipc():
         logger.info("Sending test command...")
         response = await stub.ExecuteCommand(bridge_pb2.CommandRequest(
             command_type="TEST_PING",
-            payload_json='{"data": "hello"}'
+            payload='{"data": "hello"}'
         ))
         logger.info(f"Response: {response.message} (Success: {response.success})")
         

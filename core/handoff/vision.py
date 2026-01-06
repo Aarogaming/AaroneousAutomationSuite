@@ -1,0 +1,2 @@
+class VisionClient:
+    pass

@@ -133,48 +133,14 @@ class PenpotPlugin:
                 logger.warning("No assets to synchronize")
                 return False
             
-            # Create design tokens from assets
-            tokens = {}
-            for asset in assets:
-                if asset.get("type") == "color":
-                    tokens[asset["name"]] = asset["value"]
-                elif asset.get("type") == "typography":
-                    tokens[asset["name"]] = asset["config"]
+            # TODO: Implement synchronization logic with AAS components
+            # This would integrate with ai_assistant, home_server, etc.
             
-            # Save tokens to a local file for other plugins to use
-            tokens_path = Path("artifacts/design_tokens.json")
-            tokens_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(tokens_path, "w") as f:
-                import json
-                json.dump(tokens, f, indent=4)
-            
-            logger.info(f"Synchronized {len(assets)} design assets to {tokens_path}")
+            logger.info(f"Synchronized {len(assets)} design assets")
             return True
             
         except Exception as e:
             logger.error(f"Asset synchronization failed: {e}")
-            return False
-
-    async def create_design_token(self, name: str, value: Any, token_type: str = "color") -> bool:
-        """Create a new design token in Penpot."""
-        if not self._session:
-            await self.start()
-            
-        try:
-            url = f"{self.config.api_url}/assets"
-            data = {
-                "name": name,
-                "value": value,
-                "type": token_type
-            }
-            
-            async with self._session.post(url, json=data) as response:
-                response.raise_for_status()
-                logger.info(f"Created design token: {name}")
-                return True
-        except Exception as e:
-            logger.error(f"Failed to create design token: {e}")
             return False
     
     def clear_cache(self):

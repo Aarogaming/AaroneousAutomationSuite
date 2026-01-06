@@ -13,9 +13,10 @@ Successfully implemented ngrok tunneling plugin for AAS development workflow. Th
 5. **[tests/test_ngrok_plugin.py](tests/test_ngrok_plugin.py)** - Unit tests (6 tests, all passing)
 
 ### Files Modified
-1. **[core/config/manager.py](core/config/manager.py)** - Added ngrok configuration fields:
+1. **[core/config.py](core/config.py)** - Added ngrok configuration fields:
    - `ngrok_enabled` (bool, default=False)
-   - `ngrok_authtoken` (optional str)
+   - `ngrok_auth_token` (optional SecretStr)
+   - `ngrok_authtoken` (legacy optional str)
    - `ngrok_region` (str, default="us")
    - `ngrok_port` (int, default=8000)
 
@@ -54,13 +55,15 @@ Add to `.env`:
 NGROK_ENABLED=true
 NGROK_PORT=50051          # Expose IPC server
 NGROK_REGION=us           # Closest region
-NGROK_AUTHTOKEN=your_token_here  # Optional for free tier
+NGROK_AUTH_TOKEN=your_token_here  # Optional for free tier
+# Legacy support (optional)
+NGROK_AUTHTOKEN=your_token_here
 ```
 
 ## Usage Example
 
 ```python
-from core.config.manager import load_config
+from core.config import load_config
 from plugins.ngrok_plugin import NgrokPlugin, NgrokConfig
 
 # Load config
@@ -69,7 +72,7 @@ config = load_config()
 # Create ngrok plugin
 ngrok_config = NgrokConfig(
     enabled=config.ngrok_enabled,
-    authtoken=config.ngrok_authtoken,
+    authtoken=config.ngrok_auth_token.get_secret_value() if config.ngrok_auth_token else config.ngrok_authtoken,
     region=config.ngrok_region,
     port=config.ipc_port  # Expose gRPC server
 )
@@ -116,7 +119,7 @@ url = await ngrok.start_tunnel()
 
 ⚠️ **Public Exposure**: ngrok tunnels expose services to the internet  
 🔒 **Add Authentication**: Implement auth in your services  
-🔑 **Token Management**: Store `NGROK_AUTHTOKEN` in `.env`  
+🔑 **Token Management**: Store `NGROK_AUTH_TOKEN` in `.env`  
 ⏰ **Time Limits**: Free ngrok tunnels expire after 2 hours  
 
 ## Next Steps

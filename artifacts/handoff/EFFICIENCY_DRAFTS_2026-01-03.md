@@ -136,8 +136,8 @@ def resolve_missing_imports(mypy_output):
 ```
 
 **Addresses Current Issues:**
-- `core.handoff.manager` missing → auto-fix to `core.managers.tasks`
-- `core.managers.health` missing → create stub or redirect
+- `core.handoff_manager` missing → auto-fix to `core.task_manager`
+- `core.health_manager` missing → create stub or redirect
 
 ---
 
@@ -321,8 +321,8 @@ async def test_claim_task_success():
 **Output:**
 ```
 artifacts/diagrams/dependency_graph.html
-- core.managers.tasks → [core.database, core.ipc, core.config]
-- Circular: core.ipc.server ↔ core.managers.tasks
+- core.task_manager → [core.database, core.ipc, core.config]
+- Circular: core.ipc_server ↔ core.task_manager
 ```
 
 ---
@@ -346,7 +346,7 @@ artifacts/diagrams/dependency_graph.html
   "task_execution_time": {"avg": 234ms, "p95": 890ms},
   "ipc_requests_per_minute": 45,
   "error_rate_24h": 0.02,
-  "top_errors": ["ImportError: core.handoff.manager", ...]
+  "top_errors": ["ImportError: core.handoff_manager", ...]
 }
 ```
 

@@ -3,7 +3,7 @@ import grpc
 import json
 from core.ipc.protos import bridge_pb2
 from core.ipc.protos import bridge_pb2_grpc
-from core.config.manager import load_config
+from core.config import load_config
 from loguru import logger
 
 async def test_config_service():
@@ -15,8 +15,8 @@ async def test_config_service():
     # For this test, we'll just use the repository directly to simulate the server logic
     # or try to connect if a server is active.
     
-    from core.database.manager import get_db_manager
-    from core.database.repositories import ConfigRepository
+    from core.db_manager import get_db_manager
+    from core.db_repositories import ConfigRepository
     
     db_manager = get_db_manager()
     
