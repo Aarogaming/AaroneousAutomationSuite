@@ -18,25 +18,21 @@ from core.handoff_manager import HandoffManager
 
 
 class TestFCFSClaiming:
-    """Test suite for FCFS claiming system."""
-    
-    def setup_method(self, method):
-        self.tests_passed = 0
-        self.tests_failed = 0
-        self.temp_dir = None
-        self.setup()
+    """Test suite for FCFS claiming system (stateful across tests)."""
+    tests_passed = 0
+    tests_failed = 0
+    temp_dir = None
+    manager: HandoffManager
+    task_board_path: str
+    artifact_dir: str
 
-    def teardown_method(self, method):
-        self.teardown()
-        
-    def setup(self):
-        """Create temporary task board for testing."""
-        if self.temp_dir and os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
-        self.temp_dir = tempfile.mkdtemp(prefix="aas_test_")
-        self.task_board_path = os.path.join(self.temp_dir, "ACTIVE_TASKS.md")
-        self.artifact_dir = os.path.join(self.temp_dir, "artifacts")
-        os.makedirs(self.artifact_dir, exist_ok=True)
+    @classmethod
+    def setup_class(cls):
+        """Create temporary task board once for all tests to preserve claim ordering."""
+        cls.temp_dir = tempfile.mkdtemp(prefix="aas_test_")
+        cls.task_board_path = os.path.join(cls.temp_dir, "ACTIVE_TASKS.md")
+        cls.artifact_dir = os.path.join(cls.temp_dir, "artifacts")
+        os.makedirs(cls.artifact_dir, exist_ok=True)
         
         # Create test task board
         test_board = """# AAS Active Task Board
@@ -52,17 +48,18 @@ class TestFCFSClaiming:
  | TEST-007 | Medium | Blocked Task | TEST-999 | queued | - | 2026-01-02 | 2026-01-02 | 
  | TEST-008 | Low | Another Low Priority | - | queued | - | 2026-01-02 | 2026-01-02 | 
 """
-        with open(self.task_board_path, "w", encoding="utf-8") as f:
+        with open(cls.task_board_path, "w", encoding="utf-8") as f:
             f.write(test_board)
             
         # Create manager and override task_board_path
-        self.manager = HandoffManager(artifact_dir=self.artifact_dir)
-        self.manager.task_board_path = self.task_board_path
-        
-    def teardown(self):
-        """Clean up temporary files."""
-        if self.temp_dir and os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir)
+        cls.manager = HandoffManager(artifact_dir=cls.artifact_dir)
+        cls.manager.task_board_path = cls.task_board_path
+
+    @classmethod
+    def teardown_class(cls):
+        """Clean up temporary files after all tests."""
+        if cls.temp_dir and os.path.exists(cls.temp_dir):
+            shutil.rmtree(cls.temp_dir)
             
     def assert_true(self, condition: bool, test_name: str, message: str = ""):
         """Assert helper with test tracking."""
@@ -74,6 +71,7 @@ class TestFCFSClaiming:
             if message:
                 print(f"   {message}")
             self.tests_failed += 1
+            assert condition, message or test_name
             
     def assert_equals(self, actual, expected, test_name: str):
         """Assert equality with test tracking."""
@@ -85,6 +83,7 @@ class TestFCFSClaiming:
             print(f"   Expected: {expected}")
             print(f"   Got: {actual}")
             self.tests_failed += 1
+            assert actual == expected, f"{test_name}: expected {expected}, got {actual}"
             
     # Test 1: Priority-based claiming
     def test_priority_based_claiming(self):
@@ -170,7 +169,7 @@ class TestFCFSClaiming:
         print("\n--- Test 6: Blocked Tasks List ---")
         
         # Reset for this test
-        self.setup()
+        self.__class__.setup_class()
         
         blocked = self.manager.get_blocked_tasks()
         
@@ -240,7 +239,7 @@ class TestFCFSClaiming:
         """Test that parse_board correctly builds status map."""
         print("\n--- Test 9: Parse Board Status Map ---")
         
-        self.setup()
+        self.__class__.setup_class()
         lines, tasks, status_map = self.manager.parse_board()
         
         self.assert_equals(status_map.get("TEST-001"), "queued", "Queued task in status map")

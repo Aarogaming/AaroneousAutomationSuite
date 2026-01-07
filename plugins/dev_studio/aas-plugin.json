@@ -1,0 +1,6 @@
+{
+  "name": "dev_studio",
+  "description": "Dev studio helpers and audits",
+  "entry": "studio.py",
+  "enabled": true
+}

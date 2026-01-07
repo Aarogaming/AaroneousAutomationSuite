@@ -13,8 +13,9 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from pathlib import Path
 from loguru import logger
+from dotenv import load_dotenv
 
-from core.config import AASConfig
+from core.config import AASConfig, find_workspace_env
 from core.db_manager import DatabaseManager
 from core.db_models import Task, TaskStatus, TaskPriority, Client
 from core.protocol_manager import ManagerProtocol
@@ -47,21 +48,19 @@ class TaskManager(ManagerProtocol):
         """Initialize the unified task manager."""
         # Use dummy key only when no key is configured anywhere (for CLI/AI context)
         if not os.getenv("OPENAI_API_KEY"):
-            env_key = None
-            env_path = Path(".env")
-            if env_path.exists():
+            env_path = find_workspace_env()
+            if env_path:
                 try:
-                    for line in env_path.read_text(encoding="utf-8").splitlines():
-                        stripped = line.strip()
-                        if not stripped or stripped.startswith("#"):
-                            continue
-                        if stripped.startswith("OPENAI_API_KEY="):
-                            env_key = stripped.split("=", 1)[1].strip().strip('"').strip("'")
-                            break
-                except OSError:
-                    env_key = None
-            if not env_key:
+                    load_dotenv(dotenv_path=env_path, override=False)
+                    logger.debug(f"Loaded OPENAI_API_KEY from {env_path}")
+                except Exception as e:
+                    logger.debug(f"Could not load env file {env_path}: {e}")
+            project_key = os.getenv("OPENAI_PROJECT_API_KEY")
+            if not os.getenv("OPENAI_API_KEY") and project_key:
+                os.environ["OPENAI_API_KEY"] = project_key
+            if not os.getenv("OPENAI_API_KEY"):
                 os.environ["OPENAI_API_KEY"] = "sk-dummy-key-for-init"
+                logger.debug("OPENAI_API_KEY not found; using placeholder for initialization")
             
         self.config = config or AASConfig() # type: ignore
         
@@ -103,16 +102,21 @@ class TaskManager(ManagerProtocol):
         self.worker = BackgroundWorker(self)
         
         # Task tracking
-        self.board_path = Path("handoff/ACTIVE_TASKS.md")
+        self.board_path = Path(self.config.artifact_dir) / "ACTIVE_TASKS.md"
+        try:
+            self.board_path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.warning(f"Could not create task board directory {self.board_path.parent}: {e}")
         if not self.board_path.exists():
-            # Try absolute path or other common locations
+            # Try legacy locations for backward compatibility
             potential_paths = [
+                Path(os.getcwd()) / "artifacts" / "handoff" / "ACTIVE_TASKS.md",
                 Path(os.getcwd()) / "handoff" / "ACTIVE_TASKS.md",
-                Path("artifacts/handoff/ACTIVE_TASKS.md")
             ]
             for p in potential_paths:
                 if p.exists():
                     self.board_path = p
+                    logger.debug(f"Using legacy task board path at {p}")
                     break
             
         self.batch_history_path = Path("artifacts/batch/history.json")

@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "AuditLog" ALTER COLUMN "tag" SET DATA TYPE VARCHAR(255);

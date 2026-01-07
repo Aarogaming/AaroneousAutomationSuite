@@ -23,11 +23,11 @@ watchdog>=3.0.0
 opencv-python>=4.8.0
 pyautogui>=0.9.54
 pygetwindow>=0.0.9
-pynput>=1.7.6
 mss>=9.0.1
 numpy>=1.25.1
 pyperclip>=1.9.0
 requests>=2.32.3
 pypresence>=4.3.0
-pywin32>=306
+pynput>=1.7.6; platform_system != "Linux"  # Linux build needs kernel headers; keep optional for WSL
+pywin32>=306; platform_system == "Windows"
 psutil>=5.9.8

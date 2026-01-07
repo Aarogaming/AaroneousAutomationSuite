@@ -16,6 +16,11 @@ Usage:
 import os
 import sys
 from pathlib import Path
+import signal
+import socket
+import subprocess
+import platform
+from dotenv import load_dotenv
 
 # Ensure UTF-8 output to avoid Windows charmap errors.
 os.environ.setdefault("PYTHONIOENCODING", "utf-8")
@@ -33,7 +38,28 @@ from datetime import datetime
 from typing import Optional
 
 # Import after path setup
+from core.config import find_workspace_env
 from core.managers import ManagerHub
+
+PROJECT_ROOT = Path(__file__).parent.parent
+PID_FILE = PROJECT_ROOT / "artifacts" / "hub.pid"
+
+
+def _read_pid() -> Optional[int]:
+    try:
+        if PID_FILE.exists():
+            return int(PID_FILE.read_text(encoding="utf-8").strip())
+    except Exception:
+        return None
+    return None
+
+
+def _is_running(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+        return True
+    except Exception:
+        return False
 
 
 @click.group()
@@ -53,6 +79,12 @@ def cli(ctx, debug, config_file):
     """
     ctx.ensure_object(dict)
     ctx.obj['DEBUG'] = debug
+    ctx.obj['hub'] = None
+
+    # Skip heavy init for lightweight commands
+    lazy_commands = {"start", "stop", "status", "doctor", "launch"}
+    if ctx.invoked_subcommand in lazy_commands:
+        return
     
     # Configure logging
     if debug:
@@ -69,6 +101,140 @@ def cli(ctx, debug, config_file):
         if debug:
             raise
         sys.exit(1)
+
+
+# ============================================================================
+# Hub lifecycle (start/stop/status) + doctor
+# ============================================================================
+
+@cli.command()
+@click.option('--inline-tray', is_flag=True, help='Run Hub and tray in one process')
+def start(inline_tray):
+    """Start the Hub (detached)."""
+    existing = _read_pid()
+    if existing and _is_running(existing):
+        click.echo(f"Hub already running (pid {existing}).")
+        return
+    env = os.environ.copy()
+    env.setdefault("AAS_LAUNCHED_VIA_TRAY", "1")
+    if inline_tray:
+        env["AAS_INLINE_TRAY"] = "1"
+    try:
+        proc = subprocess.Popen(
+            [sys.executable, "hub.py"],
+            cwd=str(PROJECT_ROOT),
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True  # avoid tying to terminal session
+        )
+        click.echo(f"Hub starting (pid {proc.pid}).")
+    except Exception as e:
+        click.echo(f"Failed to start Hub: {e}", err=True)
+        raise SystemExit(1)
+
+
+@cli.command()
+@click.option('--no-clean-temp', is_flag=True, help='Skip temp file cleanup during prep')
+@click.option('--no-kill-zombies', is_flag=True, help='Skip killing listeners on 50051/8000')
+@click.option('--wait', is_flag=True, help='Wait for web server readiness after launch')
+@click.option('--wait-timeout', default=15.0, show_default=True, help='Seconds to wait when --wait is set')
+@click.option('--log-max-mb', default=100, show_default=True, help='Rotate hub.log above this size')
+@click.option('--inline-tray', is_flag=True, help='Start tray inline if available')
+def launch(no_clean_temp, no_kill_zombies, wait, wait_timeout, log_max_mb, inline_tray):
+    """Prep workspace, run preflight, and start the Hub (launcher)."""
+    args = ["launch"]
+    if no_clean_temp:
+        args.append("--no-clean-temp")
+    if no_kill_zombies:
+        args.append("--no-kill-zombies")
+    if wait:
+        args.append("--wait")
+        args.extend(["--wait-timeout", str(wait_timeout)])
+    if log_max_mb is not None:
+        args.extend(["--log-max-mb", str(log_max_mb)])
+    if inline_tray:
+        args.append("--inline-tray")
+
+    try:
+        subprocess.check_call([sys.executable, "scripts/aas_launcher.py", *args])
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Launcher failed: {e}", err=True)
+        raise SystemExit(1)
+
+
+@cli.command()
+def stop():
+    """Stop the Hub using the recorded PID."""
+    pid = _read_pid()
+    if not pid:
+        click.echo("No PID file found (Hub may not be running).")
+        return
+    if not _is_running(pid):
+        click.echo("PID file found but process is not running; cleaning up PID file.")
+        try:
+            PID_FILE.unlink(missing_ok=True)
+        finally:
+            return
+    try:
+        os.kill(pid, signal.SIGTERM)
+        click.echo(f"Sent SIGTERM to Hub (pid {pid}).")
+    except Exception as e:
+        click.echo(f"Failed to stop Hub: {e}", err=True)
+        raise SystemExit(1)
+
+
+@cli.command()
+def status():
+    """Show Hub running status."""
+    pid = _read_pid()
+    if pid and _is_running(pid):
+        click.echo(f"Hub running (pid {pid}).")
+    else:
+        click.echo("Hub not running.")
+
+
+@cli.command()
+def doctor():
+    """Quick environment and dependency check."""
+    env_path = find_workspace_env(PROJECT_ROOT)
+    if env_path:
+        load_dotenv(dotenv_path=env_path, override=False)
+    else:
+        load_dotenv(dotenv_path=PROJECT_ROOT / ".env", override=False)
+    checks = []
+
+    def add(label: str, ok: bool, detail: str = ""):
+        checks.append((label, ok, detail))
+
+    add("Python >=3.12", sys.version_info >= (3, 12), platform.python_version())
+    add(".env present", env_path is not None and env_path.exists(), str(env_path) if env_path else "not found")
+    add("OPENAI_API_KEY set", bool(os.getenv("OPENAI_API_KEY")), "missing" if not os.getenv("OPENAI_API_KEY") else "set")
+
+    try:
+        import importlib
+        importlib.import_module("sqlite_vec")
+        add("sqlite-vec", True, "installed")
+    except Exception as e:
+        add("sqlite-vec", False, str(e))
+
+    for port in (50051, 8000):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                sock.bind(("127.0.0.1", port))
+                add(f"Port {port}", True, "available")
+            except OSError as e:
+                add(f"Port {port}", False, f"in use ({e})")
+
+    click.echo("AAS Doctor:")
+    for label, ok, detail in checks:
+        status_icon = "✓" if ok else "✖"
+        click.echo(f"  {status_icon} {label} ({detail})")
+
+    failures = [c for c in checks if not c[1]]
+    if failures:
+        raise SystemExit(1)
 
 
 # ============================================================================
@@ -771,7 +937,33 @@ def system_health(ctx, output_json):
             for name, status in validation.items():
                 icon = '✅' if status else '❌'
                 click.echo(f"  {icon} {name.capitalize():<15} {'OK' if status else 'FAILED'}")
-            
+
+            metrics = health.get("metrics", {})
+            components = health.get("components", {})
+
+            click.echo("\nServices:")
+            click.echo(f"  Web: {components.get('web', 'unknown')} | IPC: {components.get('ipc', 'unknown')} | DB: {components.get('database', 'unknown')}")
+            click.echo(f"  Artifacts writable: {metrics.get('artifacts_writable', True)} | Disk free: {metrics.get('disk_free_gb')} GB ({metrics.get('disk_free_pct')}%)")
+
+            tasks = metrics.get("tasks", {})
+            if tasks:
+                click.echo(f"\nTasks: queued={tasks.get('queued', 0)} in_progress={tasks.get('in_progress', 0)} done={tasks.get('done', 0)} total={tasks.get('total', 0)}")
+
+            plugins = metrics.get("plugins", {})
+            if plugins:
+                click.echo(f"Plugins: {plugins.get('count', 0)} enabled")
+
+            batch = metrics.get("batch", {})
+            if batch:
+                click.echo(f"Batch: {'enabled' if batch.get('enabled') else 'disabled'} | auto-monitor={batch.get('auto_monitor', False)}")
+
+            workspace_extra = metrics.get("workspace_extra", {})
+            large_files = workspace_extra.get("large_files") or metrics.get("large_files")
+            if large_files:
+                click.echo("\nLarge artifacts (>=200MB):")
+                for lf in large_files:
+                    click.echo(f"  - {lf['path']} ({lf['size_mb']} MB)")
+
             click.echo(f"{'='*60}\n")
         
     except Exception as e:

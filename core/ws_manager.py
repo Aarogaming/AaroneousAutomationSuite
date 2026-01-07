@@ -1,7 +1,8 @@
 import asyncio
 import json
+import os
 from typing import Any, Dict, Set
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from loguru import logger
 
 
@@ -47,17 +48,35 @@ manager = WebSocketManager()
 def setup_websocket_routes(app: FastAPI) -> None:
     """Register WebSocket endpoints on the provided FastAPI app."""
 
-    @app.websocket("/ws/events")
-    async def websocket_endpoint(websocket: WebSocket) -> None:
+    async def endpoint(websocket: WebSocket) -> None:
+        auth_token = os.getenv("AAS_API_TOKEN")
+        if auth_token:
+            provided = websocket.headers.get("x-aas-token")
+            if not provided:
+                auth_header = websocket.headers.get("authorization", "")
+                if auth_header.lower().startswith("bearer "):
+                    provided = auth_header.split(" ", 1)[1]
+            if not provided:
+                try:
+                    provided = websocket.query_params.get("token")
+                except Exception:
+                    provided = None
+            if provided != auth_token:
+                await websocket.close(code=4401)
+                return
+
         await manager.connect(websocket)
         try:
             while True:
-                # Keep connection alive and wait for messages if needed
                 data = await websocket.receive_text()
-                # Echo or handle incoming messages
                 await websocket.send_text(f"Message received: {data}")
         except WebSocketDisconnect:
             manager.disconnect(websocket)
         except Exception as e:
             logger.error(f"WebSocket error: {e}")
             manager.disconnect(websocket)
+
+    # Primary events socket
+    app.websocket("/ws/events")(endpoint)
+    # Alias for simpler clients
+    app.websocket("/ws")(endpoint)

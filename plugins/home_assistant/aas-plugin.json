@@ -1,0 +1,6 @@
+{
+  "name": "home_assistant",
+  "description": "Home Assistant bridge",
+  "entry": "connector.py",
+  "enabled": true
+}

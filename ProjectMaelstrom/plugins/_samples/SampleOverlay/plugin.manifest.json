@@ -1,8 +1,0 @@
-{
-  "pluginId": "SampleOverlay",
-  "name": "Sample Overlay",
-  "version": "1.0.0",
-  "targetAppVersion": "any",
-  "requiredProfile": "Public",
-  "declaredCapabilities": [ "OverlayWidgets" ]
-}

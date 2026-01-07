@@ -1,8 +1,0 @@
-{
-  "pluginId": "SampleLiveIntegration",
-  "name": "Sample Live Integration",
-  "version": "1.0.0",
-  "targetAppVersion": "any",
-  "requiredProfile": "Experimental",
-  "declaredCapabilities": [ "LiveIntegration" ]
-}

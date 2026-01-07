@@ -15,6 +15,9 @@ class HandoffManager:
         artifact_dir: str = "artifacts/handoff"
     ):
         self.config = config
+        if config and hasattr(config, "artifact_dir") and task_board_path == "artifacts/handoff/ACTIVE_TASKS.md":
+            task_board_path = str(Path(config.artifact_dir) / "ACTIVE_TASKS.md")
+            artifact_dir = str(config.artifact_dir)
         self.task_board_path = Path(task_board_path)
         self.artifact_dir = Path(artifact_dir)
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -64,29 +67,29 @@ class HandoffManager:
         tasks = []
         status_map = {}
         
-        # Simple Markdown table parser
+        # Simple Markdown table parser (tolerates leading/trailing pipes)
         for i, line in enumerate(lines):
             if "|" not in line or "---" in line:
                 continue
-            parts = [p.strip() for p in line.split("|")]
-            if len(parts) < 9:
+            parts = [p.strip() for p in line.strip().strip("|").split("|")]
+            if len(parts) < 8:
                 continue
-            if parts[1] in ("ID", ""):
+            if parts[0] in ("ID", ""):
                 continue
-            # | ID | Priority | Title | Depends On | Status | Assignee | Created | Updated |
-            task_id = parts[1]
-            status = parts[5]
+            # columns: ID, Priority, Title, Depends On, Status, Assignee, Created, Updated
+            task_id = parts[0]
+            status = parts[4]
 
             task = {
                 "index": i,
                 "id": task_id,
-                "priority": parts[2],
-                "title": parts[3],
-                "depends_on": parts[4],
+                "priority": parts[1],
+                "title": parts[2],
+                "depends_on": parts[3],
                 "status": status,
-                "assignee": parts[6],
-                "created": parts[7],
-                "updated": parts[8],
+                "assignee": parts[5],
+                "created": parts[6],
+                "updated": parts[7],
                 "parts": parts
             }
             tasks.append(task)
@@ -146,9 +149,9 @@ class HandoffManager:
             return False
             
         parts = target["parts"]
-        parts[5] = "Done"
+        parts[4] = "Done"
         import datetime
-        parts[8] = datetime.datetime.now().strftime("%Y-%m-%d")
+        parts[7] = datetime.datetime.now().strftime("%Y-%m-%d")
         
         lines[target["index"]] = " | ".join(parts) + "\n"
         
@@ -171,7 +174,7 @@ class HandoffManager:
             deps = task["depends_on"]
             if deps and deps != "-":
                 dep_ids = [d.strip() for d in deps.split(",")]
-                unmet = [d for d in dep_ids if status_map.get(d) != "Done"]
+                unmet = [d for d in dep_ids if status_map.get(d, "").lower() != "done"]
                 if unmet:
                     continue
             eligible.append(task)
@@ -188,10 +191,10 @@ class HandoffManager:
         target = eligible[0]
 
         parts = target["parts"]
-        parts[5] = "In Progress"
-        parts[6] = actor_name
+        parts[4] = "In Progress"
+        parts[5] = actor_name
         import datetime
-        parts[8] = datetime.datetime.now().strftime("%Y-%m-%d")
+        parts[7] = datetime.datetime.now().strftime("%Y-%m-%d")
         lines[target["index"]] = " | ".join(parts) + "\n"
 
         with open(self.task_board_path, "w", encoding="utf-8") as f:

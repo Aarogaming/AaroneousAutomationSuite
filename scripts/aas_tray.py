@@ -19,6 +19,7 @@ import pyperclip
 import requests
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import traceback
 
 # Paths
 # When running as PyInstaller exe, __file__ points to temp dir
@@ -42,6 +43,31 @@ DB_FILE = ROOT_DIR / "artifacts" / "aas_hub.db"
 LOG_FILE = ROOT_DIR / "artifacts" / "hub.log"
 HUB_CONSOLE_LOG = ROOT_DIR / "artifacts" / "hub_console.log"
 ICON_FILE = ROOT_DIR / "artifacts" / "aas_hub.ico"
+
+# Simple crash/error logging
+TRAY_LOG = ROOT_DIR / "artifacts" / "tray.log"
+TRAY_LOG.parent.mkdir(parents=True, exist_ok=True)
+
+
+def log_exception(prefix: str, exc: Exception):
+    """Append exceptions to tray log for diagnostics."""
+    try:
+        with TRAY_LOG.open("a", encoding="utf-8") as f:
+            f.write(f"[{datetime.utcnow().isoformat()}Z] {prefix}: {exc}\n")
+            f.write(traceback.format_exc())
+            f.write("\n")
+    except Exception:
+        pass
+
+# Prefer compiled Hub executable when present (fallback to Python)
+HUB_EXE_CANDIDATES = [
+    ROOT_DIR / "AAS Hub.exe",
+    ROOT_DIR / "dist" / "AAS Hub.exe",
+]
+if os.getenv("AAS_FORCE_PYTHON"):
+    HUB_EXE = None
+else:
+    HUB_EXE = next((p for p in HUB_EXE_CANDIDATES if p.exists()), None)
 
 # Load Dashboard URL from environment or use default
 DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:5174")
@@ -302,14 +328,30 @@ def start_hub(icon):
         stdout_target = log_handle if log_handle else subprocess.DEVNULL
         stderr_target = log_handle if log_handle else subprocess.DEVNULL
 
+        if HUB_EXE and HUB_EXE.exists():
+            cmd = [str(HUB_EXE)]
+        else:
+            cmd = [str(PYTHON_EXE), "-u", "hub.py"]  # -u for unbuffered output
+
+        creation_flags = 0
+        if hasattr(subprocess, "CREATE_NO_WINDOW"):
+            creation_flags |= subprocess.CREATE_NO_WINDOW
+        if hasattr(subprocess, "DETACHED_PROCESS"):
+            creation_flags |= subprocess.DETACHED_PROCESS
+
         process = subprocess.Popen(
-            [str(PYTHON_EXE), "-u", "hub.py"],  # -u for unbuffered output
+            cmd,
             cwd=str(ROOT_DIR),
-            env={**os.environ, 'PYTHONPATH': str(ROOT_DIR)},
+            env={
+                **os.environ,
+                "PYTHONPATH": str(ROOT_DIR),
+                # Flag so Hub only runs when launched by the tray controller
+                "AAS_LAUNCHED_VIA_TRAY": "1",
+            },
             stdout=stdout_target,
             stderr=stderr_target,
             stdin=subprocess.DEVNULL,
-            creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
+            creationflags=creation_flags
         )
         if log_handle:
             log_handle.close()
@@ -329,6 +371,7 @@ def start_hub(icon):
             icon.notify("Hub Startup Issue", f"Process started but may have crashed.\nCheck: {LOG_FILE}")
             
     except Exception as e:
+        log_exception("start_hub", e)
         icon.notify("Failed to start Hub", str(e))
 
 
@@ -553,10 +596,19 @@ def send_latest_prompt_api(icon):
 def setup(icon):
     """Setup callback when tray icon is ready."""
     icon.visible = True
+    
+    # Auto-start Hub when tray initializes so server always runs under controller
+    if not is_hub_running():
+        start_hub(icon)
 
 
 def exit_app(icon):
     """Exit the tray application."""
+    try:
+        if is_hub_running():
+            stop_hub(icon)
+    except Exception:
+        pass
     icon.visible = False
     icon.stop()
 
@@ -629,47 +681,55 @@ def create_menu(icon):
 
 def main():
     """Main entry point for the tray application."""
-    icon = pystray.Icon(
-        "aas_hub",
-        create_icon(),
-        "AAS Hub"
-    )
-    
-    # Set initial menu
-    icon.menu = create_menu(icon)
-    
-    # Start Handoff Watchers
-    to_handler = HandoffHandler(icon, "New HANDOFF_TO_CODEX detected.")
-    from_handler = HandoffHandler(icon, "New RESULT.md detected.")
-    
-    observer = Observer()
-    observer.schedule(to_handler, str(HANDOFF_TO_DIR), recursive=False)
-    observer.schedule(from_handler, str(HANDOFF_FROM_DIR), recursive=False)
-    observer.start()
-    
-    # Update menu dynamically every 5 seconds
-    def update_menu():
+    sys.excepthook = lambda exc_type, exc, tb: log_exception("unhandled", exc)
+
+    try:
+        icon = pystray.Icon(
+            "aas_hub",
+            create_icon(),
+            "AAS Hub"
+        )
+        
+        # Set initial menu
+        icon.menu = create_menu(icon)
+        
+        # Start Handoff Watchers
+        to_handler = HandoffHandler(icon, "New HANDOFF_TO_CODEX detected.")
+        from_handler = HandoffHandler(icon, "New RESULT.md detected.")
+        
+        observer = Observer()
+        observer.schedule(to_handler, str(HANDOFF_TO_DIR), recursive=False)
+        observer.schedule(from_handler, str(HANDOFF_FROM_DIR), recursive=False)
+        observer.start()
+        
+        # Update menu dynamically every 5 seconds
+        def update_menu():
+            try:
+                while icon.visible:
+                    time.sleep(5)
+                    if icon.visible:
+                        icon.menu = create_menu(icon)
+            except Exception as e:
+                log_exception("update_menu", e)
+        
+        threading.Thread(target=update_menu, daemon=True).start()
+        
+        # Show initial status
+        if is_hub_running():
+            icon.notify("AAS Hub Tray", "Hub is running")
+        else:
+            icon.notify("AAS Hub Tray", "Hub is not running - click to start")
+        
+        icon.run(setup=setup)
+    except Exception as e:
+        log_exception("main", e)
+        raise
+    finally:
         try:
-            while icon.visible:
-                time.sleep(5)
-                if icon.visible:
-                    icon.menu = create_menu(icon)
+            observer.stop()
+            observer.join()
         except Exception:
             pass
-    
-    threading.Thread(target=update_menu, daemon=True).start()
-    
-    # Show initial status
-    if is_hub_running():
-        icon.notify("AAS Hub Tray", "Hub is running")
-    else:
-        icon.notify("AAS Hub Tray", "Hub is not running - click to start")
-    
-    try:
-        icon.run(setup=setup)
-    finally:
-        observer.stop()
-        observer.join()
 
 
 if __name__ == "__main__":

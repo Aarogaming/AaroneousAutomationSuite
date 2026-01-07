@@ -1,0 +1,6 @@
+{
+  "name": "ngrok_plugin",
+  "description": "ngrok tunneling for development",
+  "entry": "ngrok_plugin.py",
+  "enabled": true
+}

@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Request
+import os
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from core.managers import ManagerHub
@@ -6,6 +7,7 @@ from core.ws_manager import setup_websocket_routes, manager as ws_manager
 
 def create_app(hub: ManagerHub) -> FastAPI:
     app = FastAPI(title="AAS Mission Control")
+    auth_token = os.getenv("AAS_API_TOKEN")
 
     # CORS
     app.add_middleware(
@@ -14,6 +16,19 @@ def create_app(hub: ManagerHub) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    @app.middleware("http")
+    async def enforce_token(request: Request, call_next):
+        if auth_token and request.url.path not in ("/health",):
+            provided = request.headers.get("x-aas-token")
+            if not provided:
+                auth_header = request.headers.get("authorization", "")
+                if auth_header.lower().startswith("bearer "):
+                    provided = auth_header.split(" ", 1)[1]
+            if provided != auth_token:
+                raise HTTPException(status_code=401, detail="Invalid or missing token")
+        response = await call_next(request)
+        return response
 
     # WebSocket routes
     setup_websocket_routes(app)

@@ -1,15 +1,27 @@
 @echo off
-REM AAS Hub Launcher - System Tray Interface
-REM This is the primary entry point for starting/managing the AAS Hub
-cd /d "%~dp0\.."
+setlocal
+REM AAS Hub + Tray single-process launcher (runs hub.py with inline tray)
+REM Runs minimized/silent by default.
 
-set "VENV_PYTHON=%cd%\.venv\Scripts\pythonw.exe"
-if not exist "%VENV_PYTHON%" (
-  echo [!] Python venv not found at .venv\Scripts\pythonw.exe
+cd /d "%~dp0\.."
+set "ROOT=%cd%"
+set "HUB_PY=%ROOT%\hub.py"
+set PYLAUNCHER_NO_SEARCH=1
+set PYLAUNCHER_NO_USER_PATH=1
+set PYLAUNCHER_ALLOW_INSTALL=0
+set "AAS_INLINE_TRAY=1"
+
+set "VENV_PYW=%ROOT%\.venv\Scripts\pythonw.exe"
+set "VENV_PY=%ROOT%\.venv\Scripts\python.exe"
+set "PYTHON=%VENV_PYW%"
+if not exist "%PYTHON%" set "PYTHON=%VENV_PY%"
+
+if not exist "%PYTHON%" (
+  echo [!] Python venv not found at .venv\Scripts\python[w].exe
   echo     Run: py -3.12 -m venv .venv
   exit /b 1
 )
 
-REM Detach so the launching console exits immediately.
-start "" "%VENV_PYTHON%" "scripts\aas_tray.py"
+REM Launch minimized; pythonw avoids a console window
+start "" /min "%PYTHON%" "%HUB_PY%"
 exit /b 0

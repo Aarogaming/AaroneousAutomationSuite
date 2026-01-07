@@ -838,6 +838,54 @@ function App() {
                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config?.allow_screenshots ? 'right-1' : 'left-1'}`} />
                   </button>
                 </div>
+                <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div>
+                    <h4 className="font-bold text-white">Responses API</h4>
+                    <p className="text-sm text-slate-400">Enable OpenAI Responses API endpoints.</p>
+                  </div>
+                  <button 
+                    onClick={() => updateConfig('responses_api_enabled', !config?.responses_api_enabled)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${config?.responses_api_enabled ? 'bg-emerald-600' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config?.responses_api_enabled ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div>
+                    <h4 className="font-bold text-white">Web Search</h4>
+                    <p className="text-sm text-slate-400">Allow agents to call the web search tool.</p>
+                  </div>
+                  <button 
+                    onClick={() => updateConfig('enable_web_search', !config?.enable_web_search)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${config?.enable_web_search ? 'bg-emerald-600' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config?.enable_web_search ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div>
+                    <h4 className="font-bold text-white">File Search</h4>
+                    <p className="text-sm text-slate-400">Enable file search/indexing tools for agents.</p>
+                  </div>
+                  <button 
+                    onClick={() => updateConfig('enable_file_search', !config?.enable_file_search)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${config?.enable_file_search ? 'bg-emerald-600' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config?.enable_file_search ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div>
+                    <h4 className="font-bold text-white">Code Interpreter</h4>
+                    <p className="text-sm text-slate-400">Permit the code interpreter tool for tasks.</p>
+                  </div>
+                  <button 
+                    onClick={() => updateConfig('enable_code_interpreter', !config?.enable_code_interpreter)}
+                    className={`w-12 h-6 rounded-full relative transition-colors ${config?.enable_code_interpreter ? 'bg-emerald-600' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config?.enable_code_interpreter ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
                 <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
                   <h4 className="font-bold text-white mb-2">OpenAI Model</h4>
                   <select 

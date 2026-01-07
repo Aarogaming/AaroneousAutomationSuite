@@ -3,12 +3,22 @@ import sys
 import argparse
 import uvicorn
 import os
+import threading
+import webbrowser
 from loguru import logger
 from typing import Optional
 from pathlib import Path
 from core.config import load_config
 from core.ipc_server import serve_ipc
 from core.web_server import create_app
+from core.preflight import run_preflight
+try:
+    from PIL import Image, ImageDraw
+    import pystray
+except Exception:
+    Image = None
+    ImageDraw = None
+    pystray = None
 
 class TaskCLI:
     """CLI interface for task management operations"""
@@ -111,10 +121,94 @@ class TaskCLI:
         print(f"\nUse: python hub.py task start {task['id']} [actor_name]\n")
 
 async def main():
-    # Configure logging to file
+    # Single-process mode by default; disable with --no-tray
+    inline_tray = True
+    if "--no-tray" in sys.argv:
+        inline_tray = False
+        sys.argv = [a for a in sys.argv if a != "--no-tray"]
+
+    def create_inline_tray_icon():
+        """Create a lightweight tray icon for inline mode."""
+        if Image is None or ImageDraw is None:
+            return None
+        size = 64
+        img = Image.new('RGBA', (size, size), color=(0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.ellipse([0, 0, size - 1, size - 1], fill=(67, 56, 202))
+        margin = int(size * 0.15)
+        letter_width = size - (2 * margin)
+        letter_height = int(size * 0.7)
+        top = int(size * 0.15)
+        left = margin
+        peak_x = size // 2
+        left_bottom = (left, top + letter_height)
+        right_bottom = (left + letter_width, top + letter_height)
+        draw.polygon([(peak_x, top), left_bottom, right_bottom], fill='white')
+        inner_offset = int(size * 0.12)
+        draw.polygon([
+            (peak_x, top + int(inner_offset * 1.5)),
+            (left_bottom[0] + inner_offset, left_bottom[1] - inner_offset),
+            (right_bottom[0] - inner_offset, right_bottom[1] - inner_offset)
+        ], fill=(67, 56, 202))
+        bar_y = top + int(letter_height * 0.6)
+        bar_thickness = int(size * 0.08)
+        bar_left = left + int(letter_width * 0.25)
+        bar_right = left + int(letter_width * 0.75)
+        draw.rectangle([bar_left, bar_y, bar_right, bar_y + bar_thickness], fill='white')
+        return img
+
+    def start_inline_tray(loop: asyncio.AbstractEventLoop):
+        """Start tray UI in a background thread within the same process."""
+        if pystray is None:
+            logger.warning("Tray UI unavailable (missing pystray/Pillow); continuing without tray UI.")
+            return None
+        if os.getenv("WSL_DISTRO_NAME"):
+            logger.info("Tray skipped: WSL environment detected (no native system tray).")
+            return None
+        if os.name != "nt":
+            if not os.getenv("DISPLAY"):
+                logger.info("Tray skipped: no system tray detected (DISPLAY unset).")
+                return None
+
+        icon_img = create_inline_tray_icon()
+        if not icon_img:
+            logger.warning("Inline tray icon could not be created; skipping tray UI.")
+            return None
+
+        def open_dashboard(icon, item):
+            try:
+                webbrowser.open("http://localhost:8000")
+            except Exception as e:
+                logger.warning(f"Failed to open dashboard: {e}")
+
+        def quit_hub(icon, item):
+            logger.info("Inline tray quit requested; terminating Hub.")
+            os._exit(0)
+
+        menu = pystray.Menu(
+            pystray.MenuItem("Open Dashboard", open_dashboard),
+            pystray.MenuItem("Quit Hub", quit_hub)
+        )
+        tray_icon = pystray.Icon("AAS Hub", icon_img, "AAS Hub", menu)
+
+        def run_icon():
+            try:
+                tray_icon.run()
+            except Exception as e:
+                logger.warning(f"Inline tray terminated: {e}")
+
+        thread = threading.Thread(target=run_icon, daemon=True)
+        thread.start()
+        logger.info("Inline tray started (single-process mode).")
+        return tray_icon
+
+    # Configure logging (console + rotating file)
     log_file = Path("artifacts/hub.log")
     log_file.parent.mkdir(parents=True, exist_ok=True)
-    logger.add(log_file, rotation="10 MB", retention="10 days", level="DEBUG")
+    logger.remove()
+    log_format = "{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {message}"
+    logger.add(sys.stderr, level="INFO", format=log_format, enqueue=True)
+    logger.add(log_file, rotation="10 MB", retention="10 days", level="DEBUG", format=log_format, enqueue=True)
     
     logger.info("Initializing Aaroneous Automation Suite (AAS) Hub...")
     
@@ -125,13 +219,53 @@ async def main():
         logger.critical("Failed to load configuration. Hub cannot start.")
         return
 
+    # 1a. Preflight checks (ports, dependencies, workspace hygiene)
+    web_host = os.getenv("AAS_WEB_HOST", "0.0.0.0")
+    try:
+        web_port = int(os.getenv("AAS_WEB_PORT", "8000"))
+    except ValueError:
+        web_port = 8000
+    preflight = run_preflight(config=config, workspace_root=Path.cwd(), web_host=web_host, web_port=web_port)
+    preflight.log()
+    if preflight.needs_reexec and preflight.preferred_python and not os.getenv("AAS_PREFLIGHT_REEXEC"):
+        try:
+            new_env = os.environ.copy()
+            new_env["AAS_PREFLIGHT_REEXEC"] = "1"
+            python_path = str(preflight.preferred_python)
+            logger.info(f"Re-launching Hub with workspace Python at {python_path}")
+            os.execve(python_path, [python_path] + sys.argv, new_env)
+        except Exception as e:
+            logger.warning(f"Preflight re-launch with workspace Python failed, continuing: {e}")
+    if preflight.issues:
+        logger.critical("Startup blocked by preflight issues; resolve above and retry.")
+        return
+    web_host = preflight.web_host
+    web_port = preflight.web_port
+    config.ipc_port = preflight.ipc_port
+    resolved_ipc_ports = preflight.ipc_ports
+
+    # 1b. Write PID file for unified start/stop tooling
+    pid_file = Path("artifacts/hub.pid")
+    try:
+        pid_file.write_text(str(os.getpid()), encoding="utf-8")
+        logger.debug(f"Wrote PID file to {pid_file}")
+    except Exception as e:
+        logger.warning(f"Failed to write PID file: {e}")
+
     # 2. Initialize Manager Hub (Unified access to all managers)
     from core.managers import ManagerHub
     hub = ManagerHub.create(config=config)
     
     # 3. Initialize Task CLI
     task_cli = TaskCLI(hub.tasks)
-    
+
+    # 3b. Start inline tray if requested (single-process mode)
+    if inline_tray:
+        try:
+            start_inline_tray(asyncio.get_running_loop())
+        except Exception as e:
+            logger.warning(f"Inline tray failed to start: {e}")
+
     # Handle CLI commands
     if len(sys.argv) > 1:
         cmd = sys.argv[1].lower()
@@ -500,11 +634,12 @@ async def main():
             return
 
     # 4. Start IPC and Web Servers
-    ipc_task = asyncio.create_task(serve_ipc(port=config.ipc_port, service=hub.ipc))
+    ipc_ports = resolved_ipc_ports
+    ipc_task = asyncio.create_task(serve_ipc(port=config.ipc_port, service=hub.ipc, ports=ipc_ports))
     
     # Start FastAPI in a separate thread or as a task
     app = create_app(hub)
-    web_config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
+    web_config = uvicorn.Config(app, host=web_host, port=web_port, log_level="info")
     web_server = uvicorn.Server(web_config)
     
     # 5. Start background batch monitor (always running, checks config dynamically)
@@ -533,7 +668,7 @@ async def main():
         
         batch_monitor_task = asyncio.create_task(run_batch_monitor())
     
-    logger.success("AAS Hub is now running (IPC: 50051, Web: 8000)")
+    logger.success(f"AAS Hub is now running (IPC candidates: {ipc_ports}, Web: {web_host}:{web_port})")
     if batch_monitor_task:
         status = "ENABLED" if config.batch_auto_monitor else "DISABLED"
         logger.info(f"Batch auto-monitor: {status} (aggressive batching, ≤24h completion, runtime toggle)")
@@ -548,6 +683,15 @@ async def main():
         logger.info("AAS Hub shutting down...")
         if batch_monitor_task:
             batch_monitor_task.cancel()
+    finally:
+        if 'pid_file' in locals():
+            try:
+                current_pid = str(os.getpid())
+                if pid_file.exists() and pid_file.read_text(encoding="utf-8").strip() == current_pid:
+                    pid_file.unlink()
+                    logger.debug("Removed PID file on shutdown")
+            except Exception as e:
+                logger.warning(f"Failed to clean up PID file: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main())

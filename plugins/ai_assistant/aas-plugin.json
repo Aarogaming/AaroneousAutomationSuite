@@ -1,0 +1,6 @@
+{
+  "name": "ai_assistant",
+  "description": "Core AI assistant utilities",
+  "entry": "assistant.py",
+  "enabled": true
+}

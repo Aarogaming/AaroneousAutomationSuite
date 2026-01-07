@@ -3,8 +3,23 @@ from pydantic import SecretStr, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from loguru import logger
 from dotenv import load_dotenv
+from pathlib import Path
 import json
 import os
+
+
+def find_workspace_env(start: Optional[Path] = None) -> Optional[Path]:
+    """
+    Locate the topmost .env file in the workspace (root-first search).
+    Returns the highest-level .env starting from the provided path (defaults to CWD).
+    """
+    start_path = (start or Path.cwd()).resolve()
+    for candidate in reversed([start_path] + list(start_path.parents)):
+        env_file = candidate / ".env"
+        if env_file.exists():
+            return env_file
+    fallback = Path(__file__).resolve().parent.parent / ".env"
+    return fallback if fallback.exists() else None
 
 class AASConfig(BaseSettings):
     """
@@ -302,6 +317,9 @@ def load_config(use_db: bool = True) -> AASConfig:
     Loads and validates the AAS configuration from environment variables and .env file.
     Optionally merges with configuration from the database.
     
+    Minimal mode: set AAS_MINIMAL_CONFIG=1 to bypass DB overrides and load only
+    environment/.env values. Useful for lightweight CLI tools and troubleshooting.
+    
     Implements graceful fallback for non-critical errors:
     - Missing optional fields: Uses defaults
     - Invalid values: Logs warning and uses safe defaults
@@ -314,7 +332,19 @@ def load_config(use_db: bool = True) -> AASConfig:
         SystemExit: If critical configuration (OPENAI_API_KEY) is missing
     """
     try:
-        load_dotenv(override=False)
+        env_path = find_workspace_env()
+        if env_path:
+            load_dotenv(dotenv_path=env_path, override=False)
+            try:
+                # Keep Pydantic aware of the env file we loaded for consistency
+                AASConfig.model_config["env_file"] = str(env_path)
+            except Exception:
+                logger.debug(f"Could not set env_file on AASConfig model_config (path={env_path})")
+            logger.debug(f"Loaded environment variables from {env_path}")
+        else:
+            load_dotenv(override=False)
+        if os.getenv("AAS_MINIMAL_CONFIG"):
+            use_db = False
         if use_db:
             config = AASConfig.from_db()
         else:
@@ -343,7 +373,6 @@ def load_config(use_db: bool = True) -> AASConfig:
         logger.warning("Attempting to load configuration with safe defaults...")
         try:
             # Try to load with minimal required fields
-            import os
             if not os.getenv("OPENAI_API_KEY"):
                 logger.critical("Cannot proceed without OPENAI_API_KEY")
                 raise SystemExit(1)

@@ -24,6 +24,10 @@ For a detailed project index, see [docs/INDEX.md](docs/INDEX.md).
 3. Install dependencies: `python -m pip install -r requirements.txt`
 4. Configure your local environment in `.env` (OpenAI API Key, etc.)
 5. Start the Hub: `python hub.py`
+6. Recommended: one-step launch with prep & readiness checks: `python scripts/aas_launcher.py launch --wait`
+
+## Project Maelstrom (Game Automation)
+The Wizard101/Maelstrom game automation stack has been split into its own repo: https://github.com/Aarogaming/AutoWizard101.git. Use that project for game-side bots, server, and toolkit; AAS will integrate via plugins/APIs when needed.
 
 ## Game Learning Initiative 🎮🧠
 

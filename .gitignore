@@ -52,6 +52,7 @@ __pycache__/
 .venv/
 venv/
 env/
+.venv_wsl_backup/
 
 # Build/Distribution
 dist/
@@ -83,6 +84,10 @@ artifacts/*.pdb
 artifacts/handoff/from_codex/
 artifacts/handoff/to_codex/
 !artifacts/handoff/registry.json
+# Runtime artifacts
+artifacts/hub*.log
+artifacts/hub*.out
+artifacts/*.pid
 
 # Large Files (>50MB - GitHub hard limit is 100MB)
 # We use 50MB to avoid warnings
