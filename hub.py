@@ -615,29 +615,42 @@ async def main():
                 config = status.get("config", {})
                 session = status.get("session")
                 
+                idle_mode = config.get('idle_mode', 'automation_aware')
+                idle_timeout = config.get('idle_timeout_minutes', 30)
+                timeout_str = f"{idle_timeout} min ({idle_mode})" if idle_timeout > 0 else "disabled"
+                
                 print(f"\n🎮 GAME MODE STATUS")
                 print("=" * 50)
                 print(f"State:          {state}")
-                print(f"Idle Timeout:   {config.get('idle_timeout_minutes', 30)} minutes")
+                print(f"Idle Timeout:   {timeout_str}")
                 print(f"Auto-detect:    {'Yes' if config.get('auto_detect_game') else 'No'}")
                 print(f"Start Maelstrom:{' Yes' if config.get('start_maelstrom', True) else ' No'}")
                 
                 if session:
                     print("-" * 50)
                     print(f"Session Start:  {session.get('started_at', 'Unknown')}")
-                    print(f"Last Activity:  {session.get('last_activity', 'None')}")
+                    print(f"Duration:       {session.get('duration_minutes', 0):.1f} min")
+                    print(f"Human Idle:     {session.get('human_idle_minutes', 0):.1f} min")
+                    print(f"Any Idle:       {session.get('automation_idle_minutes', 0):.1f} min")
                     print(f"Commands Exec:  {session.get('commands_executed', 0)}")
-                    print(f"Trainers Run:   {session.get('trainers_started', 0)}")
+                    print(f"Trainer Cycles: {session.get('trainer_cycles', 0)}")
+                    print(f"Game Events:    {session.get('game_events', 0)}")
+                    print(f"Trainers Used:  {', '.join(session.get('trainers_started', [])) or 'None'}")
                 print("=" * 50 + "\n")
             
             elif subcmd == "configure":
                 if len(sys.argv) < 4:
-                    print("\nUsage: python hub.py game configure <key> <value>")
+                    print("\nUsage: python hub.py game configure <key> [value]")
                     print("\nConfigurable keys:")
-                    print("  idle_timeout_minutes  - Minutes before auto-exit (0 = disabled)")
-                    print("  auto_detect_game      - true/false")
-                    print("  start_maelstrom       - true/false")
-                    print("  enable_trainers       - true/false\n")
+                    print("  idle_timeout_minutes     - Minutes before auto-exit (0 = disabled)")
+                    print("  idle_mode                - What counts as activity:")
+                    print("                             human_only | automation_aware | never")
+                    print("  auto_detect_game         - true/false")
+                    print("  start_maelstrom          - true/false")
+                    print("  enable_trainers          - true/false")
+                    print("  count_trainer_cycles     - true/false (automation_aware mode)")
+                    print("  count_maelstrom_commands - true/false (automation_aware mode)")
+                    print("  count_game_events        - true/false (automation_aware mode)\n")
                     return
                 
                 key = sys.argv[3]

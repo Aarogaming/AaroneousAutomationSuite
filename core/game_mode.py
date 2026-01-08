@@ -38,24 +38,63 @@ class GameModeState(Enum):
     ERROR = "error"
 
 
+class IdleMode(Enum):
+    """
+    What constitutes 'idle' for timeout purposes.
+    
+    - HUMAN_ONLY: Only human interaction resets idle timer (IPC commands, CLI)
+    - AUTOMATION_AWARE: Trainer activity and Maelstrom commands also count
+    - NEVER: Never idle out - disable timeout entirely
+    """
+    HUMAN_ONLY = "human_only"           # Only manual commands reset idle
+    AUTOMATION_AWARE = "automation_aware"  # Any system activity resets idle
+    NEVER = "never"                     # Never auto-exit (timeout disabled)
+
+
 @dataclass
 class GameModeConfig:
-    """Configuration for game mode behavior."""
-    idle_timeout_minutes: int = 30  # Auto-exit after N minutes of inactivity
-    auto_detect_game: bool = True   # Auto-enter when game window detected
-    start_maelstrom: bool = True    # Start Maelstrom on enter
-    enable_trainers: bool = True    # Enable minigame trainers on enter
-    snapshot_interval_ms: int = 100 # Game state polling interval
+    """
+    Configuration for game mode behavior.
+    
+    Idle Timeout Behavior:
+        The idle_mode setting controls what resets the idle timer:
+        
+        - HUMAN_ONLY (default): Only explicit human interaction resets idle.
+          Use when you want automation to run unattended but still timeout
+          when the automation finishes.
+          
+        - AUTOMATION_AWARE: Any system activity resets idle - trainer cycles,
+          Maelstrom commands, game events. Use for long-running unattended
+          automation that should stay active as long as it's doing work.
+          
+        - NEVER: Never timeout. Game mode stays active until manual exit.
+          Use for 24/7 operation or when managing timeout externally.
+    """
+    idle_timeout_minutes: int = 30       # Auto-exit after N minutes of inactivity
+    idle_mode: str = "automation_aware"  # What counts as 'activity' (see IdleMode)
+    auto_detect_game: bool = True        # Auto-enter when game window detected
+    start_maelstrom: bool = True         # Start Maelstrom on enter
+    enable_trainers: bool = True         # Enable minigame trainers on enter
+    snapshot_interval_ms: int = 100      # Game state polling interval
+    
+    # Granular activity controls (when idle_mode = automation_aware)
+    count_trainer_cycles: bool = True    # Trainer execution resets idle
+    count_maelstrom_commands: bool = True  # Commands to Maelstrom reset idle
+    count_game_events: bool = True       # Game state changes reset idle
+    count_snapshots: bool = False        # Raw snapshots reset idle (noisy!)
 
 
 @dataclass
 class GameModeSession:
     """Tracks a game mode session."""
     started_at: datetime = field(default_factory=datetime.now)
-    last_activity: datetime = field(default_factory=datetime.now)
+    last_human_activity: datetime = field(default_factory=datetime.now)
+    last_automation_activity: datetime = field(default_factory=datetime.now)
     trainers_started: List[str] = field(default_factory=list)
     commands_executed: int = 0
     snapshots_received: int = 0
+    trainer_cycles: int = 0
+    game_events_received: int = 0
     
     @property
     def duration_minutes(self) -> float:
@@ -63,13 +102,40 @@ class GameModeSession:
         return (datetime.now() - self.started_at).total_seconds() / 60
     
     @property
+    def human_idle_minutes(self) -> float:
+        """Get time since last human interaction in minutes."""
+        return (datetime.now() - self.last_human_activity).total_seconds() / 60
+    
+    @property
+    def automation_idle_minutes(self) -> float:
+        """Get time since any activity (human or automation) in minutes."""
+        last_any = max(self.last_human_activity, self.last_automation_activity)
+        return (datetime.now() - last_any).total_seconds() / 60
+    
+    # Legacy property for backward compatibility
+    @property
     def idle_minutes(self) -> float:
-        """Get idle time in minutes."""
-        return (datetime.now() - self.last_activity).total_seconds() / 60
+        """Get idle time in minutes (automation-aware by default)."""
+        return self.automation_idle_minutes
+    
+    @property
+    def last_activity(self) -> datetime:
+        """Get most recent activity timestamp (any type)."""
+        return max(self.last_human_activity, self.last_automation_activity)
+    
+    def touch_human(self) -> None:
+        """Record human interaction."""
+        self.last_human_activity = datetime.now()
+    
+    def touch_automation(self) -> None:
+        """Record automation activity."""
+        self.last_automation_activity = datetime.now()
     
     def touch(self) -> None:
-        """Update last activity timestamp."""
-        self.last_activity = datetime.now()
+        """Update both activity timestamps (legacy compatibility)."""
+        now = datetime.now()
+        self.last_human_activity = now
+        self.last_automation_activity = now
 
 
 class GameModeManager:
@@ -167,11 +233,15 @@ class GameModeManager:
             if do_enable_trainers and self._game_automation_plugin:
                 logger.debug("Game automation plugin ready for trainers")
             
-            # Start idle timeout checker
-            if timeout > 0:
+            # Start idle timeout checker (unless mode is 'never' or timeout is 0)
+            idle_mode = self._config.idle_mode.lower()
+            if timeout > 0 and idle_mode != IdleMode.NEVER.value:
                 self._idle_check_task = asyncio.create_task(
                     self._idle_timeout_loop(timeout)
                 )
+                logger.debug(f"Idle timeout: {timeout}min ({idle_mode} mode)")
+            else:
+                logger.debug("Idle timeout disabled")
             
             self._state = GameModeState.ACTIVE
             
@@ -291,28 +361,69 @@ class GameModeManager:
         else:
             return await self.enter()
     
-    def touch_activity(self) -> None:
-        """Record activity to reset idle timer."""
+    def touch_activity(self, is_human: bool = True) -> None:
+        """
+        Record activity to reset idle timer.
+        
+        Args:
+            is_human: True if this is human-initiated activity
+        """
         if self._session:
-            self._session.touch()
+            if is_human:
+                self._session.touch_human()
+            else:
+                self._session.touch_automation()
     
-    def record_command(self) -> None:
-        """Record a command execution."""
+    def record_command(self, is_human: bool = True) -> None:
+        """
+        Record a command execution.
+        
+        Args:
+            is_human: True if command was triggered by human (CLI, IPC call)
+        """
         if self._session:
             self._session.commands_executed += 1
-            self._session.touch()
+            if is_human:
+                self._session.touch_human()
+            elif self._config.count_maelstrom_commands:
+                self._session.touch_automation()
     
     def record_snapshot(self) -> None:
         """Record a snapshot received."""
         if self._session:
             self._session.snapshots_received += 1
-            # Don't touch activity for snapshots - they're automatic
+            if self._config.count_snapshots:
+                self._session.touch_automation()
+    
+    def record_trainer_cycle(self, trainer_name: str) -> None:
+        """
+        Record a trainer execution cycle (automation activity).
+        
+        This is called when a trainer completes a cycle of its work,
+        indicating the system is actively running automation.
+        """
+        if self._session:
+            self._session.trainer_cycles += 1
+            if self._config.count_trainer_cycles:
+                self._session.touch_automation()
+    
+    def record_game_event(self, event_type: str = "generic") -> None:
+        """
+        Record a game state event (automation activity).
+        
+        Args:
+            event_type: Type of game event (for logging/stats)
+        """
+        if self._session:
+            self._session.game_events_received += 1
+            if self._config.count_game_events:
+                self._session.touch_automation()
     
     def record_trainer_start(self, trainer_name: str) -> None:
-        """Record a trainer being started."""
+        """Record a trainer being started (human action)."""
         if self._session and trainer_name not in self._session.trainers_started:
             self._session.trainers_started.append(trainer_name)
-            self._session.touch()
+            self._session.touch_human()  # Starting a trainer is human-initiated
     
     def on_enter(self, callback: Callable) -> None:
         """Register a callback for when game mode is entered."""
@@ -329,6 +440,7 @@ class GameModeManager:
             "is_active": self.is_active,
             "config": {
                 "idle_timeout_minutes": self._config.idle_timeout_minutes,
+                "idle_mode": self._config.idle_mode,
                 "auto_detect_game": self._config.auto_detect_game,
                 "start_maelstrom": self._config.start_maelstrom,
             }
@@ -338,9 +450,12 @@ class GameModeManager:
             result["session"] = {
                 "started_at": self._session.started_at.isoformat(),
                 "duration_minutes": round(self._session.duration_minutes, 2),
-                "idle_minutes": round(self._session.idle_minutes, 2),
+                "human_idle_minutes": round(self._session.human_idle_minutes, 2),
+                "automation_idle_minutes": round(self._session.automation_idle_minutes, 2),
                 "commands_executed": self._session.commands_executed,
                 "snapshots_received": self._session.snapshots_received,
+                "trainer_cycles": self._session.trainer_cycles,
+                "game_events": self._session.game_events_received,
                 "trainers_started": self._session.trainers_started
             }
         
@@ -367,16 +482,42 @@ class GameModeManager:
             logger.warning("Game automation plugin not found - trainers unavailable")
     
     async def _idle_timeout_loop(self, timeout_minutes: int) -> None:
-        """Background task to check for idle timeout."""
+        """
+        Background task to check for idle timeout.
+        
+        Respects the idle_mode setting:
+        - HUMAN_ONLY: Only human_idle_minutes counts
+        - AUTOMATION_AWARE: automation_idle_minutes counts (any activity)
+        - NEVER: This loop is never started
+        """
         check_interval = 60  # Check every minute
         
         try:
             while self.is_active:
                 await asyncio.sleep(check_interval)
                 
-                if self._session and self._session.idle_minutes >= timeout_minutes:
-                    logger.info(f"Game mode idle for {timeout_minutes} minutes, auto-exiting...")
-                    await self.exit(reason="idle_timeout")
+                if not self._session:
+                    continue
+                
+                # Determine idle time based on mode
+                idle_mode = self._config.idle_mode.lower()
+                
+                if idle_mode == IdleMode.NEVER.value:
+                    # Should never get here, but just in case
+                    continue
+                elif idle_mode == IdleMode.HUMAN_ONLY.value:
+                    idle_minutes = self._session.human_idle_minutes
+                    idle_type = "human"
+                else:  # AUTOMATION_AWARE (default)
+                    idle_minutes = self._session.automation_idle_minutes
+                    idle_type = "automation-aware"
+                
+                if idle_minutes >= timeout_minutes:
+                    logger.info(
+                        f"Game mode idle for {timeout_minutes} minutes "
+                        f"({idle_type} mode), auto-exiting..."
+                    )
+                    await self.exit(reason=f"idle_timeout_{idle_type}")
                     break
                     
         except asyncio.CancelledError:
