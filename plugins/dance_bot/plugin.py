@@ -1,15 +1,23 @@
 """
 DanceBot Plugin - Wizard101 Pet Dance Minigame Automation
 
+!!! DEPRECATED !!!
+This standalone plugin has been deprecated in favor of the unified 
+minigame trainer system in game_automation plugin.
+
+Use instead:
+    IPC: game.trainer.start name=dance difficulty=easy
+    Or via game_automation.minigames.DanceGameTrainer
+
+Migration complete as of v0.2.0. This plugin will be removed in a future release.
+
 Task Reference: AAS-014 (DanceBot Integration)
 Dependencies: AAS-012 (AutoWizard101 Migration), AAS-013 (Deimos-Wizard101 Port)
-
-This plugin automates the Pet Dance minigame in Wizard101, leveraging
-the game_automation plugin for IPC communication with Project Maelstrom.
 
 Original Source: https://github.com/kennyhngo/Wizard101_DanceBot
 """
 
+import warnings
 from typing import Dict, Any, Optional, List
 from loguru import logger
 import asyncio
@@ -17,9 +25,18 @@ import asyncio
 from core.plugin_base import PluginBase
 from core.config import AASConfig
 
+# Emit deprecation warning on import
+warnings.warn(
+    "dance_bot plugin is deprecated. Use game_automation.minigames.DanceGameTrainer instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
 
 class DanceBotPlugin(PluginBase):
     """
+    DEPRECATED: Use game_automation plugin's minigame trainers instead.
+    
     Automates the Wizard101 Pet Dance minigame.
     
     The pet dance game requires players to press arrow keys in sequence
@@ -33,7 +50,7 @@ class DanceBotPlugin(PluginBase):
     4. Send keypresses at optimal moment
     """
     
-    version = "0.1.0"
+    version = "0.1.0-deprecated"
     
     # Arrow key mappings for dance game
     ARROW_KEYS = {
@@ -48,6 +65,7 @@ class DanceBotPlugin(PluginBase):
     
     def __init__(self, config: AASConfig, hub: Any):
         super().__init__("dance_bot", config, hub)
+        logger.warning("dance_bot plugin is deprecated. Use game_automation minigame trainers.")
         self._game_automation = None
         self._running = False
         self._score = 0
