@@ -12,7 +12,8 @@ import {
   AlertCircle,
   User,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Github
 } from 'lucide-react';
 
 interface Task {
@@ -83,6 +84,14 @@ interface FullConfig {
   ollama_url: string;
   lm_studio_url: string;
   batch_auto_monitor: boolean;
+  batch_monitor_enabled: boolean;
+  batch_monitor_scan_interval: number;
+  batch_monitor_check_interval: number;
+  batch_monitor_min_tasks: number;
+  batch_monitor_max_tasks: number;
+  batch_monitor_max_concurrent: number;
+  batch_monitor_max_tasks_per_batch: number;
+  batch_monitor_dry_run: boolean;
   encryption_enabled: boolean;
   responses_api_enabled: boolean;
   enable_web_search: boolean;
@@ -105,8 +114,19 @@ interface Batch {
   };
 }
 
+interface GitJob {
+  id: string;
+  sha?: string;
+  delivery?: string;
+  status?: string;
+  openai_status?: string;
+  updated?: string;
+  created?: string;
+}
+
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 const WS_BASE = API_BASE.replace(/^http/, 'ws');
+const API_TIMEOUT_MS = 8000;
 
 const normalizeStatus = (status: string): string => {
   const key = status.trim().toLowerCase();
@@ -126,6 +146,14 @@ function App() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [batchStats, setBatchStats] = useState({ total: 0, configured: false, cost_savings: '0%' });
   const [autoMonitorEnabled, setAutoMonitorEnabled] = useState(false);
+  const [batchMinTasks, setBatchMinTasks] = useState(3);
+  const [batchMaxTasks, setBatchMaxTasks] = useState(50);
+  const [batchScanInterval, setBatchScanInterval] = useState(60);
+  const [batchCheckInterval, setBatchCheckInterval] = useState(60);
+  const [batchMaxConcurrent, setBatchMaxConcurrent] = useState(5);
+  const [batchTasksPerBatch, setBatchTasksPerBatch] = useState(20);
+  const [batchMonitorEnabled, setBatchMonitorEnabled] = useState(true);
+  const [batchMonitorDryRun, setBatchMonitorDryRun] = useState(false);
   const [ollamaModels, setOllamaModels] = useState<OllamaModel[]>([]);
   const [ollamaStatus, setOllamaStatus] = useState<'online' | 'offline'>('offline');
   const [lmStudioStatus, setLmStudioStatus] = useState<'online' | 'offline'>('offline');
@@ -135,6 +163,46 @@ function App() {
   const [health, setHealth] = useState<HealthSummary | null>(null);
   const [config, setConfig] = useState<FullConfig | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [toast, setToast] = useState<{ message: string; color: string } | null>(null);
+  const [gitStatus, setGitStatus] = useState<{ branch?: string; status?: string[]; error?: string }>({});
+  const [batchSummary, setBatchSummary] = useState<{ batches_submitted?: number; batches_completed?: number; tasks_processed?: number; total_cost_saved?: number }>({});
+  const [githubJobs, setGithubJobs] = useState<GitJob[]>([]);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error && err.message) return err.message;
+    if (typeof err === 'string') return err;
+    return 'Unknown error';
+  };
+  const upsertBatch = useCallback((incoming: Batch) => {
+    setBatches(prev => {
+      const idx = prev.findIndex(b => b.id === incoming.id);
+      if (idx === -1) {
+        return [incoming, ...prev].slice(0, 50);
+      }
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], ...incoming };
+      return updated;
+    });
+  }, []);
+  const upsertTask = useCallback((incoming: Partial<Task> & { id: string }) => {
+    setTasks(prev => {
+      const idx = prev.findIndex(t => t.id === incoming.id);
+      if (idx === -1) {
+        return [{
+          id: incoming.id,
+          title: incoming.title || incoming.id,
+          priority: incoming.priority || 'Medium',
+          status: incoming.status || 'Queued',
+          assignee: incoming.assignee || '-',
+          updated: new Date().toISOString()
+        }, ...prev].slice(0, 200);
+      }
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], ...incoming, updated: new Date().toISOString() };
+      return updated;
+    });
+  }, []);
 
   const normalizedTasks = tasks.map(task => ({
     ...task,
@@ -153,36 +221,65 @@ function App() {
 
   const fetchData = useCallback(async () => {
     try {
-      const healthRes = await fetch(`${API_BASE}/health`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+      const healthRes = await fetch(`${API_BASE}/health`, { signal: controller.signal });
       if (healthRes.ok) {
         const healthData = await healthRes.json();
         setHealth(healthData);
       }
 
-      const configRes = await fetch(`${API_BASE}/config/all`);
+      const configRes = await fetch(`${API_BASE}/config/all`, { signal: controller.signal });
       if (configRes.ok) {
         const configData = await configRes.json();
         setConfig(configData);
         setLmStudioUrl(configData.lm_studio_url);
         setAutoMonitorEnabled(configData.batch_auto_monitor);
+        setBatchMonitorEnabled(configData.batch_monitor_enabled ?? true);
+        setBatchMinTasks(configData.batch_monitor_min_tasks ?? 3);
+        setBatchMaxTasks(configData.batch_monitor_max_tasks ?? 50);
+        setBatchMaxConcurrent(configData.batch_monitor_max_concurrent ?? 5);
+        setBatchTasksPerBatch(configData.batch_monitor_max_tasks_per_batch ?? 20);
+        setBatchMonitorDryRun(configData.batch_monitor_dry_run ?? false);
+        setBatchScanInterval(configData.batch_monitor_scan_interval ?? 60);
+        setBatchCheckInterval(configData.batch_monitor_check_interval ?? 60);
         setNgrokRegion(configData.ngrok_region || 'us');
         setNgrokPort(typeof configData.ngrok_port === 'number' ? configData.ngrok_port : 8000);
       }
 
-      const tasksRes = await fetch(`${API_BASE}/tasks`);
+      const tasksRes = await fetch(`${API_BASE}/tasks`, { signal: controller.signal });
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json();
         setTasks(tasksData.tasks || []);
       }
 
-      const agentsRes = await fetch(`${API_BASE}/agents`);
+      const agentsRes = await fetch(`${API_BASE}/agents`, { signal: controller.signal });
       if (agentsRes.ok) {
         const agentsData = await agentsRes.json();
         setAgents(agentsData || []);
       }
       
       try {
-        const batchRes = await fetch(`${API_BASE}/batch/status`);
+        const gitRes = await fetch(`${API_BASE}/git/status`, { signal: controller.signal });
+        if (gitRes.ok) {
+          setGitStatus(await gitRes.json());
+        }
+      } catch {
+        /* ignore */
+      }
+      try {
+        const jobsRes = await fetch(`${API_BASE}/github/jobs?limit=50`, { signal: controller.signal });
+        if (jobsRes.ok) {
+          const data = await jobsRes.json();
+          setGithubJobs(data.jobs || []);
+        }
+      } catch {
+        /* ignore */
+      }
+      
+      try {
+        const batchRes = await fetch(`${API_BASE}/batch/status`, { signal: controller.signal });
         if (batchRes.ok) {
           const batchData = await batchRes.json();
           setBatches(batchData.active_batches || []);
@@ -198,9 +295,18 @@ function App() {
       } catch {
         setBatchStats({ total: 0, configured: false, cost_savings: '0%' });
       }
+      
+      try {
+        const summaryRes = await fetch(`${API_BASE}/batch/summary`, { signal: controller.signal });
+        if (summaryRes.ok) {
+          setBatchSummary(await summaryRes.json());
+        }
+      } catch {
+        /* ignore */
+      }
 
       try {
-        const ollamaRes = await fetch('http://localhost:11434/api/tags');
+        const ollamaRes = await fetch('http://localhost:11434/api/tags', { signal: controller.signal });
         if (ollamaRes.ok) {
           const data = await ollamaRes.json();
           setOllamaModels(data.models || []);
@@ -211,8 +317,12 @@ function App() {
       } catch {
         setOllamaStatus('offline');
       }
+
+      clearTimeout(timeout);
+      setApiError(null);
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
+      setApiError('API unreachable');
     }
   }, []);
 
@@ -241,7 +351,7 @@ function App() {
     };
 
     tick();
-    const interval = setInterval(tick, 5000);
+    const interval = setInterval(tick, 60000); // lightweight fallback; primary updates via WebSocket
     
     return () => {
       isMounted = false;
@@ -254,6 +364,7 @@ function App() {
     
     socket.onopen = () => {
       console.log("Connected to AAS WebSocket");
+      setWsConnected(true);
       setEvents(prev => [{
         timestamp: new Date().toLocaleTimeString(),
         type: 'SYSTEM',
@@ -268,6 +379,14 @@ function App() {
         if (data.event_type === 'CONFIG_UPDATED') {
           if (data.key === 'lm_studio_url') setLmStudioUrl(data.value);
           if (data.key === 'batch_auto_monitor') setAutoMonitorEnabled(data.value);
+          if (data.key === 'batch_monitor_enabled') setBatchMonitorEnabled(Boolean(data.value));
+          if (data.key === 'batch_monitor_min_tasks') setBatchMinTasks(Number(data.value));
+          if (data.key === 'batch_monitor_max_tasks') setBatchMaxTasks(Number(data.value));
+          if (data.key === 'batch_monitor_max_concurrent') setBatchMaxConcurrent(Number(data.value));
+          if (data.key === 'batch_monitor_max_tasks_per_batch') setBatchTasksPerBatch(Number(data.value));
+          if (data.key === 'batch_monitor_dry_run') setBatchMonitorDryRun(Boolean(data.value));
+          if (data.key === 'batch_monitor_scan_interval') setBatchScanInterval(Number(data.value));
+          if (data.key === 'batch_monitor_check_interval') setBatchCheckInterval(Number(data.value));
           if (data.key === 'ngrok_region') setNgrokRegion(data.value);
           if (data.key === 'ngrok_port') setNgrokPort(Number(data.value));
           setConfig(prev => prev ? { ...prev, [data.key]: data.value } : null);
@@ -277,14 +396,93 @@ function App() {
             message: `Config updated: ${data.key} = ${data.value}`,
             color: 'text-amber-400'
           }, ...prev].slice(0, 50));
+        } else if (data.event_type && data.event_type.startsWith('BATCH_')) {
+          const status = data.status || (data.event_type === 'BATCH_COMPLETED' ? 'completed' :
+                          data.event_type === 'BATCH_FAILED' ? 'failed' : 'submitted');
+          if (data.batch_id) {
+            upsertBatch({
+              id: data.batch_id,
+              status,
+              metadata: data.metadata || {},
+              request_counts: data.request_counts
+            });
+          }
+          setEvents(prev => [{
+            timestamp: new Date().toLocaleTimeString(),
+            type: data.event_type,
+            message: data.message || `${data.batch_id || 'Batch'} ${status}`,
+            color: status === 'failed' ? 'text-rose-400' : 'text-emerald-400'
+          }, ...prev].slice(0, 50));
+          setToast({ message: data.message || `${data.batch_id || 'Batch'} ${status}`, color: status === 'failed' ? 'bg-rose-600' : 'bg-emerald-600' });
+        } else if (data.event_type && (data.event_type === 'CREATED' || data.event_type === 'CLAIMED' || data.event_type === 'COMPLETED')) {
+          // Task events pushed from TaskManager
+          const statusMap: Record<string, string> = {
+            CREATED: 'Queued',
+            CLAIMED: 'In Progress',
+            COMPLETED: 'Done'
+          };
+          const status = statusMap[data.event_type] || data.status || 'Queued';
+          if (data.task_id) {
+            upsertTask({
+              id: data.task_id,
+              title: data.title || data.task_id,
+              status,
+              assignee: data.assignee || '-'
+            });
+          }
+          setEvents(prev => [{
+            timestamp: new Date().toLocaleTimeString(),
+            type: data.event_type,
+            message: `${data.task_id || 'Task'} ${status.toLowerCase()}`,
+            color: status === 'Done' ? 'text-emerald-400' : 'text-indigo-400'
+          }, ...prev].slice(0, 50));
+          setToast({ message: `${data.task_id || 'Task'} ${status.toLowerCase()}`, color: status === 'Done' ? 'bg-emerald-600' : 'bg-indigo-600' });
+        } else if (data.event_type === 'HEALTH_UPDATE') {
+          // Optional: server could push health; merge quickly
+          if (data.payload) setHealth(data.payload as HealthSummary);
+        } else if (data.event_type === 'AGENT_UPDATE') {
+          if (data.payload && Array.isArray(data.payload)) setAgents(data.payload as Agent[]);
+        } else if (data.event_type === 'GIT_SYNC') {
+          setEvents(prev => [{
+            timestamp: new Date().toLocaleTimeString(),
+            type: data.event_type,
+            message: `Git sync: ${data.stage} (${data.branch || ''})`,
+            color: 'text-indigo-400'
+          }, ...prev].slice(0, 50));
+        } else if (data.event_type === 'GIT_SYNC_DONE') {
+          setToast({ message: `Git sync complete${data.push ? ' (push)' : ''}`, color: 'bg-emerald-600' });
+          setEvents(prev => [{
+            timestamp: new Date().toLocaleTimeString(),
+            type: data.event_type,
+            message: `Git sync complete${data.push ? ' (push)' : ''}`,
+            color: 'text-emerald-400'
+          }, ...prev].slice(0, 50));
+          fetchData();
+        } else if (data.event_type === 'GIT_SYNC_FAILED') {
+          const msg = data.error || 'Git sync failed';
+          setToast({ message: msg, color: 'bg-rose-600' });
+          setEvents(prev => [{
+            timestamp: new Date().toLocaleTimeString(),
+            type: data.event_type,
+            message: msg,
+            color: 'text-rose-400'
+          }, ...prev].slice(0, 50));
+        } else if (data.event_type === 'GITHUB_EVENT' || data.event_type === 'GITHUB_OPENAI_SUBMITTED' || data.event_type === 'GITHUB_OPENAI_COMPLETED') {
+          setEvents(prev => [{
+            timestamp: new Date().toLocaleTimeString(),
+            type: data.event_type,
+            message: data.message || `${data.event_type} ${data.sha || data.job_id || ''}`,
+            color: 'text-sky-400'
+          }, ...prev].slice(0, 50));
+          // Refresh jobs list on GH events
+          fetchData();
         } else if (data.event_type) {
           setEvents(prev => [{
             timestamp: new Date().toLocaleTimeString(),
-            type: 'TASK',
-            message: `${data.task_id} ${data.event_type.toLowerCase()} by ${data.assignee}`,
-            color: data.event_type === 'COMPLETED' ? 'text-emerald-400' : 'text-indigo-400'
+            type: data.event_type,
+            message: data.message || data.event_type,
+            color: 'text-indigo-400'
           }, ...prev].slice(0, 50));
-          fetchData();
         }
       } catch (err) {
         console.error("WS Message Error:", err);
@@ -293,10 +491,11 @@ function App() {
 
     socket.onclose = () => {
       console.log("Disconnected from AAS WebSocket");
+      setWsConnected(false);
     };
 
     return () => socket.close();
-  }, [fetchData]);
+  }, [fetchData, upsertBatch, upsertTask]);
 
   const updateConfig = async (key: string, value: unknown) => {
     try {
@@ -311,10 +510,24 @@ function App() {
     }
   };
 
-  const toggleAutoMonitor = () => updateConfig('batch_auto_monitor', !autoMonitorEnabled);
+  const toggleAutoMonitor = () => {
+    setAutoMonitorEnabled(!autoMonitorEnabled);
+    updateConfig('batch_auto_monitor', !autoMonitorEnabled);
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className={`px-4 py-3 rounded-lg shadow-lg text-white ${toast.color}`}>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Update</span>
+              <button className="text-white/70 text-xs" onClick={() => setToast(null)}>Dismiss</button>
+            </div>
+            <p className="text-sm">{toast.message}</p>
+          </div>
+        </div>
+      )}
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-800 p-4">
         <div className="flex items-center gap-3 mb-8 px-2">
@@ -330,6 +543,7 @@ function App() {
           <NavItem icon={<Activity size={20} />} label="Fleet Health" active={activeTab === 'health'} onClick={() => setActiveTab('health')} />
           <NavItem icon={<Terminal size={20} />} label="Live Console" active={activeTab === 'console'} onClick={() => setActiveTab('console')} />
           <NavItem icon={<Zap size={20} />} label="Batch Operations" active={activeTab === 'batch'} onClick={() => setActiveTab('batch')} />
+          <NavItem icon={<Github size={20} />} label="GitHub Jobs" active={activeTab === 'github'} onClick={() => setActiveTab('github')} />
           <div className="pt-4 mt-4 border-t border-slate-800">
             <NavItem icon={<Shield size={20} />} label="Security" active={activeTab === 'security'} onClick={() => setActiveTab('security')} />
             <NavItem icon={<Settings size={20} />} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
@@ -357,12 +571,32 @@ function App() {
             <p className="text-slate-400">Real-time fleet orchestration and monitoring</p>
           </div>
           <div className="flex gap-3">
-            <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-sm font-medium text-emerald-400">System Online</span>
+            <div className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${wsConnected ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
+              <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+              <span className={`text-sm font-medium ${wsConnected ? 'text-emerald-400' : 'text-rose-400'}`}>{wsConnected ? 'Live Updates' : 'Reconnecting...'}</span>
+            </div>
+            <div className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg">
+              <p className="text-xs text-slate-400">Git Branch</p>
+              <p className="text-sm text-white font-mono">{gitStatus.branch || '---'}</p>
+            </div>
+            <div className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg">
+              <p className="text-xs text-slate-400">Batches</p>
+              <p className="text-sm text-white font-mono">{batchSummary.batches_completed ?? 0}/{batchSummary.batches_submitted ?? 0}</p>
             </div>
           </div>
         </header>
+
+        {apiError && (
+          <div className="mb-6 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-100 flex items-center justify-between">
+            <span className="text-sm font-medium">API unreachable. Base URL: {API_BASE}</span>
+            <button
+              onClick={() => fetchData()}
+              className="px-3 py-1 text-xs font-semibold bg-amber-500/20 border border-amber-500/50 rounded hover:bg-amber-500/30 transition"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {activeTab === 'overview' && (
           <>
@@ -434,6 +668,58 @@ function App() {
               </section>
             </div>
           </>
+        )}
+
+        {activeTab === 'github' && (
+          <div className="space-y-6">
+            <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Recent GitHub Jobs ({githubJobs.length})</h3>
+                  <p className="text-sm text-slate-400">Webhook/poller events processed through GitHub App pipeline</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-800/30">
+                      <th className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500">ID</th>
+                      <th className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500">SHA</th>
+                      <th className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500">Delivery</th>
+                      <th className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
+                      <th className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500">OpenAI</th>
+                      <th className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-slate-500">Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {githubJobs.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-3 py-4 text-center text-slate-500">No jobs yet</td>
+                      </tr>
+                    )}
+                    {githubJobs.map(job => (
+                      <tr key={job.id} className="border-b border-slate-800/60">
+                        <td className="px-3 py-2 font-mono text-sm text-indigo-300">{job.id}</td>
+                        <td className="px-3 py-2 font-mono text-xs text-slate-300">{job.sha || '—'}</td>
+                        <td className="px-3 py-2 text-slate-300">{job.delivery}</td>
+                        <td className="px-3 py-2">
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${
+                            job.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' :
+                            job.status === 'failed' ? 'bg-rose-500/10 text-rose-400' :
+                            'bg-slate-500/10 text-slate-300'
+                          }`}>
+                            {job.status || 'queued'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-slate-300">{job.openai_status || '—'}</td>
+                        <td className="px-3 py-2 text-slate-400 text-xs">{job.updated || job.created}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
         )}
 
         {activeTab === 'tasks' && (
@@ -644,11 +930,13 @@ function App() {
             <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Auto-Batch Monitor</h3>
-                  <p className="text-sm text-slate-400 mt-1">Automatically submit batches when 3+ eligible tasks detected</p>
+                  <h3 className="text-lg font-semibold text-white">Hub Auto-Batch (lightweight)</h3>
+                  <p className="text-sm text-slate-400 mt-1">Hub-driven batching when enough eligible tasks are present</p>
                 </div>
                 <button
                   onClick={toggleAutoMonitor}
+                  title={autoMonitorEnabled ? "Disable auto-batch" : "Enable auto-batch"}
+                  aria-label={autoMonitorEnabled ? "Disable auto-batch" : "Enable auto-batch"}
                   className={`relative w-14 h-7 rounded-full transition-colors ${
                     autoMonitorEnabled ? 'bg-indigo-600' : 'bg-slate-700'
                   }`}
@@ -657,6 +945,122 @@ function App() {
                     autoMonitorEnabled ? 'right-1' : 'left-1'
                   }`} />
                 </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Min Tasks to Trigger</p>
+                  <input
+                    type="number"
+                    min={1}
+                    value={batchMinTasks}
+                    onChange={(e) => setBatchMinTasks(Number(e.target.value))}
+                    onBlur={(e) => updateConfig('batch_monitor_min_tasks', Math.max(1, Number(e.target.value) || 1))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-emerald-400 font-mono"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Max Tasks per Batch</p>
+                  <input
+                    type="number"
+                    min={1}
+                    value={batchMaxTasks}
+                    onChange={(e) => setBatchMaxTasks(Number(e.target.value))}
+                    onBlur={(e) => updateConfig('batch_monitor_max_tasks', Math.max(1, Number(e.target.value) || 1))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-emerald-400 font-mono"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Batch Monitor Daemon</h3>
+                  <p className="text-sm text-slate-400 mt-1">Settings for scripts/batch_monitor.py (event-driven watcher)</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-sm text-slate-400">Dry Run</div>
+                  <button
+                    onClick={() => {
+                      setBatchMonitorDryRun(!batchMonitorDryRun);
+                      updateConfig('batch_monitor_dry_run', !batchMonitorDryRun);
+                    }}
+                    title={batchMonitorDryRun ? "Disable dry run" : "Enable dry run"}
+                    aria-label={batchMonitorDryRun ? "Disable dry run" : "Enable dry run"}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${batchMonitorDryRun ? 'bg-amber-500' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${batchMonitorDryRun ? 'right-1' : 'left-1'}`} />
+                  </button>
+                  <div className="text-sm text-slate-400 ml-4">Enable</div>
+                  <button
+                    onClick={() => {
+                      setBatchMonitorEnabled(!batchMonitorEnabled);
+                      updateConfig('batch_monitor_enabled', !batchMonitorEnabled);
+                    }}
+                    title={batchMonitorEnabled ? "Disable batch monitor" : "Enable batch monitor"}
+                    aria-label={batchMonitorEnabled ? "Disable batch monitor" : "Enable batch monitor"}
+                    className={`relative w-14 h-7 rounded-full transition-colors ${batchMonitorEnabled ? 'bg-indigo-600' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${batchMonitorEnabled ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-6">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Max Tasks per Batch</p>
+                  <input
+                    type="number"
+                    min={1}
+                    value={batchTasksPerBatch}
+                    onChange={(e) => setBatchTasksPerBatch(Number(e.target.value))}
+                    onBlur={(e) => updateConfig('batch_monitor_max_tasks_per_batch', Math.max(1, Number(e.target.value) || 1))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-emerald-400 font-mono"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Max Concurrent Batches</p>
+                  <input
+                    type="number"
+                    min={1}
+                    value={batchMaxConcurrent}
+                    onChange={(e) => setBatchMaxConcurrent(Number(e.target.value))}
+                    onBlur={(e) => updateConfig('batch_monitor_max_concurrent', Math.max(1, Number(e.target.value) || 1))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-emerald-400 font-mono"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Idle Scan Interval (s)</p>
+                  <input
+                    type="number"
+                    min={5}
+                    value={batchScanInterval}
+                    onChange={(e) => setBatchScanInterval(Number(e.target.value))}
+                    onBlur={(e) => updateConfig('batch_monitor_scan_interval', Math.max(5, Number(e.target.value) || 5))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-emerald-400 font-mono"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Batch Check Interval (s)</p>
+                  <input
+                    type="number"
+                    min={10}
+                    value={batchCheckInterval}
+                    onChange={(e) => setBatchCheckInterval(Number(e.target.value))}
+                    onBlur={(e) => updateConfig('batch_monitor_check_interval', Math.max(10, Number(e.target.value) || 10))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-emerald-400 font-mono"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Min Tasks to Trigger</p>
+                  <input
+                    type="number"
+                    min={1}
+                    value={batchMinTasks}
+                    onChange={(e) => setBatchMinTasks(Number(e.target.value))}
+                    onBlur={(e) => updateConfig('batch_monitor_min_tasks', Math.max(1, Number(e.target.value) || 1))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-emerald-400 font-mono"
+                  />
+                </div>
               </div>
             </section>
 
@@ -694,6 +1098,54 @@ function App() {
                     ))}
                   </div>
                 )}
+              </div>
+            </section>
+
+            <section className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Git Sync</h3>
+                  <p className="text-sm text-slate-400">Manual sync via GitHub App</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`${API_BASE}/git/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ push: false })});
+                        const data = await res.json();
+                        if (!data.ok) throw new Error(data.error || 'Sync failed');
+                        setToast({ message: 'Git pull complete', color: 'bg-emerald-600' });
+                        fetchData();
+                      } catch (err: unknown) {
+                        setToast({ message: getErrorMessage(err) || 'Git sync failed', color: 'bg-rose-600' });
+                      }
+                    }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                  >Pull</button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`${API_BASE}/git/sync`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ push: true })});
+                        const data = await res.json();
+                        if (!data.ok) throw new Error(data.error || 'Sync failed');
+                        setToast({ message: 'Git pull+push complete', color: 'bg-emerald-600' });
+                        fetchData();
+                      } catch (err: unknown) {
+                        setToast({ message: getErrorMessage(err) || 'Git sync failed', color: 'bg-rose-600' });
+                      }
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+                  >Pull & Push</button>
+                </div>
+              </div>
+              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Branch</p>
+                <p className="font-mono text-white text-sm mb-4">{gitStatus.branch || '---'}</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Working Tree</p>
+                <pre className="bg-slate-900 border border-slate-800 rounded p-3 text-xs text-emerald-300 max-h-32 overflow-auto">
+                  {(gitStatus.status || []).join('\n') || 'Clean'}
+                </pre>
+                {gitStatus.error && <p className="text-rose-400 text-sm mt-2">{gitStatus.error}</p>}
               </div>
             </section>
           </div>

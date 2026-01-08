@@ -54,6 +54,12 @@ venv/
 env/
 .venv_wsl_backup/
 
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # Build/Distribution
 dist/
 build/
