@@ -1,0 +1,27 @@
+{
+  "name": "dance_bot",
+  "version": "0.1.0",
+  "description": "Wizard101 Pet Dance minigame automation",
+  "entry": "plugin.py",
+  "enabled": true,
+  "dependencies": ["game_automation"],
+  "tasks": ["AAS-014"],
+  "ipc_commands": [
+    "dance.start",
+    "dance.stop",
+    "dance.calibrate"
+  ],
+  "config_schema": {
+    "difficulty": {
+      "type": "string",
+      "default": "easy",
+      "options": ["easy", "medium", "hard"],
+      "description": "Dance game difficulty level"
+    },
+    "auto_retry": {
+      "type": "boolean",
+      "default": true,
+      "description": "Automatically retry on failure"
+    }
+  }
+}

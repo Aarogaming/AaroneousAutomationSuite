@@ -1,0 +1,26 @@
+{
+  "name": "game_automation",
+  "version": "0.1.0",
+  "description": "Unified Wizard101 game automation via Project Maelstrom integration",
+  "entry": "plugin.py",
+  "enabled": true,
+  "dependencies": ["wizwalker"],
+  "ipc_commands": [
+    "game.move_to",
+    "game.follow_route",
+    "game.send_key",
+    "game.get_position"
+  ],
+  "config_schema": {
+    "wizard_speed": {
+      "type": "float",
+      "default": 580.0,
+      "description": "Movement speed for pathfinding"
+    },
+    "logging_enabled": {
+      "type": "boolean", 
+      "default": true,
+      "description": "Enable verbose logging"
+    }
+  }
+}
