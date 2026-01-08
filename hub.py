@@ -5,9 +5,15 @@ import uvicorn
 import os
 import threading
 import webbrowser
+import contextlib
+import signal
+import atexit
 from loguru import logger
 from typing import Optional
 from pathlib import Path
+import hashlib
+import json
+import time
 from core.config import load_config
 from core.ipc_server import serve_ipc
 from core.web_server import create_app
@@ -204,6 +210,12 @@ async def main():
 
     # Configure logging (console + rotating file)
     log_file = Path("artifacts/hub.log")
+    try:
+        # If log file is locked, fall back to a unique name
+        test_handle = open(log_file, "a", encoding="utf-8")
+        test_handle.close()
+    except Exception:
+        log_file = Path(f"artifacts/hub_{int(time.time())}.log")
     log_file.parent.mkdir(parents=True, exist_ok=True)
     logger.remove()
     log_format = "{time:YYYY-MM-DD HH:mm:ss} | {level:<8} | {message}"
@@ -227,6 +239,9 @@ async def main():
         web_port = 8000
     preflight = run_preflight(config=config, workspace_root=Path.cwd(), web_host=web_host, web_port=web_port)
     preflight.log()
+    if os.getenv("AAS_FORCE_PYTHON"):
+        preflight.needs_reexec = False
+
     if preflight.needs_reexec and preflight.preferred_python and not os.getenv("AAS_PREFLIGHT_REEXEC"):
         try:
             new_env = os.environ.copy()
@@ -244,8 +259,80 @@ async def main():
     config.ipc_port = preflight.ipc_port
     resolved_ipc_ports = preflight.ipc_ports
 
-    # 1b. Write PID file for unified start/stop tooling
+    # 1c. Persist runtime metadata for discovery (tray/dashboard/tests)
+    try:
+        runtime_file = Path("artifacts/runtime.json")
+        runtime_file.parent.mkdir(parents=True, exist_ok=True)
+        runtime = {
+            "web_host": web_host,
+            "web_port": web_port,
+            "ws_url": f"ws://{web_host}:{web_port}/ws/events",
+            "ipc_ports": resolved_ipc_ports,
+            "ipc_port": preflight.ipc_port,
+            "venv": sys.executable,
+            "env": {
+                "AAS_WEB_HOST": os.getenv("AAS_WEB_HOST"),
+                "AAS_WEB_PORT": os.getenv("AAS_WEB_PORT"),
+                "AAS_GRPC_PORT": os.getenv("AAS_GRPC_PORT"),
+            },
+            "pid_file": str(Path("artifacts/hub.pid").resolve()),
+        }
+        runtime_file.write_text(json.dumps(runtime, indent=2), encoding="utf-8")
+    except Exception as e:
+        logger.warning(f"Failed to write runtime metadata: {e}")
+
+    # 1b. Single-instance guard + PID file for unified start/stop tooling
+    def _pid_alive(pid: int) -> bool:
+        try:
+            if os.name == 'nt':
+                # Windows-specific check
+                import ctypes
+                PROCESS_QUERY_INFORMATION = 0x0400
+                PROCESS_VM_READ = 0x0010
+                handle = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, pid)
+                if handle == 0:
+                    return False
+                ctypes.windll.kernel32.CloseHandle(handle)
+                return True
+            else:
+                os.kill(pid, 0)
+                return True
+        except Exception:
+            return False
+
     pid_file = Path("artifacts/hub.pid")
+    if pid_file.exists():
+        try:
+            existing = int(pid_file.read_text(encoding="utf-8").strip())
+            if existing and existing != os.getpid() and _pid_alive(existing):
+                logger.critical(f"Another Hub appears to be running (PID {existing}); aborting startup.")
+                # Auto-recovery: if it's a stale PID file, we'll overwrite it later
+                # but if it's actually alive, we must stop.
+                return
+        except Exception:
+            # Corrupt PID file, safe to ignore and overwrite
+            pass
+    
+    # Register cleanup handlers for PID file
+    def cleanup_pid_file():
+        try:
+            current_pid = str(os.getpid())
+            if pid_file.exists() and pid_file.read_text(encoding="utf-8").strip() == current_pid:
+                pid_file.unlink()
+                logger.debug("Cleaned up PID file")
+        except Exception as e:
+            logger.warning(f"Failed to clean up PID file: {e}")
+    
+    def signal_handler(signum, frame):
+        logger.info(f"Received signal {signum}, cleaning up...")
+        cleanup_pid_file()
+        sys.exit(0)
+    
+    # Register cleanup on normal exit and signals
+    atexit.register(cleanup_pid_file)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     try:
         pid_file.write_text(str(os.getpid()), encoding="utf-8")
         logger.debug(f"Wrote PID file to {pid_file}")
@@ -255,6 +342,34 @@ async def main():
     # 2. Initialize Manager Hub (Unified access to all managers)
     from core.managers import ManagerHub
     hub = ManagerHub.create(config=config)
+    # Initialize GitHub integration (webhooks/poller/openai reconcile)
+    try:
+        from core.github_integration import GitHubIntegration
+        hub.github = GitHubIntegration(db_path="artifacts/github/github_events.db", ws_manager=hub.ws)
+    except Exception as e:
+        hub.github = None
+        logger.warning(f"GitHub integration not initialized: {e}")
+    # Git sync helper (manual trigger)
+    try:
+        from core.git_sync import GitSync
+        hub.git_sync = GitSync(repo_path=str(Path.cwd()), ws_manager=hub.ws)
+    except Exception as e:
+        hub.git_sync = None
+        logger.warning(f"Git sync not initialized: {e}")
+    # Log GitHub App env readiness
+    missing_env = []
+    for var in ["GITHUB_APP_ID", "GITHUB_APP_INSTALLATION_ID", "GITHUB_APP_PRIVATE_KEY"]:
+        if not os.getenv(var):
+            missing_env.append(var)
+    if missing_env:
+        logger.warning(f"GitHub App sync env vars missing: {', '.join(missing_env)}")
+    # Initialize GitHub integration (webhooks/poller/openai reconcile)
+    try:
+        from core.github_integration import GitHubIntegration
+        hub.github = GitHubIntegration(db_path="artifacts/github/github_events.db", ws_manager=hub.ws)
+    except Exception as e:
+        hub.github = None
+        logger.warning(f"GitHub integration not initialized: {e}")
     
     # 3. Initialize Task CLI
     task_cli = TaskCLI(hub.tasks)
@@ -442,6 +557,112 @@ async def main():
 
             else:
                 print(f"\n❌ Unknown workspace command: {subcmd}\n")
+            
+            return
+        
+        # Game Mode management
+        if cmd == "game":
+            if len(sys.argv) < 3:
+                print("\n🎮 Game Mode Management\n")
+                print("Available commands:")
+                print("  enter        - Activate game mode (starts Maelstrom + trainers)")
+                print("  exit         - Deactivate game mode (graceful shutdown)")
+                print("  toggle       - Toggle game mode on/off")
+                print("  status       - Show current game mode status")
+                print("  configure    - Show/set game mode configuration\n")
+                print("Usage: python hub.py game <command>\n")
+                return
+            
+            subcmd = sys.argv[2].lower()
+            
+            if subcmd == "enter":
+                print("\n🎮 Entering Game Mode...")
+                success = await hub.game_mode.enter()
+                if success:
+                    print("✓ Game Mode ACTIVE")
+                    status = hub.game_mode.get_status()
+                    if status.get("session"):
+                        print(f"  Session started: {status['session'].get('started_at', 'now')}")
+                    print("  Maelstrom: starting...")
+                    print("  Trainers: enabled\n")
+                else:
+                    state = hub.game_mode.get_status().get("state", "UNKNOWN")
+                    print(f"❌ Failed to enter game mode (current state: {state})\n")
+            
+            elif subcmd == "exit":
+                print("\n🎮 Exiting Game Mode...")
+                success = await hub.game_mode.exit()
+                if success:
+                    print("✓ Game Mode INACTIVE")
+                    print("  Maelstrom: stopped")
+                    print("  Trainers: disabled\n")
+                else:
+                    state = hub.game_mode.get_status().get("state", "UNKNOWN")
+                    print(f"❌ Failed to exit game mode (current state: {state})\n")
+            
+            elif subcmd == "toggle":
+                status = hub.game_mode.get_status()
+                current = status.get("state", "INACTIVE")
+                print(f"\n🎮 Toggling Game Mode (current: {current})...")
+                success = await hub.game_mode.toggle()
+                new_status = hub.game_mode.get_status()
+                new_state = new_status.get("state", "UNKNOWN")
+                print(f"✓ Game Mode now: {new_state}\n")
+            
+            elif subcmd == "status":
+                status = hub.game_mode.get_status()
+                state = status.get("state", "INACTIVE")
+                config = status.get("config", {})
+                session = status.get("session")
+                
+                print(f"\n🎮 GAME MODE STATUS")
+                print("=" * 50)
+                print(f"State:          {state}")
+                print(f"Idle Timeout:   {config.get('idle_timeout_minutes', 30)} minutes")
+                print(f"Auto-detect:    {'Yes' if config.get('auto_detect_game') else 'No'}")
+                print(f"Start Maelstrom:{' Yes' if config.get('start_maelstrom', True) else ' No'}")
+                
+                if session:
+                    print("-" * 50)
+                    print(f"Session Start:  {session.get('started_at', 'Unknown')}")
+                    print(f"Last Activity:  {session.get('last_activity', 'None')}")
+                    print(f"Commands Exec:  {session.get('commands_executed', 0)}")
+                    print(f"Trainers Run:   {session.get('trainers_started', 0)}")
+                print("=" * 50 + "\n")
+            
+            elif subcmd == "configure":
+                if len(sys.argv) < 4:
+                    print("\nUsage: python hub.py game configure <key> <value>")
+                    print("\nConfigurable keys:")
+                    print("  idle_timeout_minutes  - Minutes before auto-exit (0 = disabled)")
+                    print("  auto_detect_game      - true/false")
+                    print("  start_maelstrom       - true/false")
+                    print("  enable_trainers       - true/false\n")
+                    return
+                
+                key = sys.argv[3]
+                value = sys.argv[4] if len(sys.argv) > 4 else None
+                
+                if value is None:
+                    current = getattr(hub.game_mode.config, key, "Not found")
+                    print(f"\n{key} = {current}\n")
+                else:
+                    # Parse value
+                    if value.lower() in {"true", "yes", "1"}:
+                        parsed = True
+                    elif value.lower() in {"false", "no", "0"}:
+                        parsed = False
+                    else:
+                        try:
+                            parsed = int(value)
+                        except ValueError:
+                            parsed = value
+                    
+                    hub.game_mode.configure(**{key: parsed})
+                    print(f"\n✓ Set {key} = {parsed}\n")
+            
+            else:
+                print(f"\n❌ Unknown game command: {subcmd}\n")
             
             return
         
@@ -647,26 +868,128 @@ async def main():
     if hub.batch_manager:
         async def run_batch_monitor():
             """Background task to monitor and auto-submit batch jobs (checks config on each iteration)."""
-            logger.info("Starting background batch monitor (60s scan interval, toggle-enabled)")
+            logger.info("Starting background batch monitor (config-driven intervals, toggle-enabled)")
+            error_backoff = 60
             while True:
                 try:
-                    await asyncio.sleep(60)  # Check every minute
-                    
                     # Check if auto-monitor is enabled (allows runtime toggling)
                     if not hub.config.batch_auto_monitor:
+                        await asyncio.sleep(10)
                         continue
+
+                    interval = max(5, int(getattr(hub.config, "batch_monitor_scan_interval", 60)))
+                    active_batches = []
+                    with contextlib.suppress(Exception):
+                        active_batches = hub.batch_manager.list_active_batches()
+                    
+                    # When batches exist, use the tighter check interval if configured
+                    if active_batches:
+                        interval = min(
+                            interval,
+                            max(5, int(getattr(hub.config, "batch_monitor_check_interval", interval)))
+                        )
                     
                     # Find eligible unbatched tasks (scan up to 50)
-                    unbatched = hub.tasks.find_unbatched_tasks(max_count=50)
-                    if len(unbatched) >= 3:  # Batch aggressively when 3+ tasks available
+                    max_tasks = max(1, int(getattr(hub.config, "batch_monitor_max_tasks", 50)))
+                    min_tasks = max(1, int(getattr(hub.config, "batch_monitor_min_tasks", 3)))
+                    unbatched = hub.tasks.find_unbatched_tasks(max_count=max_tasks)
+                    
+                    if len(unbatched) >= min_tasks:  # Batch when threshold is met
                         logger.info(f"Found {len(unbatched)} unbatched tasks - auto-submitting (≤24h completion)")
-                        batch_id = await hub.tasks.batch_multiple_tasks(max_tasks=50)
+                        batch_id = await hub.tasks.batch_multiple_tasks(max_tasks=max_tasks)
                         if batch_id:
                             logger.success(f"Auto-submitted batch: {batch_id} ({len(unbatched)} tasks)")
+                        error_backoff = 60  # reset after success
+                    
+                    await asyncio.sleep(interval)
                 except Exception as e:
                     logger.error(f"Batch monitor error: {e}")
+                    # Back off to avoid log spam when API rejects (e.g., archived project / 401)
+                    await asyncio.sleep(error_backoff)
+                    error_backoff = min(error_backoff * 2, 600)
         
         batch_monitor_task = asyncio.create_task(run_batch_monitor())
+
+    # 6. Health/agent broadcaster for WebSocket clients (push vs. polling)
+    async def run_ws_broadcaster():
+        last_health_hash = None
+        last_agents_hash = None
+        while True:
+            try:
+                await asyncio.sleep(15)
+                if not hub.ws:
+                    continue
+                health = hub.get_health_summary()
+                agents = hub.collaboration.get_active_agents()
+                # Hash payloads to avoid spam
+                h_bytes = json.dumps(health, sort_keys=True).encode()
+                a_bytes = json.dumps(agents, sort_keys=True).encode()
+                health_hash = hashlib.sha256(h_bytes).hexdigest()
+                agents_hash = hashlib.sha256(a_bytes).hexdigest()
+                if health_hash != last_health_hash:
+                    last_health_hash = health_hash
+                    await hub.ws.broadcast({"event_type": "HEALTH_UPDATE", "payload": health})
+                if agents_hash != last_agents_hash:
+                    last_agents_hash = agents_hash
+                    await hub.ws.broadcast({"event_type": "AGENT_UPDATE", "payload": agents})
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.debug(f"WS broadcaster error: {e}")
+        logger.info("WS broadcaster stopped")
+
+    ws_broadcast_task = asyncio.create_task(run_ws_broadcaster())
+
+    # 7. GitHub poller + OpenAI reconcile (if configured)
+    async def run_github_loop():
+        if not getattr(hub, "github", None):
+            return
+        poll_interval = int(os.getenv("GITHUB_POLL_INTERVAL_SECONDS", "300"))
+        owner = os.getenv("GITHUB_OWNER")
+        repo = os.getenv("GITHUB_REPO")
+        token = os.getenv("GITHUB_TOKEN")
+        branch = os.getenv("GITHUB_BRANCH", "main")
+        api_key = os.getenv("OPENAI_API_KEY")
+        model = os.getenv("OPENAI_MODEL", "gpt-4.1")
+        while True:
+            try:
+                # Poll GitHub if enabled
+                if owner and repo and _is_automation_enabled(hub.github, "github.poller"):
+                    await hub.github.poll_and_enqueue(owner, repo, token, branch)
+                # Submit queued jobs to OpenAI if automation enabled
+                if api_key and _is_automation_enabled(hub.github, "openai.analysis"):
+                    await hub.github.submit_openai_jobs(api_key=api_key, model=model)
+                    await hub.github.reconcile_openai(api_key=api_key)
+            except Exception as e:
+                logger.debug(f"GitHub loop error: {e}")
+            await asyncio.sleep(min(60, poll_interval))
+
+    def _is_automation_enabled(github_integration, automation_id: str) -> bool:
+        try:
+            with github_integration._connect() as conn:
+                row = conn.execute("SELECT enabled FROM automations WHERE id=?", (automation_id,)).fetchone()
+                return bool(row and row[0])
+        except Exception:
+            return False
+
+    github_task = asyncio.create_task(run_github_loop())
+
+    # 8. Game Mode idle timeout monitor
+    async def run_game_mode_monitor():
+        """Background task to check game mode idle timeout."""
+        logger.debug("Game Mode monitor started")
+        while True:
+            try:
+                await asyncio.sleep(60)  # Check every minute
+                if hub.game_mode._state.name == "ACTIVE":
+                    await hub.game_mode._check_idle_timeout()
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.debug(f"Game mode monitor error: {e}")
+        logger.debug("Game Mode monitor stopped")
+
+    game_mode_task = asyncio.create_task(run_game_mode_monitor())
     
     logger.success(f"AAS Hub is now running (IPC candidates: {ipc_ports}, Web: {web_host}:{web_port})")
     if batch_monitor_task:
@@ -675,7 +998,7 @@ async def main():
 
     
     try:
-        tasks = [ipc_task, web_server.serve()]
+        tasks = [ipc_task, web_server.serve(), ws_broadcast_task, github_task, game_mode_task]
         if batch_monitor_task:
             tasks.append(batch_monitor_task)
         await asyncio.gather(*tasks)
@@ -683,6 +1006,13 @@ async def main():
         logger.info("AAS Hub shutting down...")
         if batch_monitor_task:
             batch_monitor_task.cancel()
+        ws_broadcast_task.cancel()
+        github_task.cancel()
+        game_mode_task.cancel()
+        # Gracefully exit game mode if active
+        if hub.game_mode._state.name == "ACTIVE":
+            logger.info("Exiting Game Mode before shutdown...")
+            await hub.game_mode.exit()
     finally:
         if 'pid_file' in locals():
             try:

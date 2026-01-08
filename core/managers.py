@@ -21,6 +21,7 @@ class ManagerHub:
         self._database_manager = None
         self._workspace_manager = None
         self._collaboration_manager = None
+        self._game_mode_manager = None
     
     @classmethod
     def create(cls, config: Optional[AASConfig] = None):
@@ -30,12 +31,11 @@ class ManagerHub:
     @property
     def tasks(self):
         if self._task_manager is None:
-            from core.handoff.task_manager import TaskManager
+            from core.task_manager import TaskManager
             self._task_manager = TaskManager(
                 config=self.config, 
                 db=self.db, 
                 workspace=self.workspace, 
-                handoff=self.handoff,
                 batch=self._batch_manager,
                 ws=self.ws
             )
@@ -45,10 +45,8 @@ class ManagerHub:
     
     @property
     def handoff(self):
-        if self._handoff_manager is None:
-            from core.handoff_manager import HandoffManager
-            self._handoff_manager = HandoffManager(config=self.config)
-        return self._handoff_manager
+        """Deprecated: Use .tasks instead."""
+        return self.tasks
     
     @property
     def batch_manager(self):
@@ -184,9 +182,30 @@ class ManagerHub:
             self._patch_manager = PatchManager(hub=self)
         return self._patch_manager
 
+    @property
+    def game_mode(self):
+        """Game Mode manager for on-demand Maelstrom/game automation lifecycle."""
+        if self._game_mode_manager is None:
+            from core.game_mode import GameModeManager
+            self._game_mode_manager = GameModeManager(hub=self)
+        return self._game_mode_manager
+
     def get_health_summary(self) -> dict:
         """Returns a combined health summary from all managers."""
-        return self.health_aggregator.scan()
+        summary = self.health_aggregator.scan()
+        # Inject game mode status
+        try:
+            gm_status = self.game_mode.get_status()
+            summary["metrics"]["game_mode"] = {
+                "active": gm_status.get("state") == "ACTIVE",
+                "state": gm_status.get("state", "INACTIVE"),
+                "session": gm_status.get("session"),
+            }
+            summary["components"]["game_mode"] = "active" if gm_status.get("state") == "ACTIVE" else "inactive"
+        except Exception:
+            summary["metrics"]["game_mode"] = {"active": False, "state": "INACTIVE"}
+            summary["components"]["game_mode"] = "inactive"
+        return summary
 
     def validate_all(self) -> dict:
         """Validates all managers."""
