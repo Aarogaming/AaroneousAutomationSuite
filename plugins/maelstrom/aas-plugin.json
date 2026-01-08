@@ -1,0 +1,48 @@
+{
+  "name": "maelstrom",
+  "display_name": "Project Maelstrom",
+  "version": "0.1.0",
+  "description": "Bridge to Project Maelstrom C# game client for Wizard101 automation",
+  "author": "AAS Team",
+  "entry": "plugin.py",
+  "dependencies": ["game_automation"],
+  "capabilities": [
+    "game_bridge",
+    "input_injection",
+    "screen_capture",
+    "ocr",
+    "template_matching"
+  ],
+  "config_schema": {
+    "maelstrom_root": {
+      "type": "string",
+      "description": "Path to Maelstrom installation",
+      "default": null
+    },
+    "maelstrom_start_cmd": {
+      "type": "string",
+      "description": "Command to launch Maelstrom",
+      "default": null
+    },
+    "auto_launch": {
+      "type": "boolean",
+      "description": "Auto-start Maelstrom with Hub",
+      "default": false
+    },
+    "snapshot_interval_ms": {
+      "type": "integer",
+      "description": "Game state snapshot interval",
+      "default": 100
+    }
+  },
+  "ipc_commands": [
+    "maelstrom.status",
+    "maelstrom.start",
+    "maelstrom.stop",
+    "maelstrom.restart",
+    "maelstrom.snapshot",
+    "maelstrom.plugins.list",
+    "maelstrom.plugins.enable",
+    "maelstrom.plugins.disable"
+  ]
+}
