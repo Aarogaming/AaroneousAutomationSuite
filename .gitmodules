@@ -1,0 +1,18 @@
+[submodule "AndroidApp"]
+	path = AndroidApp
+	url = https://github.com/Aarogaming/AndroidApp.git
+[submodule "Merlin"]
+	path = Merlin
+	url = https://github.com/Aarogaming/Merlin.git
+[submodule "MyFortress"]
+	path = MyFortress
+	url = https://github.com/Aarogaming/MyFortress.git
+[submodule "Maelstrom"]
+	path = Maelstrom
+	url = https://github.com/Aarogaming/Maelstrom.git
+[submodule "Library"]
+	path = Library
+	url = https://github.com/Aarogaming/Library.git
+[submodule "Workbench"]
+	path = Workbench
+	url = https://github.com/Aarogaming/Workbench.git
