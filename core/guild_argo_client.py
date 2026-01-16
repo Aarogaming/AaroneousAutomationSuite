@@ -41,11 +41,11 @@ class TaskResult:
 class ARGOClient:
     """
     Client for interacting with ARGO agent runtime.
-    
+
     ARGO provides task decomposition, autonomous execution, and memory
     persistence for complex multi-step goals.
     """
-    
+
     def __init__(
         self,
         model_endpoint: str = "http://localhost:11434",
@@ -55,7 +55,7 @@ class ARGOClient:
     ):
         """
         Initialize ARGO client.
-        
+
         Args:
             model_endpoint: Ollama or LocalAI endpoint URL
             memory_path: Directory for persistent memory storage
@@ -66,11 +66,11 @@ class ARGOClient:
         self.memory_path = Path(memory_path)
         self.max_iterations = max_iterations
         self.tool_registry = tool_registry or {}
-        
+
         # Ensure memory path exists
         self.memory_path.mkdir(parents=True, exist_ok=True)
         logger.info(f"ARGO client initialized with memory at {self.memory_path}")
-    
+
     async def decompose_task(
         self,
         task: str,
@@ -78,20 +78,20 @@ class ARGOClient:
     ) -> List[Subtask]:
         """
         Decompose a high-level task into subtasks.
-        
+
         Args:
             task: High-level task description
             constraints: Optional constraints (max_subtasks, time_limit, etc.)
-        
+
         Returns:
             List of Subtask objects
         """
         logger.info(f"Decomposing task: {task}")
         constraints = constraints or {}
-        
+
         # Build prompt for task decomposition
         prompt = self._build_decomposition_prompt(task, constraints)
-        
+
         # Query model
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:
@@ -105,40 +105,40 @@ class ARGOClient:
                 )
                 response.raise_for_status()
                 result = response.json()
-                
+
                 # Parse response into subtasks
                 subtasks = self._parse_subtasks(result["response"])
-                
+
                 # Store in memory
                 self._save_to_memory("decomposition", {
                     "task": task,
                     "constraints": constraints,
                     "subtasks": [vars(st) for st in subtasks]
                 })
-                
+
                 logger.info(f"Decomposed into {len(subtasks)} subtasks")
                 return subtasks
-                
+
             except httpx.HTTPError as e:
                 logger.error(f"Failed to decompose task: {e}")
                 raise
-    
+
     async def execute_subtask(self, subtask: Subtask) -> TaskResult:
         """
         Execute a single subtask using available tools.
-        
+
         Args:
             subtask: Subtask to execute
-        
+
         Returns:
             TaskResult with execution details
         """
         logger.info(f"Executing subtask: {subtask.title}")
         start_time = asyncio.get_event_loop().time()
-        
+
         # Build execution prompt
         prompt = self._build_execution_prompt(subtask)
-        
+
         # Execute with model
         async with httpx.AsyncClient(timeout=120.0) as client:
             try:
@@ -152,9 +152,9 @@ class ARGOClient:
                 )
                 response.raise_for_status()
                 result = response.json()
-                
+
                 execution_time = asyncio.get_event_loop().time() - start_time
-                
+
                 # Parse execution result
                 task_result = TaskResult(
                     subtask_id=subtask.id,
@@ -164,16 +164,16 @@ class ARGOClient:
                     errors=[],
                     execution_time=execution_time
                 )
-                
+
                 # Store in memory
                 self._save_to_memory("execution", {
                     "subtask_id": subtask.id,
                     "result": vars(task_result)
                 })
-                
+
                 logger.info(f"Subtask completed in {execution_time:.2f}s")
                 return task_result
-                
+
             except httpx.HTTPError as e:
                 logger.error(f"Failed to execute subtask: {e}")
                 execution_time = asyncio.get_event_loop().time() - start_time
@@ -185,7 +185,7 @@ class ARGOClient:
                     errors=[str(e)],
                     execution_time=execution_time
                 )
-    
+
     async def execute_goal(
         self,
         goal: str,
@@ -193,33 +193,33 @@ class ARGOClient:
     ) -> Dict[str, Any]:
         """
         Execute a high-level goal end-to-end.
-        
+
         Args:
             goal: High-level goal description
             context: Optional context information
-        
+
         Returns:
             Dictionary with execution results
         """
         logger.info(f"Executing goal: {goal}")
-        
+
         # Decompose goal into subtasks
         subtasks = await self.decompose_task(goal)
-        
+
         # Execute each subtask
         results = []
         for subtask in subtasks:
             result = await self.execute_subtask(subtask)
             results.append(result)
-            
+
             # Abort if critical failure
             if result.status == "failure" and not subtask.dependencies:
                 logger.warning(f"Critical subtask failed: {subtask.title}")
                 break
-        
+
         # Synthesize results
         final_result = await self.synthesize_results(results)
-        
+
         return {
             "goal": goal,
             "subtasks": len(subtasks),
@@ -228,31 +228,31 @@ class ARGOClient:
             "output": final_result,
             "results": [vars(r) for r in results]
         }
-    
+
     async def synthesize_results(self, results: List[TaskResult]) -> str:
         """
         Synthesize multiple task results into a coherent summary.
-        
+
         Args:
             results: List of TaskResult objects
-        
+
         Returns:
             Synthesized summary string
         """
         logger.info("Synthesizing results from subtasks")
-        
+
         # Build synthesis prompt
         outputs = "\n\n".join([
             f"Subtask {r.subtask_id}:\n{r.output}"
             for r in results if r.status == "success"
         ])
-        
+
         prompt = f"""Synthesize the following subtask results into a coherent summary:
 
 {outputs}
 
 Provide a comprehensive summary that integrates all completed work."""
-        
+
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:
                 response = await client.post(
@@ -269,7 +269,7 @@ Provide a comprehensive summary that integrates all completed work."""
             except httpx.HTTPError as e:
                 logger.error(f"Failed to synthesize results: {e}")
                 return "Failed to synthesize results."
-    
+
     def _build_decomposition_prompt(
         self,
         task: str,
@@ -278,7 +278,7 @@ Provide a comprehensive summary that integrates all completed work."""
         """Build prompt for task decomposition."""
         max_subtasks = constraints.get("max_subtasks", 5)
         time_limit = constraints.get("time_limit", "unlimited")
-        
+
         return f"""You are a task planning agent. Decompose the following task into clear, actionable subtasks.
 
 Task: {task}
@@ -307,7 +307,7 @@ Format your response as JSON:
   }}
 ]
 """
-    
+
     def _build_execution_prompt(self, subtask: Subtask) -> str:
         """Build prompt for subtask execution."""
         return f"""Execute the following subtask:
@@ -317,7 +317,7 @@ Description: {subtask.description}
 Tools available: {', '.join(subtask.tools_required)}
 
 Provide detailed steps and output for completing this subtask."""
-    
+
     def _parse_subtasks(self, response: str) -> List[Subtask]:
         """Parse model response into Subtask objects."""
         try:
@@ -325,9 +325,9 @@ Provide detailed steps and output for completing this subtask."""
             start = response.find("[")
             end = response.rfind("]") + 1
             json_str = response[start:end]
-            
+
             data = json.loads(json_str)
-            
+
             subtasks = []
             for item in data:
                 subtasks.append(Subtask(
@@ -339,7 +339,7 @@ Provide detailed steps and output for completing this subtask."""
                     has_clear_goal=bool(item.get("description")),
                     tools_required=item.get("tools_required", [])
                 ))
-            
+
             return subtasks
         except (json.JSONDecodeError, ValueError) as e:
             logger.warning(f"Failed to parse subtasks JSON: {e}")
@@ -353,31 +353,31 @@ Provide detailed steps and output for completing this subtask."""
                 has_clear_goal=True,
                 tools_required=[]
             )]
-    
+
     def _save_to_memory(self, category: str, data: Dict[str, Any]) -> None:
         """Save data to persistent memory."""
         memory_file = self.memory_path / f"{category}.jsonl"
-        
+
         with memory_file.open("a") as f:
             f.write(json.dumps(data) + "\n")
-        
+
         logger.debug(f"Saved to memory: {category}")
-    
+
     def load_memory(self, category: str) -> List[Dict[str, Any]]:
         """
         Load all memory entries for a category.
-        
+
         Args:
             category: Memory category (decomposition, execution, etc.)
-        
+
         Returns:
             List of memory entries
         """
         memory_file = self.memory_path / f"{category}.jsonl"
-        
+
         if not memory_file.exists():
             return []
-        
+
         entries = []
         with memory_file.open("r") as f:
             for line in f:
@@ -385,13 +385,13 @@ Provide detailed steps and output for completing this subtask."""
                     entries.append(json.loads(line))
                 except json.JSONDecodeError:
                     continue
-        
+
         return entries
-    
+
     def clear_memory(self, category: Optional[str] = None) -> None:
         """
         Clear memory entries.
-        
+
         Args:
             category: Specific category to clear, or None for all
         """

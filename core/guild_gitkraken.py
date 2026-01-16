@@ -17,7 +17,7 @@ class GitKrakenCLI:
         """Runs a gk command and returns the output."""
         if not os.path.exists(self.gk):
             return None
-            
+
         try:
             result = subprocess.run([self.gk] + args, capture_output=True, text=True, check=True)
             return result.stdout.strip()

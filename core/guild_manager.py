@@ -21,7 +21,7 @@ class HandoffManager:
         self.task_board_path = Path(task_board_path)
         self.artifact_dir = Path(artifact_dir)
         self.artifact_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Initialize batch processor if API keys are available
         self.batch_processor = None
         if config and hasattr(config, 'openai_api_key'):
@@ -33,7 +33,7 @@ class HandoffManager:
                 logger.warning(f"BatchManager not available: {e}")
             except Exception as e:
                 logger.warning(f"Batch processor initialization failed: {e}")
-        
+
         # Try alternative locations if default doesn't exist
         if not self.task_board_path.exists():
             potential_paths = [
@@ -44,7 +44,7 @@ class HandoffManager:
                 if p.exists():
                     self.task_board_path = p
                     break
-        
+
         if not self.task_board_path.exists():
             logger.warning(f"Task board not found at {task_board_path}")
 
@@ -66,7 +66,7 @@ class HandoffManager:
 
         tasks = []
         status_map = {}
-        
+
         # Simple Markdown table parser (tolerates leading/trailing pipes)
         for i, line in enumerate(lines):
             if "|" not in line or "---" in line:
@@ -101,7 +101,7 @@ class HandoffManager:
         """Returns tasks that are queued but have unmet dependencies."""
         lines, tasks, status_map = self.parse_board()
         blocked = []
-        
+
         for t in tasks:
             if t["status"].lower() == "queued" and t["depends_on"] != "-":
                 dep_ids = [d.strip() for d in t["depends_on"].split(",")]
@@ -144,17 +144,17 @@ class HandoffManager:
         """Marks a task as Done in the Markdown board."""
         lines, tasks, _ = self.parse_board()
         target = next((t for t in tasks if t["id"] == task_id), None)
-        
+
         if not target:
             return False
-            
+
         parts = target["parts"]
         parts[4] = "Done"
         import datetime
         parts[7] = datetime.datetime.now().strftime("%Y-%m-%d")
-        
+
         lines[target["index"]] = " | ".join(parts) + "\n"
-        
+
         with open(self.task_board_path, "w", encoding="utf-8") as f:
             f.writelines(lines)
         return True
@@ -218,28 +218,28 @@ class HandoffManager:
                 ]),
                 encoding="utf-8"
             )
-    
+
     async def batch_analyze_queued_tasks(self, urgent: bool = False):
         """Analyze queued tasks using Batch API (50% cost savings)."""
         if not self.batch_processor:
             logger.error("Batch processor not initialized - check OPENAI_API_KEY")
             return {"status": "error", "message": "Batch processor not available"}
-        
+
         lines, tasks, _ = self.parse_board()
         queued = [t for t in tasks if t["status"].lower() == "queued"]
-        
+
         if not queued:
             logger.info("No queued tasks to analyze")
             return {"status": "success", "message": "No queued tasks found", "task_count": 0}
-        
+
         # Smart routing: urgent or single task → sync, otherwise → batch
         if urgent or len(queued) == 1:
             logger.info(f"Using synchronous API (urgent={urgent}, count={len(queued)})")
             # Fall back to sync - would need separate implementation
             return {"status": "error", "message": "Sync analysis not implemented yet"}
-        
+
         logger.info(f"📦 Analyzing {len(queued)} queued tasks via Batch API (50% savings)")
-        
+
         # Build analysis requests
         requests = []
         for task in queued:
@@ -252,7 +252,7 @@ class HandoffManager:
 Task: {task['id']} - {task['title']}
 Current Priority: {task['priority']}
 Status: {task['status']}"""
-            
+
             requests.append({
                 "custom_id": task['id'],
                 "method": "POST",
@@ -263,14 +263,14 @@ Status: {task['status']}"""
                     "max_tokens": 1000
                 }
             })
-        
+
         # Submit batch job using BatchManager's submit_batch
         batch_id = await self.batch_processor.submit_batch(
             requests=requests,
             description=f"Analyze {len(queued)} queued tasks",
             metadata={"operation": "analyze_queued", "task_count": str(len(queued))}
         )
-        
+
         return {
             "status": "submitted",
             "batch_id": batch_id,
@@ -278,20 +278,20 @@ Status: {task['status']}"""
             "tasks_analyzed": [t['id'] for t in queued],
             "message": f"Batch job created - check status with: .venv\\Scripts\\python.exe -c \"from core.batch_manager import BatchManager; from core.config import load_config; bm = BatchManager(load_config()); print(bm.get_batch_status('{batch_id}'))\""
         }
-    
+
     async def batch_classify_all_tasks(self):
         """Classify all tasks into categories using Batch API."""
         if not self.batch_processor:
             logger.error("Batch processor not initialized")
             return {"status": "error", "message": "Batch processor not available"}
-        
+
         lines, tasks, _ = self.parse_board()
-        
+
         if not tasks:
             return {"status": "success", "message": "No tasks to classify", "task_count": 0}
-        
+
         logger.info(f"📦 Classifying {len(tasks)} tasks via Batch API")
-        
+
         requests = []
         for task in tasks:
             prompt = f"""Classify this task into one category:
@@ -304,7 +304,7 @@ Status: {task['status']}"""
 
 Task: {task['title']}
 Provide ONLY the category name."""
-            
+
             requests.append({
                 "custom_id": f"classify_{task['id']}",
                 "method": "POST",
@@ -315,38 +315,38 @@ Provide ONLY the category name."""
                     "max_tokens": 50
                 }
             })
-        
+
         batch_id = await self.batch_processor.submit_batch(
             requests=requests,
             description=f"Classify {len(tasks)} tasks",
             metadata={"operation": "classify_tasks", "task_count": str(len(tasks))}
         )
-        
+
         return {
             "status": "submitted",
             "batch_id": batch_id,
             "task_count": len(tasks)
         }
-    
+
     async def batch_generate_task_descriptions(self):
         """Generate descriptions for tasks with missing descriptions."""
         if not self.batch_processor:
             return {"status": "error", "message": "Batch processor not available"}
-        
+
         lines, tasks, _ = self.parse_board()
         needs_desc = [t for t in tasks if len(t.get('title', '')) < 30]  # Heuristic
-        
+
         if not needs_desc:
             return {"status": "success", "message": "All tasks have descriptions"}
-        
+
         logger.info(f"📦 Generating descriptions for {len(needs_desc)} tasks via Batch API")
-        
+
         requests = []
         for task in needs_desc:
             prompt = f"""Generate a 2-3 sentence description for this task:
 Title: {task['title']}
 Provide technical details and expected outcome."""
-            
+
             requests.append({
                 "custom_id": f"desc_{task['id']}",
                 "method": "POST",
@@ -357,13 +357,13 @@ Provide technical details and expected outcome."""
                     "max_tokens": 500
                 }
             })
-        
+
         batch_id = await self.batch_processor.submit_batch(
             requests=requests,
             description=f"Generate descriptions for {len(needs_desc)} tasks",
             metadata={"operation": "generate_descriptions", "task_count": str(len(needs_desc))}
         )
-        
+
         return {
             "status": "submitted",
             "batch_id": batch_id,

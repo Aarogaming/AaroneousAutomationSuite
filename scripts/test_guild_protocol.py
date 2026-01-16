@@ -5,9 +5,9 @@ from loguru import logger
 
 async def test_handoff_protocol():
     logger.info("Starting Agent Handoff Protocol Test...")
-    
+
     hub = ManagerHub.create()
-    
+
     # 0. Ensure task exists (for foreign key)
     from core.db_repositories import TaskRepository
     with hub.db.get_session() as session:
@@ -24,15 +24,15 @@ async def test_handoff_protocol():
         relevant_files=["core/managers/protocol.py", "core/database/models.py"],
         pending_actions=["Verify with test script", "Add CLI command"]
     )
-    
+
     # 2. Relay the handoff
     logger.info("Relaying handoff...")
     hub.protocol.relay_handoff(handoff)
-    
+
     # 3. Retrieve the handoff
     logger.info("Retrieving handoff context...")
     retrieved = hub.protocol.get_handoff_context("AAS-212")
-    
+
     if retrieved:
         logger.info(f"Retrieved Handoff from {retrieved.source_agent}: {retrieved.context_summary}")
         assert retrieved.source_agent == "Sixth"

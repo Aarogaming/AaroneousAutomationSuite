@@ -443,7 +443,6 @@ namespace Installer
             Controls.Add(installedVersionLabel);
             Controls.Add(statusLabel);
             Controls.Add(updateButton);
-            Controls.Add(launchAppButton);
             Controls.Add(createPortableButton);
             Controls.Add(uninstallButton);
             Controls.Add(installButton);
@@ -496,7 +495,6 @@ namespace Installer
         private Label logPathLabel;
         private Button openInstallFolderButton;
         private Button openLibraryButton;
-        private Button launchAppButton;
         private CheckBox smartPlayInitCheck;
         private Button manualSourceButton;
     }
