@@ -1,0 +1,99 @@
+name: Python CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Detect dashboard changes
+        id: dashdiff
+        run: |
+          git fetch origin main || true
+          if git diff --name-only origin/main...HEAD | grep '^dashboard/' >/dev/null; then echo "changed=true" >> $GITHUB_OUTPUT; else echo "changed=false" >> $GITHUB_OUTPUT; fi
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - name: Cache pytest artifacts
+        uses: actions/cache@v4
+        with:
+          path: .pytest_cache
+          key: ${{ runner.os }}-pytest-${{ hashFiles('requirements.lock', 'tests/**/*.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pytest-
+      - name: Cache npm (dashboard)
+        if: steps.dashdiff.outputs.changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('dashboard/package-lock.json', 'dashboard/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+      - name: Skip dashboard (backend-only)
+        if: steps.dashdiff.outputs.changed != 'true'
+        run: echo "Dashboard unchanged; skipping frontend cache/setup"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.lock
+      - name: Run pip-audit (fast)
+        run: |
+          python -m pip install pip-audit
+          pip-audit -r requirements.lock --progress-spinner off
+      - name: Run pre-commit (changed files)
+        id: precommit
+        continue-on-error: true
+        run: |
+          python -m pip install pre-commit
+          git fetch origin main || true
+          pre-commit run --from-ref origin/main --to-ref HEAD > .git/pre-commit.log 2>&1 || pre-commit run --all-files >> .git/pre-commit.log 2>&1
+          cat .git/pre-commit.log
+        shell: bash
+      - name: Upload pre-commit log
+        if: steps.precommit.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-commit-log
+          path: ./.git/pre-commit.log
+          if-no-files-found: ignore
+      - name: Fail on pre-commit errors
+        if: steps.precommit.outcome == 'failure'
+        run: exit 1
+      - name: Run mypy (strict allowlist)
+        run: |
+          python -m pip install mypy==1.13.0
+          mypy --config-file mypy-strict.ini
+      - name: Verify plugin readiness
+        run: |
+          python scripts/check_plugin_readiness.py
+      - name: Check proto freshness
+        run: |
+          python scripts/check_proto_freshness.py
+      - name: Changed plugins subset
+        run: |
+          python scripts/changed_plugin_tests.py --base origin/main
+      - name: Ensure artifacts dir
+        run: mkdir -p artifacts
+      - name: Run tests
+        run: |
+          pytest --durations=25 --cov=core --cov=plugins --cov-report=term --cov-fail-under=50 | tee artifacts/pytest.log
+      - name: Upload pytest durations
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-log
+          path: artifacts/pytest.log

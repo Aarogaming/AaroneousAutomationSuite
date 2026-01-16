@@ -1,0 +1,18 @@
+{
+  "issuedUtc": "2026-01-16T00:54:25.1475893Z",
+  "payload": {
+    "schemaName": "CommandBatch",
+    "issuedUtc": "2026-01-16T00:54:25.1476311Z",
+    "commands": [
+      {
+        "delayMs": 1,
+        "type": "delay"
+      }
+    ],
+    "schemaVersion": "1.0.0"
+  },
+  "id": "ipc_test_guild_001",
+  "schemaName": "GuildEnvelope",
+  "schemaVersion": "1.0.0",
+  "type": "command-batch.v1"
+}

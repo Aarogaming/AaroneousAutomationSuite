@@ -1,0 +1,12 @@
+[flake8]
+extend-ignore = E203, W503, E501
+max-line-length = 120
+exclude =
+    .venv,
+    __pycache__,
+    aider_repo,
+    core/ipc/protos/bridge_pb2.py,
+    core/ipc/protos/bridge_pb2_grpc.py
+per-file-ignores =
+    scripts/*.py: E402, F401
+    tests/*.py: E402, F401

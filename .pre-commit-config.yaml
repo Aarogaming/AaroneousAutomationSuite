@@ -1,0 +1,59 @@
+ci:
+  skip: [eslint]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        language_version: python3
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        additional_dependencies: ["flake8-bugbear>=24.10.31"]
+        exclude: ^aider_repo/
+      - id: flake8
+        name: flake8 (aider_repo)
+        files: ^aider_repo/
+        args: [--config, aider_repo/.flake8, --extend-ignore, E501]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        name: Type Check
+        args: [--config-file, mypy.ini]
+        files: ^(core|plugins)/
+        exclude: ^(core/ipc/protos|plugins/penpot|plugins/dev_studio)/
+      - id: mypy
+        name: Type Check (strict allowlist)
+        args: [--config-file, mypy-strict.ini]
+        files: ^core/(patch_manager|deimos)\.py$
+  - repo: local
+    hooks:
+      - id: secret-scan
+        name: Secret scan (local)
+        entry: python3 scripts/scan_for_secrets.py
+        language: system
+        types: [text]
+        stages: [pre-commit, pre-push]
+      - id: large-file-guard
+        name: Large file guard (50MB)
+        entry: python3 scripts/check_large_files.py --max-mb 50
+        language: system
+        stages: [pre-commit, pre-push]
+      - id: eslint
+        name: Lint (eslint)
+        entry: npx eslint
+        language: system
+        types: [javascript]
+      - id: changed-plugins-smoke
+        name: Changed plugins smoke (pre-push)
+        entry: python3 scripts/changed_plugin_tests.py --base origin/main
+        language: system
+        stages: [pre-push]

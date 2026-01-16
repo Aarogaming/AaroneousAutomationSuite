@@ -1,0 +1,11 @@
+{
+  "issuedUtc": "2026-01-16T01:12:33.0747443Z",
+  "commands": [
+    {
+      "type": "delay",
+      "delayMs": 1
+    }
+  ],
+  "schemaName": "CommandBatch",
+  "schemaVersion": "1.0.0"
+}

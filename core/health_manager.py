@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Optional, Callable
+from typing import Dict, Any, Optional, Callable
 from datetime import datetime
 from loguru import logger
 
@@ -14,10 +14,12 @@ try:
 except Exception:  # pragma: no cover
     requests = None
 
+
 class HealthAggregator:
     """
     Aggregates health metrics from various AAS components.
     """
+
     def __init__(
         self,
         db_manager=None,
@@ -43,16 +45,20 @@ class HealthAggregator:
         Perform a full health scan of the system.
         """
         logger.debug("Performing system health scan...")
-        
+
         # Get system metrics
         cpu_usage = psutil.cpu_percent(interval=None)
         memory = psutil.virtual_memory()
-        
+
         # Network Latency check (ping a reliable external endpoint as proxy for internet health)
         now = time.time()
         latency = self._last_latency
         latency_ms = self._last_latency_ms
-        skip_latency = os.getenv("AAS_HEALTH_SKIP_LATENCY", "").lower() in {"1", "true", "yes"}
+        skip_latency = os.getenv("AAS_HEALTH_SKIP_LATENCY", "").lower() in {
+            "1",
+            "true",
+            "yes",
+        }
         if skip_latency:
             latency = "skipped"
             latency_ms = None
@@ -80,9 +86,10 @@ class HealthAggregator:
             try:
                 if self._db_manager is None:
                     from core.db_manager import get_db_manager
+
                     self._db_manager = get_db_manager()
                 with self._db_manager.get_session() as session:
-                    session.execute(__import__('sqlalchemy').text("SELECT 1"))
+                    session.execute(__import__("sqlalchemy").text("SELECT 1"))
                 db_load = "healthy"
             except Exception:
                 db_load = "error"
@@ -102,15 +109,25 @@ class HealthAggregator:
             except Exception:
                 return False
 
-        web_status = "skipped" if os.getenv("AAS_HEALTH_SKIP_WEB", "").lower() in {"1", "true", "yes"} else "unknown"
-        ipc_status = "skipped" if os.getenv("AAS_HEALTH_SKIP_IPC", "").lower() in {"1", "true", "yes"} else "unknown"
+        web_status = (
+            "skipped"
+            if os.getenv("AAS_HEALTH_SKIP_WEB", "").lower() in {"1", "true", "yes"}
+            else "unknown"
+        )
+        ipc_status = (
+            "skipped"
+            if os.getenv("AAS_HEALTH_SKIP_IPC", "").lower() in {"1", "true", "yes"}
+            else "unknown"
+        )
 
         if web_status != "skipped":
             if requests is None:
                 web_status = "healthy" if check_tcp(web_host, web_port) else "down"
             else:
                 try:
-                    resp = requests.get(f"http://{web_host}:{web_port}/health", timeout=1)
+                    resp = requests.get(
+                        f"http://{web_host}:{web_port}/health", timeout=1
+                    )
                     web_status = "healthy" if resp.status_code == 200 else "error"
                 except Exception:
                     # If HTTP fails but TCP is up, treat as degraded but healthy enough
@@ -145,7 +162,9 @@ class HealthAggregator:
             workspace_status = "unknown"
 
         # Optional providers for richer suite coverage
-        def safe_call(provider: Optional[Callable[[], Dict[str, Any]]]) -> Dict[str, Any]:
+        def safe_call(
+            provider: Optional[Callable[[], Dict[str, Any]]]
+        ) -> Dict[str, Any]:
             if not provider:
                 return {}
             try:
@@ -246,5 +265,5 @@ class HealthAggregator:
                 "ipc": ipc_status,
                 "task_manager": "active",
                 "workspace": workspace_status,
-            }
+            },
         }

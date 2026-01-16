@@ -1,0 +1,13 @@
+{
+  "type": "command-batch.v1",
+  "issuedUtc": "2026-01-16T01:12:30.9035773Z",
+  "schemaVersion": "1.0.0",
+  "payload": {
+    "issuedUtc": "2026-01-16T01:12:30.9036220Z",
+    "commands": [],
+    "schemaName": "CommandBatch",
+    "schemaVersion": "1.0.0"
+  },
+  "id": "ipc_test_handoff_002",
+  "schemaName": "HandoffEnvelope"
+}

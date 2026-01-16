@@ -1,19 +1,18 @@
 import importlib
 import sys
-import inspect
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List
 from loguru import logger
-from pathlib import Path
+
 
 class PatchManager:
     """
     Handles live patching and hot-reloading of AAS components.
-    
+
     This manager allows reloading modules and plugins at runtime without
-    restarting the entire Hub, facilitating rapid development and 
+    restarting the entire Hub, facilitating rapid development and
     on-the-fly bug fixes.
     """
-    
+
     def __init__(self, hub: Any):
         self.hub = hub
         self.patched_modules: List[str] = []
@@ -48,18 +47,18 @@ class PatchManager:
         # In a real scenario, we'd need to find where the plugin is stored in the Hub
         # and replace the instance.
         logger.info(f"Attempting to reload plugin: {plugin_name}")
-        
+
         # Example logic:
         # 1. Find plugin module
         # 2. Reload module
         # 3. Re-instantiate and replace in hub.plugins
-        
+
         return self.reload_module(f"core.plugins.{plugin_name}")
 
     async def apply_patch(self, patch_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Applies a live patch based on provided data.
-        
+
         Expected patch_data format:
         {
             "type": "module_reload" | "plugin_reload" | "monkey_patch",
@@ -69,9 +68,12 @@ class PatchManager:
         """
         patch_type = patch_data.get("type")
         target = patch_data.get("target")
-        
+
         result = {"success": False, "target": target, "type": patch_type}
-        
+        if not isinstance(target, str):
+            result["error"] = "Missing patch target"
+            return result
+
         if patch_type == "module_reload":
             result["success"] = self.reload_module(target)
         elif patch_type == "plugin_reload":
@@ -82,16 +84,16 @@ class PatchManager:
             try:
                 exec(patch_data.get("code", ""), globals())
                 result["success"] = True
-                logger.warning(f"Applied monkey patch to global context")
+                logger.warning("Applied monkey patch to global context")
             except Exception as e:
                 result["error"] = str(e)
                 logger.error(f"Monkey patch failed: {e}")
-        
+
         return result
 
     def get_status(self) -> Dict[str, Any]:
         """Returns the status of the PatchManager."""
         return {
             "patched_modules_count": len(self.patched_modules),
-            "patched_modules": self.patched_modules
+            "patched_modules": self.patched_modules,
         }

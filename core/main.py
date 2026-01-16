@@ -2,14 +2,16 @@ import sys
 import argparse
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 from loguru import logger
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.managers import ManagerHub
-from core.handoff_manager import HandoffManager
+# Add project root to path
+project_root = Path(__file__).resolve().parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from core.managers import ManagerHub  # noqa: E402
+from core.guild_manager import GuildManager  # noqa: E402
 
 
 def _normalize_status(value: str) -> str:
@@ -17,8 +19,8 @@ def _normalize_status(value: str) -> str:
 
 
 def _load_tasks() -> tuple[list[str], list[dict], dict[str, str]]:
-    handoff = HandoffManager()
-    return handoff.parse_board()
+    guild = GuildManager()
+    return guild.parse_board()
 
 
 def _filter_available(tasks: list[dict], status_map: dict[str, str]) -> list[dict]:
@@ -30,8 +32,7 @@ def _filter_available(tasks: list[dict], status_map: dict[str, str]) -> list[dic
         if deps and deps != "-":
             dep_ids = [d.strip() for d in deps.split(",")]
             unmet = [
-                d for d in dep_ids
-                if _normalize_status(status_map.get(d, "")) != "done"
+                d for d in dep_ids if _normalize_status(status_map.get(d, "")) != "done"
             ]
             if unmet:
                 continue
@@ -44,7 +45,9 @@ def _print_task_table(tasks: list[dict]) -> None:
         print(f"{task['id']} | {task['priority']} | {task['status']} | {task['title']}")
 
 
-def _create_task(lines: list[str], tasks: list[dict], title: str, priority: str, description: str) -> str:
+def _create_task(
+    lines: list[str], tasks: list[dict], title: str, priority: str, description: str
+) -> str:
     max_id = 0
     for task in tasks:
         task_id = task.get("id", "")
@@ -71,12 +74,18 @@ def _create_task(lines: list[str], tasks: list[dict], title: str, priority: str,
     lines.append("- **Acceptance Criteria**:\n")
     lines.append("    - [ ] Initial implementation\n")
 
-    board_path = HandoffManager().task_board_path
+    board_path = GuildManager().task_board_path
     board_path.write_text("".join(lines), encoding="utf-8")
     return new_id
 
 
-def _start_task(lines: list[str], tasks: list[dict], status_map: dict[str, str], task_id: str, assignee: str) -> str:
+def _start_task(
+    lines: list[str],
+    tasks: list[dict],
+    status_map: dict[str, str],
+    task_id: str,
+    assignee: str,
+) -> str:
     target = next((t for t in tasks if t["id"] == task_id), None)
     if not target:
         return f"Task {task_id} not found"
@@ -85,8 +94,7 @@ def _start_task(lines: list[str], tasks: list[dict], status_map: dict[str, str],
     if deps and deps != "-":
         dep_ids = [d.strip() for d in deps.split(",")]
         unmet = [
-            d for d in dep_ids
-            if _normalize_status(status_map.get(d, "")) != "done"
+            d for d in dep_ids if _normalize_status(status_map.get(d, "")) != "done"
         ]
         if unmet:
             return f"Task {task_id} is blocked by: {', '.join(unmet)}"
@@ -96,7 +104,7 @@ def _start_task(lines: list[str], tasks: list[dict], status_map: dict[str, str],
     parts[6] = assignee
     parts[8] = datetime.now().strftime("%Y-%m-%d")
     lines[target["index"]] = " | ".join(parts) + "\n"
-    board_path = HandoffManager().task_board_path
+    board_path = GuildManager().task_board_path
     board_path.write_text("".join(lines), encoding="utf-8")
     return f"Task {task_id} started by {assignee}"
 
@@ -147,10 +155,14 @@ def run_cli(args: list[str]) -> int:
             filtered = tasks
             if parsed.status:
                 status_norm = _normalize_status(parsed.status)
-                filtered = [t for t in filtered if _normalize_status(t["status"]) == status_norm]
+                filtered = [
+                    t for t in filtered if _normalize_status(t["status"]) == status_norm
+                ]
             if parsed.priority:
                 priority_norm = parsed.priority.lower()
-                filtered = [t for t in filtered if t["priority"].lower() == priority_norm]
+                filtered = [
+                    t for t in filtered if t["priority"].lower() == priority_norm
+                ]
             if not filtered:
                 print("No tasks match filters.")
             else:
@@ -175,12 +187,16 @@ def run_cli(args: list[str]) -> int:
 
         if parsed.task_command == "create":
             title = " ".join(parsed.title)
-            new_id = _create_task(lines, tasks, title, parsed.priority, parsed.description)
+            new_id = _create_task(
+                lines, tasks, title, parsed.priority, parsed.description
+            )
             print(f"Created task {new_id}")
             return 0
 
         if parsed.task_command == "start":
-            message = _start_task(lines, tasks, status_map, parsed.task_id, parsed.assignee)
+            message = _start_task(
+                lines, tasks, status_map, parsed.task_id, parsed.assignee
+            )
             print(message)
             return 0
 
@@ -191,8 +207,8 @@ def run_cli(args: list[str]) -> int:
         return 0
 
     if parsed.command == "blocked":
-        handoff = HandoffManager()
-        blocked = handoff.get_blocked_tasks()
+        guild = GuildManager()
+        blocked = guild.get_blocked_tasks()
         if not blocked:
             print("No blocked tasks.")
             return 0

@@ -2,6 +2,7 @@
 AAS Hub System Tray Application
 Provides a taskbar icon for monitoring and controlling the AAS Hub.
 """
+
 import subprocess
 import sys
 import os
@@ -24,7 +25,7 @@ import traceback
 # Paths
 # When running as PyInstaller exe, __file__ points to temp dir
 # Use the exe's parent directory as ROOT_DIR when frozen
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     # Running as compiled exe in dist/ - go up one level to project root
     ROOT_DIR = Path(sys.executable).parent.parent
 else:
@@ -43,10 +44,24 @@ DB_FILE = ROOT_DIR / "artifacts" / "aas_hub.db"
 LOG_FILE = ROOT_DIR / "artifacts" / "hub.log"
 HUB_CONSOLE_LOG = ROOT_DIR / "artifacts" / "hub_console.log"
 ICON_FILE = ROOT_DIR / "artifacts" / "aas_hub.ico"
+STATE_FILE = ROOT_DIR / "artifacts" / "tray_state.json"
 
 # Simple crash/error logging
 TRAY_LOG = ROOT_DIR / "artifacts" / "tray.log"
 TRAY_LOG.parent.mkdir(parents=True, exist_ok=True)
+
+# Shared tray state (DND + status snapshot)
+STATE_LOCK = threading.Lock()
+DEFAULT_STATE = {
+    "dnd": False,
+    "status": {
+        "hub": "unknown",
+        "merlin": "unknown",
+        "home_gateway": "unknown",
+        "latency_ms": {},
+    },
+    "last_checked": None,
+}
 
 
 def log_exception(prefix: str, exc: Exception):
@@ -58,6 +73,7 @@ def log_exception(prefix: str, exc: Exception):
             f.write("\n")
     except Exception:
         pass
+
 
 # Prefer compiled Hub executable when present (fallback to Python)
 HUB_EXE_CANDIDATES = [
@@ -72,15 +88,118 @@ else:
 # Load Dashboard URL from environment or use default
 DASHBOARD_URL = os.getenv("DASHBOARD_URL", "http://localhost:5174")
 
-# Handoff Paths
-HANDOFF_TO_DIR = ROOT_DIR / "artifacts" / "handoff" / "to_codex"
-HANDOFF_FROM_DIR = ROOT_DIR / "artifacts" / "handoff" / "from_codex"
-REPORTS_DIR = ROOT_DIR / "artifacts" / "handoff" / "reports"
+# Guild Paths
+GUILD_TO_DIR = ROOT_DIR / "artifacts" / "guild" / "to_codex"
+GUILD_FROM_DIR = ROOT_DIR / "artifacts" / "guild" / "from_codex"
+REPORTS_DIR = ROOT_DIR / "artifacts" / "guild" / "reports"
 
-# Ensure handoff directories exist
-HANDOFF_TO_DIR.mkdir(parents=True, exist_ok=True)
-HANDOFF_FROM_DIR.mkdir(parents=True, exist_ok=True)
+# Ensure guild directories exist
+GUILD_TO_DIR.mkdir(parents=True, exist_ok=True)
+GUILD_FROM_DIR.mkdir(parents=True, exist_ok=True)
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def load_tray_state():
+    """Load tray state (DND/status) with sane defaults."""
+    with STATE_LOCK:
+        try:
+            if not STATE_FILE.exists():
+                return DEFAULT_STATE.copy()
+            data = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+            merged = DEFAULT_STATE.copy()
+            merged.update({k: v for k, v in data.items() if k in DEFAULT_STATE})
+            # Merge nested status fields
+            status = DEFAULT_STATE["status"].copy()
+            status.update(data.get("status", {}))
+            merged["status"] = status
+            return merged
+        except Exception:
+            return DEFAULT_STATE.copy()
+
+
+def save_tray_state(state: dict):
+    """Persist tray state safely."""
+    with STATE_LOCK:
+        try:
+            STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            STATE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+        except Exception as exc:
+            log_exception("save_tray_state", exc)
+
+
+def set_dnd(enabled: bool) -> dict:
+    state = load_tray_state()
+    state["dnd"] = bool(enabled)
+    save_tray_state(state)
+    return state
+
+
+def send_notification(icon, title: str, message: str, *, bypass_dnd: bool = False):
+    """Centralized notification handler honoring DND."""
+    try:
+        state = load_tray_state()
+        if state.get("dnd") and not bypass_dnd:
+            # Quietly log instead of popping a notification.
+            with TRAY_LOG.open("a", encoding="utf-8") as log_file:
+                log_file.write(
+                    f"[{datetime.utcnow().isoformat()}Z] DND active; suppressed notification: {title} - {message}\n"
+                )
+            return
+
+        # pystray.notify expects (message, title) order.
+        icon.notify(message, title=title)
+    except Exception as exc:
+        log_exception("notify", exc)
+
+
+def toggle_dnd(icon):
+    state = load_tray_state()
+    updated = set_dnd(not state.get("dnd", False))
+    status = "enabled" if updated["dnd"] else "disabled"
+    send_notification(icon, "Do Not Disturb", f"DND {status}.")
+
+
+def ping_url(url: str, timeout: float = 3.0):
+    """Return tuple (is_up, latency_ms or None)."""
+    try:
+        start = time.perf_counter()
+        resp = requests.get(url, timeout=timeout)
+        elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
+        if resp.status_code == 200:
+            return True, elapsed_ms
+        return False, None
+    except Exception:
+        return False, None
+
+
+def update_status_snapshot():
+    """Poll hub/home-gateway endpoints and store snapshot."""
+    state = load_tray_state()
+    statuses = {}
+    latencies = {}
+
+    hub_url = os.getenv("AAS_HEALTH_URL", "http://localhost:8000/health")
+    hub_ok, hub_latency = ping_url(hub_url)
+    statuses["hub"] = "online" if hub_ok else "offline"
+    if hub_latency:
+        latencies["hub"] = hub_latency
+
+    merlin_url = os.getenv("MERLIN_HEALTH_URL", "http://localhost:8001/health")
+    merlin_ok, merlin_latency = ping_url(merlin_url)
+    statuses["merlin"] = "online" if merlin_ok else "offline"
+    if merlin_latency:
+        latencies["merlin"] = merlin_latency
+
+    hg_base = os.getenv("HOMEGATEWAY_URL", "http://127.0.0.1:8100").rstrip("/")
+    hg_ok, hg_latency = ping_url(f"{hg_base}/health")
+    statuses["home_gateway"] = "online" if hg_ok else "offline"
+    if hg_latency:
+        latencies["home_gateway"] = hg_latency
+
+    state["status"] = {**state.get("status", {}), **statuses, "latency_ms": latencies}
+    state["last_checked"] = datetime.utcnow().isoformat() + "Z"
+    save_tray_state(state)
+    return state
 
 
 def create_icon():
@@ -93,65 +212,61 @@ def create_icon():
             pass
 
     size = 64  # Tray icon size
-    img = Image.new('RGBA', (size, size), color=(0, 0, 0, 0))
+    img = Image.new("RGBA", (size, size), color=(0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    
+
     # Solid indigo background circle
     draw.ellipse([0, 0, size - 1, size - 1], fill=(67, 56, 202))
-    
+
     # Draw a bold letter "A"
     margin = int(size * 0.15)
     letter_width = size - (2 * margin)
     letter_height = int(size * 0.7)
     top = int(size * 0.15)
     left = margin
-    
+
     # Letter A as a triangle outline
     peak_x = size // 2
     peak_y = top
     left_bottom = (left, top + letter_height)
     right_bottom = (left + letter_width, top + letter_height)
-    
+
     # Outer triangle
-    draw.polygon([
-        (peak_x, peak_y),
-        left_bottom,
-        right_bottom
-    ], fill='white')
-    
+    draw.polygon([(peak_x, peak_y), left_bottom, right_bottom], fill="white")
+
     # Inner triangle (cut out to make it hollow)
     inner_offset = int(size * 0.12)
-    draw.polygon([
-        (peak_x, peak_y + inner_offset * 1.5),
-        (left_bottom[0] + inner_offset, left_bottom[1] - inner_offset),
-        (right_bottom[0] - inner_offset, right_bottom[1] - inner_offset)
-    ], fill=(67, 56, 202))
-    
+    draw.polygon(
+        [
+            (peak_x, peak_y + inner_offset * 1.5),
+            (left_bottom[0] + inner_offset, left_bottom[1] - inner_offset),
+            (right_bottom[0] - inner_offset, right_bottom[1] - inner_offset),
+        ],
+        fill=(67, 56, 202),
+    )
+
     # Cross bar for A
     bar_y = top + int(letter_height * 0.6)
     bar_thickness = int(size * 0.08)
     bar_left = left + int(letter_width * 0.25)
     bar_right = left + int(letter_width * 0.75)
-    draw.rectangle([
-        bar_left, bar_y,
-        bar_right, bar_y + bar_thickness
-    ], fill='white')
-    
+    draw.rectangle([bar_left, bar_y, bar_right, bar_y + bar_thickness], fill="white")
+
     return img
 
 
 def check_prerequisites():
     """Check if environment is ready to start Hub."""
     issues = []
-    
+
     # Check virtual environment
     if not PYTHON_EXE.exists():
         issues.append("Virtual environment not found at .venv\\")
-    
+
     # Check .env file
     if not ENV_FILE.exists():
         issues.append(".env file not found")
-    
+
     # Check/create artifacts directory
     artifacts_dir = ROOT_DIR / "artifacts"
     if not artifacts_dir.exists():
@@ -159,7 +274,7 @@ def check_prerequisites():
             artifacts_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
             issues.append(f"Cannot create artifacts directory: {e}")
-    
+
     # Rotate large log files
     if LOG_FILE.exists():
         try:
@@ -170,72 +285,88 @@ def check_prerequisites():
                 LOG_FILE.rename(archive_log)
         except Exception:
             pass
-    
+
     return issues
 
 
 def clear_zombie_processes():
     """Kill any zombie processes holding Hub ports."""
     killed = []
-    
+
     try:
         # Check port 50051 (gRPC)
         result = subprocess.run(
             ["netstat", "-ano"],
             capture_output=True,
             text=True,
-            creationflags=subprocess.CREATE_NO_WINDOW
+            creationflags=subprocess.CREATE_NO_WINDOW,
         )
-        
-        for line in result.stdout.split('\n'):
+
+        for line in result.stdout.split("\n"):
             if ":50051" in line and "LISTENING" in line:
                 parts = line.split()
                 if parts:
                     pid = int(parts[-1])
                     # Check if it's a Python process
                     proc_check = subprocess.run(
-                        ["powershell", "-NoProfile", "-Command", 
-                         f"(Get-Process -Id {pid} -ErrorAction SilentlyContinue).ProcessName"],
+                        [
+                            "powershell",
+                            "-NoProfile",
+                            "-Command",
+                            f"(Get-Process -Id {pid} -ErrorAction SilentlyContinue).ProcessName",
+                        ],
                         capture_output=True,
                         text=True,
-                        creationflags=subprocess.CREATE_NO_WINDOW
+                        creationflags=subprocess.CREATE_NO_WINDOW,
                     )
                     if "python" in proc_check.stdout.lower():
-                        subprocess.run(["taskkill", "/F", "/PID", str(pid)], 
-                                     capture_output=True,
-                                     creationflags=subprocess.CREATE_NO_WINDOW)
+                        subprocess.run(
+                            ["taskkill", "/F", "/PID", str(pid)],
+                            capture_output=True,
+                            creationflags=subprocess.CREATE_NO_WINDOW,
+                        )
                         killed.append(f"port 50051 (PID {pid})")
                         time.sleep(0.5)
-            
+
             elif ":8000" in line and "LISTENING" in line:
                 parts = line.split()
                 if parts:
                     pid = int(parts[-1])
                     proc_check = subprocess.run(
-                        ["powershell", "-NoProfile", "-Command", 
-                         f"(Get-Process -Id {pid} -ErrorAction SilentlyContinue).ProcessName"],
+                        [
+                            "powershell",
+                            "-NoProfile",
+                            "-Command",
+                            f"(Get-Process -Id {pid} -ErrorAction SilentlyContinue).ProcessName",
+                        ],
                         capture_output=True,
                         text=True,
-                        creationflags=subprocess.CREATE_NO_WINDOW
+                        creationflags=subprocess.CREATE_NO_WINDOW,
                     )
                     if "python" in proc_check.stdout.lower():
-                        subprocess.run(["taskkill", "/F", "/PID", str(pid)], 
-                                     capture_output=True,
-                                     creationflags=subprocess.CREATE_NO_WINDOW)
+                        subprocess.run(
+                            ["taskkill", "/F", "/PID", str(pid)],
+                            capture_output=True,
+                            creationflags=subprocess.CREATE_NO_WINDOW,
+                        )
                         killed.append(f"port 8000 (PID {pid})")
                         time.sleep(0.5)
     except Exception:
         pass
-    
+
     # Clean stale PID file
     if PID_FILE.exists():
         pid = get_pid()
         if pid:
             result = subprocess.run(
-                ["powershell", "-NoProfile", "-Command", 
-                 f"Get-Process -Id {pid} -ErrorAction SilentlyContinue"],
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    f"Get-Process -Id {pid} -ErrorAction SilentlyContinue",
+                ],
                 capture_output=True,
-                creationflags=subprocess.CREATE_NO_WINDOW
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
             if result.returncode != 0:
                 try:
@@ -243,7 +374,7 @@ def clear_zombie_processes():
                     killed.append("stale PID file")
                 except Exception:
                     pass
-    
+
     return killed
 
 
@@ -252,24 +383,24 @@ def get_pid():
     try:
         if not PID_FILE.exists():
             return None
-        
+
         # Read PID file as bytes to handle potential encoding issues from PowerShell's Out-File
         content = PID_FILE.read_bytes()
-        
+
         # Try to decode as UTF-16 (common for PowerShell Out-File) or UTF-8
         try:
-            if content.startswith(b'\xff\xfe') or content.startswith(b'\xfe\xff'):
-                pid_text = content.decode('utf-16').strip()
+            if content.startswith(b"\xff\xfe") or content.startswith(b"\xfe\xff"):
+                pid_text = content.decode("utf-16").strip()
             else:
-                pid_text = content.decode('utf-8').strip()
+                pid_text = content.decode("utf-8").strip()
         except UnicodeDecodeError:
-            pid_text = content.decode('latin-1').strip()
+            pid_text = content.decode("latin-1").strip()
 
         # Extract only digits
-        pid_text = ''.join(filter(str.isdigit, pid_text))
+        pid_text = "".join(filter(str.isdigit, pid_text))
         if not pid_text:
             return None
-            
+
         return int(pid_text)
     except Exception:
         return None
@@ -281,15 +412,22 @@ def is_hub_running():
         pid = get_pid()
         if not pid:
             return False
-        
+
         # Check if process exists (Windows)
         result = subprocess.run(
-            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", f"Get-Process -Id {pid} -ErrorAction SilentlyContinue"],
+            [
+                "powershell",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                f"Get-Process -Id {pid} -ErrorAction SilentlyContinue",
+            ],
             capture_output=True,
             text=True,
-            creationflags=subprocess.CREATE_NO_WINDOW
+            creationflags=subprocess.CREATE_NO_WINDOW,
         )
-        
+
         # If process doesn't exist, clean up stale PID file
         if result.returncode != 0:
             try:
@@ -297,7 +435,7 @@ def is_hub_running():
             except Exception:
                 pass
             return False
-            
+
         return True
     except Exception:
         return False
@@ -309,15 +447,15 @@ def start_hub(icon):
         # Check prerequisites
         issues = check_prerequisites()
         if issues:
-            icon.notify("Cannot Start Hub", "\n".join(issues[:3]))
+            send_notification(icon, "Cannot Start Hub", "\n".join(issues[:3]))
             return
-        
+
         # Clear zombie processes
         killed = clear_zombie_processes()
         if killed:
-            icon.notify("Cleaned up zombies", "\n".join(killed[:3]))
+            send_notification(icon, "Cleaned up zombies", "\n".join(killed[:3]))
             time.sleep(1)
-        
+
         # Start Hub directly; capture early startup errors without opening a console.
         log_handle = None
         try:
@@ -351,28 +489,33 @@ def start_hub(icon):
             stdout=stdout_target,
             stderr=stderr_target,
             stdin=subprocess.DEVNULL,
-            creationflags=creation_flags
+            creationflags=creation_flags,
         )
         if log_handle:
             log_handle.close()
-        
+
         # Save PID
         PID_FILE.write_text(str(process.pid))
-        
+
         # Wait and verify startup
         time.sleep(3)
-        
+
         if is_hub_running():
-            icon.notify(
+            send_notification(
+                icon,
                 "AAS Hub Started",
-                f"PID: {process.pid}\nWeb: http://localhost:8000\ngRPC: localhost:50051"
+                f"PID: {process.pid}\nWeb: http://localhost:8000\ngRPC: localhost:50051",
             )
         else:
-            icon.notify("Hub Startup Issue", f"Process started but may have crashed.\nCheck: {LOG_FILE}")
-            
+            send_notification(
+                icon,
+                "Hub Startup Issue",
+                f"Process started but may have crashed.\nCheck: {LOG_FILE}",
+            )
+
     except Exception as e:
         log_exception("start_hub", e)
-        icon.notify("Failed to start Hub", str(e))
+        send_notification(icon, "Failed to start Hub", str(e))
 
 
 def stop_hub(icon):
@@ -380,27 +523,32 @@ def stop_hub(icon):
     try:
         pid = get_pid()
         if not pid:
-            icon.notify("Hub Not Running", "No PID file found")
+            send_notification(icon, "Hub Not Running", "No PID file found")
             return
-        
+
         # Check if process exists
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", f"Stop-Process -Id {pid} -Force -ErrorAction SilentlyContinue"],
+        subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                f"Stop-Process -Id {pid} -Force -ErrorAction SilentlyContinue",
+            ],
             capture_output=True,
-            creationflags=subprocess.CREATE_NO_WINDOW
+            creationflags=subprocess.CREATE_NO_WINDOW,
         )
-        
+
         time.sleep(1)
-        
+
         # Clean up PID file
         try:
             PID_FILE.unlink(missing_ok=True)
         except Exception:
             pass
-        
-        icon.notify("AAS Hub Stopped", f"Hub shut down (was PID {pid})")
+
+        send_notification(icon, "AAS Hub Stopped", f"Hub shut down (was PID {pid})")
     except Exception as e:
-        icon.notify("Failed to stop Hub", str(e))
+        send_notification(icon, "Failed to stop Hub", str(e))
 
 
 def restart_hub(icon):
@@ -408,13 +556,13 @@ def restart_hub(icon):
     try:
         pid = get_pid()
         if pid:
-            icon.notify("Restarting Hub", "Stopping current instance...")
+            send_notification(icon, "Restarting Hub", "Stopping current instance...")
             stop_hub(icon)
             time.sleep(2)
-        
+
         start_hub(icon)
     except Exception as e:
-        icon.notify("Failed to restart Hub", str(e))
+        send_notification(icon, "Failed to restart Hub", str(e))
 
 
 def show_status(icon):
@@ -422,11 +570,33 @@ def show_status(icon):
     try:
         pid = get_pid()
         if pid and is_hub_running():
-            icon.notify("AAS Hub Status", f"Running (PID: {pid})\nWeb: http://localhost:8000\ngRPC: localhost:50051")
+            send_notification(
+                icon,
+                "AAS Hub Status",
+                f"Running (PID: {pid})\nWeb: http://localhost:8000\ngRPC: localhost:50051",
+            )
         else:
-            icon.notify("AAS Hub Status", "Not Running")
+            send_notification(icon, "AAS Hub Status", "Not Running")
     except Exception as e:
-        icon.notify("Status Check Failed", str(e))
+        send_notification(icon, "Status Check Failed", str(e))
+
+
+def refresh_status(icon):
+    """Force a status poll and show a summary."""
+    snapshot = update_status_snapshot()
+    status = snapshot.get("status", {})
+    latency = status.get("latency_ms", {})
+    hub = status.get("hub", "unknown")
+    hg = status.get("home_gateway", "unknown")
+    hub_ms = latency.get("hub")
+    hg_ms = latency.get("home_gateway")
+    parts = [
+        f"Hub: {hub}" + (f" ({hub_ms} ms)" if hub_ms else ""),
+        f"MyFortress: {hg}" + (f" ({hg_ms} ms)" if hg_ms else ""),
+    ]
+    last_checked = snapshot.get("last_checked") or "never"
+    summary = " | ".join(parts) + f"\nChecked: {last_checked}"
+    send_notification(icon, "Status Refreshed", summary)
 
 
 def open_dashboard(icon):
@@ -434,7 +604,7 @@ def open_dashboard(icon):
     try:
         webbrowser.open(DASHBOARD_URL)
     except Exception as e:
-        icon.notify("Failed to open dashboard", str(e))
+        send_notification(icon, "Failed to open dashboard", str(e))
 
 
 def open_logs(icon):
@@ -444,9 +614,9 @@ def open_logs(icon):
         if log_file.exists():
             os.startfile(log_file)
         else:
-            icon.notify("No logs found", "Log file does not exist yet")
+            send_notification(icon, "No logs found", "Log file does not exist yet")
     except Exception as e:
-        icon.notify("Failed to open logs", str(e))
+        send_notification(icon, "Failed to open logs", str(e))
 
 
 def open_project_folder(icon):
@@ -454,7 +624,7 @@ def open_project_folder(icon):
     try:
         os.startfile(ROOT_DIR)
     except Exception as e:
-        icon.notify("Error", f"Failed to open folder: {e}")
+        send_notification(icon, "Error", f"Failed to open folder: {e}")
 
 
 def edit_env(icon):
@@ -463,21 +633,23 @@ def edit_env(icon):
         if ENV_FILE.exists():
             os.startfile(ENV_FILE)
         else:
-            icon.notify("Error", ".env file not found")
+            send_notification(icon, "Error", ".env file not found")
     except Exception as e:
-        icon.notify("Error", f"Failed to open .env: {e}")
+        send_notification(icon, "Error", f"Failed to open .env: {e}")
 
 
-# --- Handoff Integration ---
+# --- Guild Integration ---
 
-class HandoffHandler(FileSystemEventHandler):
+
+class GuildHandler(FileSystemEventHandler):
     def __init__(self, icon, message):
         self.icon = icon
         self.message = message
 
     def on_created(self, event):
         if not event.is_directory:
-            self.icon.notify("Handoff Detected", self.message)
+            send_notification(self.icon, "Guild Detected", self.message)
+
 
 def get_latest_file(directory):
     files = list(directory.glob("*"))
@@ -485,57 +657,75 @@ def get_latest_file(directory):
         return None
     return max(files, key=lambda f: f.stat().st_mtime)
 
+
 def copy_latest_prompt(icon):
-    latest = get_latest_file(HANDOFF_TO_DIR)
+    latest = get_latest_file(GUILD_TO_DIR)
     if not latest:
-        icon.notify("Handoff", "No prompt found in to_codex.")
+        send_notification(icon, "Guild", "No prompt found in to_codex.")
         return
-    
+
     try:
         text = latest.read_text(encoding="utf-8")
         pyperclip.copy(text)
-        icon.notify("Handoff", "Copied latest prompt to clipboard.")
+        send_notification(icon, "Guild", "Copied latest prompt to clipboard.")
     except Exception as e:
-        icon.notify("Handoff Error", f"Failed to copy: {e}")
+        send_notification(icon, "Guild Error", f"Failed to copy: {e}")
+
 
 def run_import(icon):
     def do_import():
         try:
-            # Using dotnet toolkit as in original HandoffTray
+            # Using dotnet toolkit as in original GuildTray
             process = subprocess.Popen(
-                ["dotnet", "run", "--project", "MaelstromToolkit/MaelstromToolkit.csproj", "--", "handoff", "import", "--out", "artifacts/handoff/reports"],
+                [
+                    "dotnet",
+                    "run",
+                    "--project",
+                    "MaelstromToolkit/MaelstromToolkit.csproj",
+                    "--",
+                    "guild",
+                    "import",
+                    "--out",
+                    "artifacts/guild/reports",
+                ],
                 cwd=str(ROOT_DIR),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                creationflags=subprocess.CREATE_NO_WINDOW
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
             stdout, stderr = process.communicate()
-            
+
             if process.returncode == 0:
-                icon.notify("Handoff", "Import completed. Check CODEX_REPORT.md in reports.")
+                send_notification(
+                    icon, "Guild", "Import completed. Check CODEX_REPORT.md in reports."
+                )
             else:
-                icon.notify("Handoff Error", f"Import failed (exit {process.returncode})")
+                send_notification(
+                    icon, "Guild Error", f"Import failed (exit {process.returncode})"
+                )
         except Exception as e:
-            icon.notify("Handoff Error", f"Import exception: {e}")
-    
+            send_notification(icon, "Guild Error", f"Import exception: {e}")
+
     threading.Thread(target=do_import, daemon=True).start()
+
 
 def open_reports(icon):
     try:
         os.startfile(REPORTS_DIR)
     except Exception as e:
-        icon.notify("Error", f"Failed to open reports: {e}")
+        send_notification(icon, "Error", f"Failed to open reports: {e}")
+
 
 def send_latest_prompt_api(icon):
-    latest = get_latest_file(HANDOFF_TO_DIR)
+    latest = get_latest_file(GUILD_TO_DIR)
     if not latest:
-        icon.notify("Handoff", "No prompt found in to_codex.")
+        send_notification(icon, "Guild", "No prompt found in to_codex.")
         return
-    
+
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        icon.notify("Handoff Error", "OPENAI_API_KEY env var is missing.")
+        send_notification(icon, "Guild Error", "OPENAI_API_KEY env var is missing.")
         return
 
     try:
@@ -543,19 +733,22 @@ def send_latest_prompt_api(icon):
         # Extract fenced block
         matches = re.findall(r"```(.*?)```", content, re.DOTALL)
         if not matches:
-            icon.notify("Handoff Error", "No fenced code block found.")
+            send_notification(icon, "Guild Error", "No fenced code block found.")
             return
-        
+
         fenced = f"```{matches[0]}```"
-        
+
         # Redact secrets
-        secret_patterns = re.compile(r"(ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+|AIza[0-9A-Za-z\-_]{20,}|BEGIN RSA PRIVATE KEY|BEGIN PRIVATE KEY)", re.IGNORECASE)
+        secret_patterns = re.compile(
+            r"(ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+|AIza[0-9A-Za-z\-_]{20,}|BEGIN RSA PRIVATE KEY|BEGIN PRIVATE KEY)",
+            re.IGNORECASE,
+        )
         redacted = secret_patterns.sub("[REDACTED]", fenced)
         if secret_patterns.search(fenced):
             redacted += "\n\n[Note: content redacted before send]"
 
         # Use notification instead of messagebox for non-blocking flow
-        icon.notify("Handoff", "Sending latest block to OpenAI API...")
+        send_notification(icon, "Guild", "Sending latest block to OpenAI API...")
 
         def do_send():
             try:
@@ -566,37 +759,42 @@ def send_latest_prompt_api(icon):
                     json={
                         "model": model,
                         "messages": [{"role": "user", "content": redacted}],
-                        "max_tokens": 512
+                        "max_tokens": 512,
                     },
-                    timeout=30
+                    timeout=30,
                 )
-                
+
                 if resp.status_code == 200:
                     body = resp.json()
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     out_path = REPORTS_DIR / f"OPENAI_RESPONSE_{timestamp}.md"
-                    
+
                     stamped = f"# OpenAI Response\nTimestamp (UTC): {datetime.utcnow().isoformat()}\nModel: {model}\n\n{json.dumps(body, indent=2)}\n"
                     out_path.write_text(stamped, encoding="utf-8")
-                    
-                    icon.notify("Handoff", f"Saved response to {out_path.name}")
+
+                    send_notification(
+                        icon, "Guild", f"Saved response to {out_path.name}"
+                    )
                 else:
-                    icon.notify("Handoff Error", f"API error {resp.status_code}")
+                    send_notification(
+                        icon, "Guild Error", f"API error {resp.status_code}"
+                    )
             except Exception as e:
-                icon.notify("Handoff Error", f"API send exception: {e}")
+                send_notification(icon, "Guild Error", f"API send exception: {e}")
 
         threading.Thread(target=do_send, daemon=True).start()
 
     except Exception as e:
-        icon.notify("Handoff Error", str(e))
+        send_notification(icon, "Guild Error", str(e))
 
-# --- End Handoff Integration ---
+
+# --- End Guild Integration ---
 
 
 def setup(icon):
     """Setup callback when tray icon is ready."""
     icon.visible = True
-    
+
     # Auto-start Hub when tray initializes so server always runs under controller
     if not is_hub_running():
         start_hub(icon)
@@ -616,66 +814,48 @@ def exit_app(icon):
 def create_menu(icon):
     """Create the context menu."""
     running = is_hub_running()
+    state = load_tray_state()
+    status = state.get("status", {})
+    last_checked = state.get("last_checked") or "never"
+    status_label = (
+        f"Hub: {status.get('hub', 'unknown')} | "
+        f"Merlin: {status.get('merlin', 'unknown')} | "
+        f"MyFortress: {status.get('home_gateway', 'unknown')} | "
+        f"Checked: {last_checked}"
+    )
 
     return pystray.Menu(
+        item("🚀 AAS Hub", lambda: None, enabled=False),
+        pystray.Menu.SEPARATOR,
+        item("▶️  Start Hub", lambda: start_hub(icon), enabled=not running),
+        item("⏸️  Stop Hub", lambda: stop_hub(icon), enabled=running),
+        item("🔄 Restart Hub", lambda: restart_hub(icon), enabled=running),
         item(
-            "🚀 AAS Hub",
-            lambda: None,
-            enabled=False
+            "🔕 Do Not Disturb",
+            lambda: toggle_dnd(icon),
+            checked=lambda _: load_tray_state().get("dnd", False),
         ),
         pystray.Menu.SEPARATOR,
-        item(
-            "▶️  Start Hub",
-            lambda: start_hub(icon),
-            enabled=not running
-        ),
-        item(
-            "⏸️  Stop Hub",
-            lambda: stop_hub(icon),
-            enabled=running
-        ),
-        item(
-            "🔄 Restart Hub",
-            lambda: restart_hub(icon),
-            enabled=running
-        ),
+        item("📊 Mission Control", lambda: open_dashboard(icon)),
+        item("📋 View Logs", lambda: open_logs(icon)),
+        item("ℹ️  Status", lambda: show_status(icon)),
+        item("📡 Refresh Status Snapshot", lambda: refresh_status(icon)),
+        item(status_label, lambda: None, enabled=False),
         pystray.Menu.SEPARATOR,
         item(
-            "📊 Mission Control",
-            lambda: open_dashboard(icon)
-        ),
-        item(
-            "📋 View Logs",
-            lambda: open_logs(icon)
-        ),
-        item(
-            "ℹ️  Status",
-            lambda: show_status(icon)
-        ),
-        pystray.Menu.SEPARATOR,
-        item(
-            "📝 Handoff",
+            "📝 Guild",
             pystray.Menu(
                 item("📋 Copy Latest Prompt", lambda: copy_latest_prompt(icon)),
                 item("🚀 Send Latest to API", lambda: send_latest_prompt_api(icon)),
-                item("📥 Run Handoff Import", lambda: run_import(icon)),
-                item("📂 Open Reports", lambda: open_reports(icon))
-            )
+                item("📥 Run Guild Import", lambda: run_import(icon)),
+                item("📂 Open Reports", lambda: open_reports(icon)),
+            ),
         ),
         pystray.Menu.SEPARATOR,
-        item(
-            "📂 Open Project Folder",
-            lambda: open_project_folder(icon)
-        ),
-        item(
-            "⚙️  Edit .env",
-            lambda: edit_env(icon)
-        ),
+        item("📂 Open Project Folder", lambda: open_project_folder(icon)),
+        item("⚙️  Edit .env", lambda: edit_env(icon)),
         pystray.Menu.SEPARATOR,
-        item(
-            "❌ Exit",
-            lambda: exit_app(icon)
-        )
+        item("❌ Exit", lambda: exit_app(icon)),
     )
 
 
@@ -684,24 +864,31 @@ def main():
     sys.excepthook = lambda exc_type, exc, tb: log_exception("unhandled", exc)
 
     try:
-        icon = pystray.Icon(
-            "aas_hub",
-            create_icon(),
-            "AAS Hub"
-        )
-        
+        icon = pystray.Icon("aas_hub", create_icon(), "AAS Hub")
+
         # Set initial menu
         icon.menu = create_menu(icon)
-        
-        # Start Handoff Watchers
-        to_handler = HandoffHandler(icon, "New HANDOFF_TO_CODEX detected.")
-        from_handler = HandoffHandler(icon, "New RESULT.md detected.")
-        
+
+        # Start Guild Watchers
+        to_handler = GuildHandler(icon, "New GUILD_TO_CODEX detected.")
+        from_handler = GuildHandler(icon, "New RESULT.md detected.")
+
         observer = Observer()
-        observer.schedule(to_handler, str(HANDOFF_TO_DIR), recursive=False)
-        observer.schedule(from_handler, str(HANDOFF_FROM_DIR), recursive=False)
+        observer.schedule(to_handler, str(GUILD_TO_DIR), recursive=False)
+        observer.schedule(from_handler, str(GUILD_FROM_DIR), recursive=False)
         observer.start()
-        
+
+        # Background status poller
+        def poll_status():
+            try:
+                while icon.visible:
+                    update_status_snapshot()
+                    time.sleep(15)
+            except Exception as e:
+                log_exception("poll_status", e)
+
+        threading.Thread(target=poll_status, daemon=True).start()
+
         # Update menu dynamically every 5 seconds
         def update_menu():
             try:
@@ -711,15 +898,17 @@ def main():
                         icon.menu = create_menu(icon)
             except Exception as e:
                 log_exception("update_menu", e)
-        
+
         threading.Thread(target=update_menu, daemon=True).start()
-        
+
         # Show initial status
         if is_hub_running():
-            icon.notify("AAS Hub Tray", "Hub is running")
+            send_notification(icon, "AAS Hub Tray", "Hub is running")
         else:
-            icon.notify("AAS Hub Tray", "Hub is not running - click to start")
-        
+            send_notification(
+                icon, "AAS Hub Tray", "Hub is not running - click to start"
+            )
+
         icon.run(setup=setup)
     except Exception as e:
         log_exception("main", e)

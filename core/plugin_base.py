@@ -6,7 +6,7 @@ to ensure consistent lifecycle management and Hub integration.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from loguru import logger
 from core.config import AASConfig
 
@@ -14,11 +14,11 @@ from core.config import AASConfig
 class PluginBase(ABC):
     """
     Abstract base class for all AAS plugins.
-    
+
     Plugins are modular extensions that provide specific functionality
     while leveraging the core Hub services (Tasks, DB, Artifacts).
     """
-    
+
     def __init__(self, name: str, config: AASConfig, hub: Any):
         self.name = name
         self.config = config
@@ -35,7 +35,7 @@ class PluginBase(ABC):
                 "plugin": self.name,
                 "event_type": event_type,
                 "data": payload,
-                "timestamp": getattr(self.hub, "get_timestamp", lambda: None)()
+                "timestamp": getattr(self.hub, "get_timestamp", lambda: None)(),
             }
             await self.hub.ws.broadcast(full_payload)
 
@@ -43,7 +43,7 @@ class PluginBase(ABC):
     async def setup(self) -> bool:
         """
         Perform any necessary setup (e.g., connecting to external APIs).
-        
+
         Returns:
             True if setup was successful, False otherwise.
         """
@@ -53,7 +53,7 @@ class PluginBase(ABC):
     async def shutdown(self) -> bool:
         """
         Perform cleanup during system shutdown.
-        
+
         Returns:
             True if shutdown was successful.
         """
@@ -64,7 +64,7 @@ class PluginBase(ABC):
         return {
             "name": self.name,
             "type": self.__class__.__name__,
-            "version": getattr(self, "version", "1.0.0")
+            "version": getattr(self, "version", "1.0.0"),
         }
 
     def safe_execute(self, func, *args, **kwargs):
