@@ -1,0 +1,43 @@
+{
+  "schemaName": "ContractsIndex",
+  "schemaVersion": "1.0.0",
+  "generatedUtc": "2026-01-13T00:00:00Z",
+  "schemas": [
+    {
+      "name": "CommandBatch",
+      "version": "1.0.0",
+      "file": "schema/command-batch.v1.schema.json",
+      "id": "https://aas.local/contracts/command-batch/v1",
+      "channel": "commands",
+      "owners": ["ProjectMaelstrom", "AaroneousAutomationSuite"],
+      "status": "active"
+    },
+    {
+      "name": "GameStateSnapshot",
+      "version": "1.0.0",
+      "file": "schema/snapshot.v1.schema.json",
+      "id": "https://aas.local/contracts/snapshot/v1",
+      "channel": "snapshots",
+      "owners": ["ProjectMaelstrom"],
+      "status": "active"
+    },
+    {
+      "name": "HandoffEnvelope",
+      "version": "1.0.0",
+      "file": "schema/handoff-envelope.v1.schema.json",
+      "id": "https://aas.local/contracts/handoff-envelope/v1",
+      "channel": "handoff",
+      "owners": ["AaroneousAutomationSuite"],
+      "status": "active"
+    },
+    {
+      "name": "HomeDeviceControl",
+      "version": "1.0.0",
+      "file": "schema/home-device-control.v1.schema.json",
+      "id": "https://aas.local/contracts/home-device-control/v1",
+      "channel": "commands",
+      "owners": ["AaroneousAutomationSuite"],
+      "status": "experimental"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aas.local/contracts/home-device-control.v1",
+  "title": "HomeDeviceControl v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaName", "schemaVersion", "deviceId", "action", "timestamp"],
+  "properties": {
+    "schemaName": { "const": "HomeDeviceControl" },
+    "schemaVersion": { "const": "1.0.0" },
+    "deviceId": { "type": "string", "minLength": 1 },
+    "action": {
+      "type": "string",
+      "enum": ["turn_on", "turn_off", "set_brightness", "set_temperature"]
+    },
+    "value": { "type": ["number", "string", "null"] },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}

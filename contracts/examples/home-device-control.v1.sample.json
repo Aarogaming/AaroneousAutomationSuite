@@ -1,0 +1,8 @@
+{
+  "schemaName": "HomeDeviceControl",
+  "schemaVersion": "1.0.0",
+  "deviceId": "living_room_light",
+  "action": "set_brightness",
+  "value": 75,
+  "timestamp": "2026-01-13T00:00:00Z"
+}

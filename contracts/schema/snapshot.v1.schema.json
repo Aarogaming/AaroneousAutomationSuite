@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aas.local/contracts/snapshot/v1",
+  "title": "GameStateSnapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaName", "schemaVersion", "capturedUtc", "resolution", "gold"],
+  "properties": {
+    "schemaName": { "const": "GameStateSnapshot" },
+    "schemaVersion": { "const": "1.0.0" },
+    "capturedUtc": { "type": "string", "format": "date-time" },
+    "resolution": { "type": "string", "pattern": "^[0-9]+x[0-9]+$" },
+    "gold": { "type": "integer", "minimum": 0 }
+  }
+}

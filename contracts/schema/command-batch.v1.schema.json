@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aas.local/contracts/command-batch/v1",
+  "title": "CommandBatch v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaName", "schemaVersion", "issuedUtc", "commands"],
+  "properties": {
+    "schemaName": { "const": "CommandBatch" },
+    "schemaVersion": { "const": "1.0.0" },
+    "issuedUtc": { "type": "string", "format": "date-time" },
+    "commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string" },
+          "delayMs": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

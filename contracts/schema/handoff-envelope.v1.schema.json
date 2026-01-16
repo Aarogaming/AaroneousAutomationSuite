@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aas.local/contracts/handoff-envelope/v1",
+  "title": "HandoffEnvelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaName", "schemaVersion", "issuedUtc", "id", "type", "payload"],
+  "properties": {
+    "schemaName": { "const": "HandoffEnvelope" },
+    "schemaVersion": { "const": "1.0.0" },
+    "issuedUtc": { "type": "string", "format": "date-time" },
+    "id": { "type": "string", "minLength": 1 },
+    "type": { "type": "string", "enum": ["command-batch.v1", "snapshot.v1"] },
+    "payload": { "type": "object" }
+  }
+}

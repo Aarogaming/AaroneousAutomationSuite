@@ -1,0 +1,18 @@
+{
+  "schemaName": "HandoffEnvelope",
+  "schemaVersion": "1.0.0",
+  "issuedUtc": "2026-01-13T00:00:00Z",
+  "id": "handoff-001",
+  "type": "command-batch.v1",
+  "payload": {
+    "schemaName": "CommandBatch",
+    "schemaVersion": "1.0.0",
+    "issuedUtc": "2026-01-13T00:00:00Z",
+    "commands": [
+      {
+        "type": "delay",
+        "delayMs": 500
+      }
+    ]
+  }
+}
